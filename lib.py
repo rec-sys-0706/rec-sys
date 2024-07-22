@@ -7,6 +7,14 @@ def tokenize(text: str) -> list[str]:
     return re.sub(r'[^a-z0-9\s]', '', text.lower()).split() # 36306
     # return nltk.word_tokenize(text.lower()) # 37539
 
+def tru_pad(tokens, max_length):
+    """truncation and padding"""
+    if len(tokens) < max_length:
+        result = tokens + [0] * (max_length - len(tokens))
+    else:
+        result = tokens[:max_length]
+    attention_mask = [1 if i < len(tokens) else 0 for i in range(max_length)]
+    return result, attention_mask
 def parse_behaviors(src_path, dest_path):
     """
     Parse behaviors.tsv file into (user_id, clicked_news, candidate_news, clicked) form.
@@ -47,12 +55,13 @@ def parse_news(src_path, dest_dir):
     Returns:
         category2int
         word2int
-        # TODO write this
+        news_parsed.tsv: (category, subcategory, title, abstract, title_attention_mask, abstract_attention_mask)
     """
     # TODO tqdm
     # TODO entity
     # TODO train/test mode?
-    # TODO 
+    # TODO threshold
+
 
 
 
@@ -90,6 +99,13 @@ def parse_news(src_path, dest_dir):
     news['subcategory'] = news['subcategory'].apply(lambda c: category2int.get(c, 0))
     news['title'] = news['title'].apply(lambda text: [word2int.get(token, 0) for token in tokenize(text)])
     news['abstract'] = news['abstract'].apply(lambda text: [word2int.get(token, 0) for token in tokenize(text)])
+    # padding
+    maxlen = news['title'].apply(len).mean().__ceil__()
+    print(f"Average title length   : {maxlen}")
+    news[['title', 'title_attention_mask']] = news['title'].apply(lambda t: pd.Series(tru_pad(t, maxlen)))
+    maxlen = news['abstract'].apply(len).mean().__ceil__()
+    print(f"Average abstract length: {maxlen}")
+    news[['abstract', 'abstract_attention_mask']] = news['abstract'].apply(lambda t: pd.Series(tru_pad(t, maxlen)))
     # save to tsv
     temp = pd.DataFrame(category2int.items(), columns=['category', 'int'])
     temp.to_csv(dest_dir + '/category2int.tsv',
@@ -100,8 +116,7 @@ def parse_news(src_path, dest_dir):
                 sep='\t',
                 index=False)
     news.to_csv(dest_dir + '/news_parsed.tsv',
-                sep='\t',
-                index=False)
+                sep='\t')
 
 
 if __name__ == '__main__':

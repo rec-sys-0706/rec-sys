@@ -2,3 +2,4 @@ news-recommendation/
 data/
 misc/
 runs/
+__pycache__/

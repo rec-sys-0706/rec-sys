@@ -22,7 +22,7 @@ def train():
         log_dir=f"./runs/"
     )
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model: nn.Module = Model().to(device)
+    model: nn.Module = Model(CONFIG).to(device)
     # model = Model(config, pretrained_word_embedding,
     #                 pretrained_entity_embedding,
     #                 pretrained_context_embedding).to(device)

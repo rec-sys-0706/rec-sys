@@ -6,6 +6,8 @@ import torch.nn.functional as F
 from dataset import NewsDataset
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+import pdb
 
 CONFIG = BaseConfig()
 try:
@@ -21,30 +23,37 @@ def train():
     writer = SummaryWriter(
         log_dir=f"./runs/"
     )
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model: nn.Module = Model().to(device)
+    device = CONFIG.device
+    model: nn.Module = Model(CONFIG, device).to(device)
     # model = Model(config, pretrained_word_embedding,
     #                 pretrained_entity_embedding,
     #                 pretrained_context_embedding).to(device)
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters())
     # TODO optimizer
 
     # training loop
-    dataset = NewsDataset(CONFIG, 'data/MINDsmall_train/behaviors_parsed.tsv', 'data/MINDsmall_train/news_parsed.tsv', 'data/MINDsmall_train')
+    dataset = NewsDataset(CONFIG, 'data/MINDsmall_train/behaviors_parsed.tsv', 'data/MINDsmall_train/news_parsed.tsv')
     loader = DataLoader(dataset, batch_size=32) # TODO shuffle
 
     # TODO logging something.
-    for step in range(100):
+    for epoch in tqdm(CONFIG.max_epochs):
         losses = []
-        for item in loader:
+        for item in tqdm(loader):
             y_pred = model(item['clicked_news'], item['candidate_news'])
-            y_true = item['clicked']
+            y_true = item['clicked'].to(device)
             loss = criterion(y_pred, y_true)
-            losses.append(loss)
+
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+
+            losses.append(loss.item())
+
+        mean_train_loss = sum(losses) / len(losses)
+        print(f'Epoch: {epoch}, Loss/trainL: {mean_train_loss}')
+        writer.add_scalar('Loss/train', mean_train_loss, epoch)
     # TODO model
-
-
-    # writer.add_scalar('Loss/train', sum(losses) / len(losses), step)
     # writer.add_scalar('Loss/test', np.random.random(), step)
     # writer.add_scalar('Accuracy/train', np.random.random(), step)
     # writer.add_scalar('Accuracy/test', np.random.random(), step)

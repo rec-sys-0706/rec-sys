@@ -2,3 +2,5 @@ pandas
 tqdm
 nltk
 gradio
+tensorboard
+openai

@@ -3,3 +3,4 @@ tqdm
 nltk
 gradio
 tensorboard
+openai

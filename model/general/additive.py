@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
-
+import pdb
 class AdditiveAttention(nn.Module):
     """
     Description:
@@ -18,16 +18,16 @@ class AdditiveAttention(nn.Module):
     def forward(self, x: Tensor):
         """
         Args:
-            x           : (batch_size, ctx_len, d_embed)
+            x           : (..., ctx_len, d_embed)
         Returns:
             second-level attention weight.
         Others:
             query_vector: (d_query)
-            temp        : (batch_size, ctx_len, d_query)
-            a           : (batch_size, ctx_len)
-            out         : (batch_size, d_embed, 1)
+            temp        : (..., ctx_len, d_query)
+            a           : (..., 1, ctx_len)
+            out         : (..., 1, d_embed)
         """
         temp = torch.tanh(self.linear(x))
-        a = F.softmax(temp @ self.query_vector, dim=1).unsqueeze(dim=-1)
-        out = x * a # weighted-sum # TODO? torch.bmm(x.transpose(1, 2), a)
-        return out
+        a = F.softmax(temp @ self.query_vector, dim=-1).unsqueeze(dim=-2)
+        out = a @ x # weighted-sum
+        return out.squeeze(-2)

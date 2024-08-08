@@ -5,102 +5,84 @@ from ast import literal_eval
 from tqdm import tqdm
 from config import BaseConfig
 import random
+import logging
+from pathlib import Path
 import pdb
 
 class NewsDataset(Dataset):
     """
-    News: {
-        title (batch_size, num_tokens_title): tensor.
-        title_mask: # TODO
-    }
     For each element {
-
-        clicked_news                                  : list[news], <num_clicked_news_a_user> sized list, each element is a News.
-        candidate_news  (batch_size, )                : News. shape
-        clicked         (batch_size, )                : int, 0/1 integer. shape
+        clicked_news     : {
+            title        : (batch_size, num_clicked_news_a_user, num_tokens_title)
+            title_mask   : same as title
+        }
+        candidate_news   : {
+            title        : (batch_size, 1 + k, num_tokens_title)
+            title_mask   : same as title
+        }
+        clicked          : (batch_size, 1 + k)
     }
     """
+
+    # list[news], <num_clicked_news_a_user> sized list, each element is a News.
     def __init__(self,
                  config: BaseConfig,
                  behaviors_path,
-                 news_path,
-                 dest_dir=None) -> None:
+                 news_path) -> None:
         super().__init__()
         # ---- config ---- #
         self.num_tokens_title = config.num_tokens_title
         self.num_tokens_abstract = config.num_tokens_abstract
         self.num_clicked_news_a_user = config.num_clicked_news_a_user
-        self.padding_news = {
-            'title': torch.tensor([0] * self.num_tokens_title),
-            'title_mask': torch.tensor([0] * self.num_tokens_title)
-        }
-        
-        
+        self.padding_title = torch.tensor([0] * self.num_tokens_title)
         # ---------------- #
         self.__behaviors = pd.read_csv(behaviors_path,
                                        sep='\t')
+        self.__behaviors = self.__behaviors.dropna(subset=['clicked_news']) # TODO If no clicked_news, should it be dropped?
         self.__news = pd.read_csv(news_path,
                                   sep='\t',
                                   index_col='news_id')
-        self.result = self.__process_result(dest_dir)
-        # else:
-        #     temp = pd.read_csv(dest_dir + '/train.tsv',
-        #                        sep='\t')
-        #     temp['clicked_news'] = temp['clicked_news'].apply(literal_eval)
-        #     temp['clicked_news_mask'] = temp['clicked_news_mask'].apply(literal_eval)
-        #     temp['candidate_news'] = temp['candidate_news'].apply(literal_eval)
-        #     temp['candidate_news_mask'] = temp['candidate_news_mask'].apply(literal_eval)
-        #     self.result = temp.to_dict(orient='records')
-        # TODO load from prepared.
+        
+        train_filepath = Path(behaviors_path).parent / 'train.pt'
+        if not config.is_new:
+            assert train_filepath.exists(), 'train.pt does not exist.'
+            self.result = torch.load(train_filepath)
+        else:
+            self.result = self.__process_result(train_filepath)
 
-    def __process_result(self, dest_dir):
+    def __process_result(self, train_filepath):
         get_title = lambda news_id: torch.tensor(literal_eval(self.__news.loc[news_id]['title']))
         get_title_mask = lambda news_id: torch.tensor(literal_eval(self.__news.loc[news_id]['title_attention_mask']))
-
+        print(self.__behaviors[self.__behaviors['clicked_news'].isna()])
         result = []
-        with tqdm(total=len(self.__behaviors)) as pbar:
-            for _, row in self.__behaviors.iterrows():
-                pbar.update(1)
-                try:
-                    clicked_news_ids = row['clicked_news'].split(' ')
-                except Exception as e:
-                    print(f'[ERROR] {row["user_id"]} Message: {e}')
-                    clicked_news_ids = []
-                
-                for candidate_news_id, y in zip(row['candidate_news'].split(' '), row['clicked'].split(' ')):
-                    random.shuffle(clicked_news_ids)
-                    clicked_news_ids = clicked_news_ids[:self.num_clicked_news_a_user] # truncate
-                    num_missing_news = self.num_clicked_news_a_user - len(clicked_news_ids)
+        for _, row in tqdm(self.__behaviors.iterrows(), total=len(self.__behaviors)):
+            clicked_news_ids = row['clicked_news'].split(' ')
+            candidate_news_ids = row['candidate_news'].split(' ')
+            labels = row['clicked'].split(' ')
+            # Clicked news
+            random.shuffle(clicked_news_ids)
+            clicked_news_ids = clicked_news_ids[:self.num_clicked_news_a_user] # truncate
+            num_missing_news = self.num_clicked_news_a_user - len(clicked_news_ids)
 
-                    # Clicked news
-                    clicked_news = []
-                    for news_id in clicked_news_ids:
-                        news = {
-                            'title': get_title(news_id),
-                            'title_mask': get_title_mask(news_id)
-                        }
-                        clicked_news.append(news)
-                    clicked_news += [self.padding_news] * num_missing_news
+            clicked_news = {
+                'title': torch.stack([get_title(news_id) for news_id in clicked_news_ids] + [self.padding_title] * num_missing_news),
+                'title_mask': torch.stack([get_title_mask(news_id) for news_id in clicked_news_ids] + [self.padding_title] * num_missing_news)
+            }
+            # Candidate news
+            candidate_news = {
+                'title': torch.stack([get_title(news_id) for news_id in candidate_news_ids]),
+                'title_mask': torch.stack([get_title_mask(news_id) for news_id in candidate_news_ids])
+            }
+            
+            result.append({
+                'clicked_news': clicked_news,
+                'candidate_news': candidate_news,
+                'clicked': torch.tensor([int(y) for y in labels], dtype=torch.float32),
+            })
 
-                    # Candidate news (only 1)
-                    candidate_news = {
-                        'title': get_title(candidate_news_id),
-                        'title_mask': get_title_mask(candidate_news_id)
-                    }
-
-               
-                    result.append({
-                        'clicked_news': clicked_news,
-                        'candidate_news': candidate_news,
-                        'clicked': torch.tensor(int(y), dtype=torch.float32),
-                    })
-                if len(result) > 1000:
-                    break # TODO
-        # TODO save?
-        # temp = pd.DataFrame(result)
-        # temp.to_csv(dest_dir + '/train.tsv',
-        #             sep='\t',
-        #             index=False)
+        # Save
+        torch.save(result, train_filepath)
+        logging.info('train.csv file saved successfully.')
         return result
     def __len__(self):
         return len(self.result)
@@ -112,9 +94,11 @@ class NewsDataset(Dataset):
 
 if __name__ == '__main__':
     config = BaseConfig()
-    dataset = NewsDataset(config, 'data/MINDsmall_train/behaviors_parsed.tsv', 'data/MINDsmall_train/news_parsed.tsv', 'data/MINDsmall_train')
-    loader = DataLoader(dataset, batch_size=1)
+    dataset = NewsDataset(config, 'data/MINDsmall_train/behaviors_parsed.tsv', 'data/MINDsmall_train/news_parsed.tsv')
+    loader = DataLoader(dataset, batch_size=2)
 
     for item in loader:
-        print(item['clicked_news'])
-        break
+        x1 = item['clicked_news']
+        x2 = item['candidate_news']
+        y = item['clicked']
+        pdb.set_trace()

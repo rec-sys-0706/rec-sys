@@ -1,3 +1,4 @@
+<<<<<<<< HEAD:data_preprocessing.py
 """
 Returns:
     Generate processed files including
@@ -164,3 +165,5 @@ def parse_news(config: BaseConfig,
 if __name__ == '__main__':
     parse_behaviors('data/MINDsmall_train/behaviors.tsv', 'data/MINDsmall_train/behaviors_parsed.tsv', BaseConfig())
     # parse_news(BaseConfig(), 'data/MINDsmall_train/news.tsv', 'data/MINDsmall_train')
+========
+>>>>>>>> b44b6ae40ec1b27c06ebe03799b90608ccdc98ea:lib.py

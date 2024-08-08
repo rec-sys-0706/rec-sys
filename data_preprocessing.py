@@ -10,6 +10,9 @@ import pandas as pd
 import re
 from collections import Counter
 from config import BaseConfig
+import pdb
+import random
+from tqdm import tqdm
 
 def tokenize(text: str) -> list[str]:
     # return list(set(text)) # character only, 123
@@ -25,7 +28,23 @@ def tru_pad(tokens: list[str], max_length: int):
     attention_mask = [1 if i < len(tokens) else 0 for i in range(max_length)]
     return result, attention_mask
 
-def parse_behaviors(src_path, dest_path):
+def sample(true_set: set[str], false_set: set[str], negative_sampling_ratio=4) -> tuple[str, str]:
+    """negative sampling"""
+    true_set = list(true_set)
+    false_set = list(false_set)
+
+    random.shuffle(true_set)
+    random.shuffle(false_set)
+
+    true_set = true_set[:1]
+    false_set = false_set[:negative_sampling_ratio]
+
+    # assert len(true_set) == 1 and len(false_set) == negative_sampling_ratio
+    news_id = ' '.join(true_set + false_set)
+    clicked = ' '.join('1' * len(true_set) + '0' * len(false_set))
+    return (news_id, clicked)
+
+def parse_behaviors(src_path, dest_path, config: BaseConfig):
     """
     Parse behaviors.tsv file into (user_id, clicked_news, candidate_news, clicked) form.
     """
@@ -44,14 +63,27 @@ def parse_behaviors(src_path, dest_path):
     }).reset_index()
     behaviors['clicked_news'] = behaviors['clicked_news'].apply(lambda h: ' '.join(set(h.split()))) # Remove duplicated values in 'clicked_news'.
     behaviors['impressions'] = behaviors['impressions'].apply(lambda impression: list(set(impression)))
-    behaviors[['candidate_news', 'clicked']] = pd.DataFrame(
-        behaviors['impressions'].map(lambda x: (
-            ' '.join([e.split('-')[0] for e in x]),
-            ' '.join([e.split('-')[1] for e in x])
-        )).tolist() # tuple to list, so it can be converted to DataFrame.
-    )
-    # TODO
-    # ! 以 behaviors[behaviors['user_id'] == 'U91836'] 為例，其中 N17059-1 有發生 click/not click 都有的現象，應該要改sample 3 個
+
+    # Create candidate_news & clicked columns
+    k = config.negative_sampling_ratio
+    behaviors[['candidate_news', 'clicked']] = [None, None]
+    for idx, row in tqdm(behaviors['impressions'].items(), total=len(behaviors)):
+        try:
+            true_set = set()
+            false_set = set()
+            for e in row:
+                news_id, clicked = e.split('-') # TODO assert size 2
+                true_set.add(news_id) if clicked == '1' else false_set.add(news_id)
+            false_set -= true_set # duplicated news_id keep by true_set
+            behaviors.loc[idx, ['candidate_news', 'clicked']] = sample(true_set, false_set, k) # TODO config
+        except AssertionError as e:
+            # print(e)
+            behaviors = behaviors.drop(index=idx)
+    
+    behaviors = behaviors[behaviors['clicked'].apply(len) == 2*k+1]
+    # behaviors['clicked'].apply(len).sort_values()
+    # [~behaviors['clicked'].str.contains('1')] # 不包含 1
+
     # print(behaviors[behaviors['user_id'] == 'U91836'].head())
     # print(behaviors[behaviors['user_id'] == 'U91836']['impressions'].iloc[0])
     behaviors.to_csv(dest_path,
@@ -130,5 +162,5 @@ def parse_news(config: BaseConfig,
                 sep='\t')
 
 if __name__ == '__main__':
-    # parse_behaviors('data/MINDsmall_train/behaviors.tsv', 'data/MINDsmall_train/behaviors_parsed.tsv')
-    parse_news(BaseConfig(), 'data/MINDsmall_train/news.tsv', 'data/MINDsmall_train')
+    parse_behaviors('data/MINDsmall_train/behaviors.tsv', 'data/MINDsmall_train/behaviors_parsed.tsv', BaseConfig())
+    # parse_news(BaseConfig(), 'data/MINDsmall_train/news.tsv', 'data/MINDsmall_train')

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
-
+import pdb
 class Head(nn.Module):
     """One head of self-attention"""
     def __init__(self, d_embed, d_query):
@@ -12,27 +12,29 @@ class Head(nn.Module):
         self.value = nn.Linear(d_embed, d_query, bias=False)
         # TODO dropout
 
-    def forward(self, x, attn_mask=None):
+    def forward(self, x, attn_mask: Tensor=None):
         """
+        N: number of news.
         T: context_length, T stands for time, just a naming convention.
         Shapes:
-            x      : (B, T, d_embed) 
-            q, k, v: (B, T, d_query) <- (B, T, d_embed) @ (d_embed, d_query)
-            logits : (B, T, T) <- (B, T, d_query) @ (B, d_query, T) 
-            A      : (B, T, T)
-            output : (B, T, d_query)
+            x      : (..., T, d_embed) 
+            q, k, v: (..., T, d_query) <- (..., T, d_embed) @ (d_embed, d_query)
+            logits : (..., T, T) <- (..., T, d_query) @ (B, d_query, T) 
+            A      : (..., T, T)
+            output : (..., T, d_query)
         """
-        B, T, C = x.shape
         q: Tensor = self.query(x)
         k: Tensor = self.key(x)
         v: Tensor = self.value(x)
         # Compute attention scores
-        logits = q @ k.transpose(1, 2) # a(q, k) for each cell. # TODO * k.shape[-1]**-0.5 
+        logits = q @ k.transpose(-1, -2) # a(q, k) for each cell. # TODO * k.shape[-1]**-0.5 
         if attn_mask is not None:
-            attn_mask = attn_mask.unsqueeze(1).repeat(1, attn_mask.shape[1], 1)
+            repeats = [1] * (attn_mask.dim() + 1)
+            repeats[-2] = attn_mask.shape[-1]
+            attn_mask = attn_mask.unsqueeze(-2).repeat(repeats=repeats) # (repeats=(1, 1, dim, 1))
             logits = logits.masked_fill(attn_mask.logical_not(), float(-1e9))
         A = F.softmax(logits, dim=-1)
-        A = A.masked_fill(attn_mask.logical_not(), 0) # TODO
+        # A = A.masked_fill(attn_mask.logical_not(), 0) # TODO delete
         return A @ v # ? weighted-sum
 class MultiHeadAttention(nn.Module):
     """
@@ -52,9 +54,9 @@ class MultiHeadAttention(nn.Module):
     def forward(self, x, attn_mask=None):
         """
         Args:
-            x: (batch_size, ctx_len, d_embed)
+            x: (batch_size, n_news, ctx_len, d_embed)
         Return:
-            out: (batch_size, ctx_len, d_embed)
+            out: (batch_size, n_news, ctx_len, d_embed)
         """
         out = torch.cat([h(x, attn_mask) for h in self.heads], dim=-1) # concat in channel, -> (B, T, C*num_heads)
         out = self.proj(out)

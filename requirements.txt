@@ -4,4 +4,7 @@ nltk
 gradio
 tensorboard
 openai
-python-dotenv
+Flask
+numpy<2.0
+scikit-learn
+# torch (See https://pytorch.org/ and choose version that match your GPU.)

@@ -1,25 +1,26 @@
 from flask import Flask, render_template
-import pyodbc
-from datetime import datetime
 
-app = Flask(__name__, template_folder='C:/Users/user/Desktop/website/.venv/templates', static_folder='C:/Users/user/Desktop/website/.venv/static')
+app = Flask(__name__)
 
-# SQL Server connection string
-conn_str = (
-    "Driver={SQL Server};"
-    "Server=LAPTOP-IGBO7T9O\\SQLEXPRESS01;"
-    "Database=cnn;"
-    "Trusted_Connection=yes;"
-)
+# Sample news data
+articles = [
+    {
+        'title': 'Breaking News: Market Hits All-Time High',
+        'content': 'The stock market has reached an all-time high today, with major indices showing significant gains.',
+        'author': 'John Doe',
+        'date': '2024-08-09'
+    },
+    {
+        'title': 'Tech Innovations: AI Revolutionizing Industries',
+        'content': 'Artificial Intelligence is transforming the way businesses operate, from automation to customer service.',
+        'author': 'Jane Smith',
+        'date': '2024-08-08'
+    },
+    # Add more news articles here
+]
 
 @app.route('/')
 def index():
-    conn = pyodbc.connect(conn_str)
-    cursor = conn.cursor()
-    cursor.execute("SELECT Category, Subcategory, Title, Abstract, URL, PublicationDate FROM News")
-    articles = cursor.fetchall()
-    cursor.close()
-    conn.close()
     return render_template('index.html', articles=articles)
 
 if __name__ == '__main__':

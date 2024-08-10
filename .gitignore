@@ -3,3 +3,5 @@ data/
 misc/
 runs/
 __pycache__/
+.env
+.venv/

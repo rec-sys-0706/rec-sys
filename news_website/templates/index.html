@@ -9,15 +9,38 @@
 <body>
     <div class="background"></div>
     <div class="container">
-        <h1>CNN News</h1>
-        {% for article in articles %}
-        <div class="article">
-            <h2>{{ article.title }}</h2>
-            <p><strong>Content:</strong> {{ article.content }}</p>
-            <p><strong>Author:</strong> {{ article.author }}</p>
-            <p><strong>Date:</strong> {{ article.date }}</p>
+        <div class="item1">
+            <h1>CNN News</h1>
+            {% for article in articles %}
+            <div class="article">
+                <h2>{{ article.title }}</h2>
+                <p><strong>Content:</strong> {{ article.content }}</p>
+                <p><strong>Author:</strong> {{ article.author }}</p>
+                <p><strong>Date:</strong> {{ article.date }}</p>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        <div class="item2">
+            <img src="{{ url_for('wordcloud_image') }}" alt="Word Cloud">
+            <h1>top5 news recommend by XXX</h1>
+            <ul>
+                {% for article in articles[:5] %}
+                <li>{{ article.title }}</li>
+                {% endfor %}
+            </ul>
+            <h1>top5 news recommend by YYY</h1>
+            <ul>
+                {% for article in articles[6:11] %}
+                <li>{{ article.title }}</li>
+                {% endfor %}
+            </ul>
+            <h1>top5 news recommend by ZZZ</h1>
+            <ul>
+                {% for article in articles[-10:-5] %}
+                <li>{{ article.title }}</li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 </body>
 </html>

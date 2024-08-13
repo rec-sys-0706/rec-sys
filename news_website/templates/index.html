@@ -9,7 +9,24 @@
 <body>
     <div class="background"></div>
     <div class="container">
-        <div class="item1">
+        <div class="clicked_news">
+            <table class="user_info">
+                <h1>User Info</h1>
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Age</th>
+                        <th scope="col">Gender</th>
+                        <th scope="col">Most interest in</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <th scope="row">AAA</th>
+                    <th scope="row">30</th>
+                    <th scope="row">F</th>
+                    <th scope="row">Sports</th>
+                </tbody>
+            </table>
             <h1>CNN News</h1>
             {% for article in articles %}
             <div class="article">
@@ -20,7 +37,7 @@
             </div>
             {% endfor %}
         </div>
-        <div class="item2">
+        <div class="candidate_news">
             <img src="{{ url_for('wordcloud_image') }}" alt="Word Cloud">
             <h1>top5 news recommend by XXX</h1>
             <ul>

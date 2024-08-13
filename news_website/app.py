@@ -153,7 +153,7 @@ def wordcloud_image():
     categories = [article['category'] for article in articles]
     wordcloud_text = ' '.join(categories)
     mask = np.array(Image.open("static/mask.png"))
-    wordcloud = WordCloud(width=800, height=400, background_color='transparent', mask=mask, contour_color='white', contour_width=1).generate(wordcloud_text)
+    wordcloud = WordCloud(width=800, height=400, background_color='white', mask=mask, contour_color='white', contour_width=1).generate(wordcloud_text)
     wordcloud.to_image().save(img, format='PNG')
     img.seek(0)
     return send_file(img, mimetype='image/png')

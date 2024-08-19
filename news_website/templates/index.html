@@ -12,12 +12,10 @@
         <h1>CNN News</h1>
         {% for article in articles %}
         <div class="article">
-            <h2>{{ article.Title }}</h2>
-            <p><strong>Category:</strong> {{ article.Category }}</p>
-            <p><strong>Subcategory:</strong> {{ article.Subcategory }}</p>
-            <p><strong>Abstract:</strong> {{ article.Abstract }}</p>
-            <p><strong>URL:</strong> <a href="{{ article.URL }}" target="_blank">{{ article.URL }}</a></p>
-            <p><strong>Publication Date:</strong> {{ article.PublicationDate }}</p>
+            <h2>{{ article.title }}</h2>
+            <p><strong>Content:</strong> {{ article.content }}</p>
+            <p><strong>Author:</strong> {{ article.author }}</p>
+            <p><strong>Date:</strong> {{ article.date }}</p>
         </div>
         {% endfor %}
     </div>

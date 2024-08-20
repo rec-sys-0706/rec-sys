@@ -5,6 +5,7 @@ class EarlyStopping:
         self.patience = patience
         self.counter = 0
         self.best_loss = float('inf')
+        self.stop_training = False
     
     def __call__(self, val_loss):
         if val_loss < self.best_loss:
@@ -16,6 +17,7 @@ class EarlyStopping:
             (stop_training, is_better) = (False, False)
             if self.counter >= self.patience:
                 (stop_training, is_better) = (True, False)
+                self.stop_training = True
 
         return stop_training, is_better
 

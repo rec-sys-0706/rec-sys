@@ -10,7 +10,9 @@ from tqdm import tqdm
 import pdb
 import logging
 from evaluate import nDCG, MRR, ROC_AUC
-from utils import EarlyStopping
+from utils import EarlyStopping, time_since
+from pathlib import Path
+import time
 
 CONFIG = BaseConfig()
 try:
@@ -29,6 +31,8 @@ def train():
     writer = SummaryWriter(
         log_dir=f"./runs/"
     )
+    if not Path(CONFIG.ckpt_dir).exists():
+        Path(CONFIG.ckpt_dir).mkdir()
     device = CONFIG.device
     model: nn.Module = Model(CONFIG, device).to(device)
     # TODO load pretrain
@@ -36,23 +40,30 @@ def train():
     #                 pretrained_entity_embedding,
     #                 pretrained_context_embedding).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters())
-    # TODO optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=CONFIG.learning_rate)
 
-    # training loop
+    # Training Loop
     logging.info(f'Preparing datasets...')
     train_dataset = NewsDataset(CONFIG, mode='train')
-    train_loader = DataLoader(train_dataset, batch_size=CONFIG.train_batch_size) # TODO shuffle
+    train_loader = DataLoader(train_dataset,
+                              batch_size=CONFIG.train_batch_size,
+                              shuffle=True,
+                              drop_last=True,
+                              pin_memory=True)
 
     valid_dataset = NewsDataset(CONFIG, mode='valid')
-    valid_loader = DataLoader(valid_dataset, batch_size=CONFIG.valid_batch_size)
+    valid_loader = DataLoader(valid_dataset,
+                              batch_size=CONFIG.valid_batch_size,
+                              shuffle=False,
+                              drop_last=False,
+                              pin_memory=True)
 
     early_stopping = EarlyStopping(patience=3)
 
 
-    # TODO logging something.
-    # TODO delete logging.info(f'Starting training process with {CONFIG.max_epochs} epochs.')
+
     step = 0
+    start_time = time.time()
     for epoch in range(1, CONFIG.max_epochs + 1):
 
         train_loss = 0.0
@@ -66,12 +77,12 @@ def train():
             optimizer.step()
             optimizer.zero_grad()
 
-            train_loss += item(loss)
+            train_loss += loss.item()
 
 
             step += 1
             if step % CONFIG.valid_interval == 0:
-                logging.info(f'Starting validation process in step {step:5}.')
+                tqdm.write(f'Starting validation process in step {step:5}.')
                 model.eval()
                 evaluate = lambda _pred, _true: (0, 0, nDCG(_pred, _true, 5), nDCG(_pred, _true, 10))
                 y_preds = []
@@ -79,42 +90,47 @@ def train():
                 valid_loss = 0.0
                 for item in tqdm(valid_loader, desc='Validation', leave=False):
                     y_pred = model(item['clicked_news'], item['candidate_news'])
-                    y_true = item['clicked']
+                    y_true = item['clicked'].to(device)
                     loss = criterion(y_pred, y_true)
                     valid_loss += loss.item()
                     
                     y_preds.append(y_pred.detach().cpu())
-                    y_trues.append(y_true)
+                    y_trues.append(y_true.cpu())
                 valid_loss /= len(valid_loader)
                 y_preds = torch.concat(y_preds)
                 y_trues = torch.concat(y_trues)
                 roc_auc, mrr, ndcg5, ndcg10 = evaluate(y_preds, y_trues)
-                print((
-                    f'\nValid/ROC_AUC: {0.0:6.4}\n',
+                # Logging - valid
+                tqdm.write((
+                    f'Step: {step}\n'
+                    f'Time: {time_since(start_time)}\bn'
+                    f'Valid/ROC_AUC: {0.0:6.4}\n'
                     f'Valid/MRR: {0.0:6.4}\n'
                     f'Valid/nDCG@5: {ndcg5:6.4}\n'
                     f'Valid/nDCG@10: {ndcg10:6.4}\n'
-                    f'Valid/Loss: {valid_loss}\n'
+                    f'Valid/Loss: {valid_loss}'
                 ))
-                stop_training, is_better = early_stopping(valid_loss)
+                writer.add_scalar('Valid/AUC', roc_auc, step)
+                writer.add_scalar('Valid/MRR', mrr, step)
+                writer.add_scalar('Valid/nDCG@5', ndcg5, step)
+                writer.add_scalar('Valid/nDCG@10', ndcg10, step)
+                writer.add_scalar('Valid/nDCG@10', ndcg10, step)
 
+                stop_training, is_better = early_stopping(valid_loss)
                 if stop_training:
-                    pass # TODO
+                    tqdm.write(f'Training process ended at Epoch {epoch}\n')
+                    break
                 elif is_better:
-                    pass # TODO
+                    torch.save({'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': optimizer.state_dict(),
+                                'epoch': epoch},  Path(CONFIG.ckpt_dir) / f'ckpt-{step}.pth')
+
         train_loss /= len(train_loader)
         logging.info((
-            f'Epoch: {epoch:3}/{CONFIG.max_epochs}\n'
+            f'Epoch: {epoch:3}/{CONFIG.max_epochs} Train/Time: {time_since(start_time)}\n'
             f'Train/Loss: {train_loss}\n'
         ))
         writer.add_scalar('Train/Loss', loss, epoch)
-
-
-    # TODO model
-    # writer.add_scalar('Loss/test', np.random.random(), step)
-    # writer.add_scalar('Accuracy/train', np.random.random(), step)
-    # writer.add_scalar('Accuracy/test', np.random.random(), step)
-    # writer.close()
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-
+import time
 class EarlyStopping:
     """EarlyStopping references tensorflow.keras.callbacks.EarlyStopping."""
     def __init__(self, patience=3):
@@ -18,3 +18,8 @@ class EarlyStopping:
                 (stop_training, is_better) = (True, False)
 
         return stop_training, is_better
+
+def time_since(base: float):
+    now = time.time()
+    elapsed_time = now - base
+    return time.strftime("%H:%M:%S", time.gmtime(elapsed_time))

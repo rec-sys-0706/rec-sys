@@ -106,7 +106,7 @@ class NewsDataset(Dataset):
 
         # Save
         torch.save(result, filepath)
-        logging.info('train.csv file saved successfully.')
+        logging.info(f"{self.mode}.pt saved successfully.")
         return result
     def __len__(self):
         return len(self.result)

@@ -9,11 +9,15 @@ Returns:
 import pandas as pd
 import re
 from collections import Counter
-from model.config import BaseConfig
-import pdb
+from config import BaseConfig
 import random
 from tqdm import tqdm
 from pathlib import Path
+import numpy as np
+import time
+import torch
+import time
+from utils import time_since
 
 def tokenize(text: str) -> list[str]:
     # return list(set(text)) # character only, 123
@@ -119,7 +123,6 @@ def parse_news(config: BaseConfig,
         word2int
         news_parsed.tsv: (category, subcategory, title, abstract, title_attention_mask, abstract_attention_mask)
     """
-    # TODO tqdm
     # TODO entity
     # TODO threshold
 
@@ -177,12 +180,11 @@ def parse_news(config: BaseConfig,
             raise FileNotFoundError(f"File '{word2int_path}' does not exist.")
         category2int = dict(pd.read_csv(category2int_path,
                                         sep='\t',
-                                        names=['category', 'int'],
                                         index_col=False).values)
         word2int = dict(pd.read_csv(word2int_path,
                                     sep='\t',
-                                    names=['word', 'int'],
-                                    index_col=False).values)
+                                    index_col=False,
+                                    na_filter=False).values)
     # ! processing news
     news = news.drop(columns=['url', 'title_entities', 'abstract_entities'])
     news['category'] = news['category'].apply(lambda c: category2int.get(c, 0))
@@ -205,6 +207,59 @@ def parse_news(config: BaseConfig,
     news.to_csv(src_dir / 'news_parsed.tsv',
                 sep='\t')
 
+def generate_word_embedding(config: BaseConfig):
+    start_time = time.time()
+    print('Initializing processing of pretrained embeddings...')
+    # Vocabulary
+    word2int_path = Path(config.train_dir) / 'word2int.tsv'
+    if not word2int_path.exists():
+        raise FileNotFoundError(f"File '{word2int_path}' does not exist.")
+    word2int = pd.read_csv(word2int_path,
+                        sep='\t',
+                        index_col='word',
+                        na_filter=False)
+    # GloVe
+    print('Loading GloVe embeddings...')
+    glove_embedding = pd.read_csv(config.glove_embedding_path,
+                                sep=' ',
+                                index_col=0,
+                                quoting=3,
+                                header=None,
+                                na_filter=False)
+    glove_embedding.index.rename('word', inplace=True)
+    if glove_embedding.shape[1] != config.embedding_dim:
+        raise ValueError((
+            f"Pretrained embedding source dim {glove_embedding.shape[1]} "
+            f"is not equal to config.embedding_dim {config.embedding_dim}\n"
+            "Please check your config.py file."
+        ))
+    print(f'GloVe embeddings loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
+    # Missing Rows
+    temp = word2int.merge(glove_embedding,
+                        how='left',
+                        indicator=True,
+                        left_index=True,
+                        right_index=True)
+    missing_rows = temp[temp['_merge'] == 'left_only'].drop(columns='_merge')
+    missing_rows.iloc[:, 1:] = np.random.normal(size=(missing_rows.shape[0], config.embedding_dim))
+
+    merged = word2int.merge(glove_embedding,
+                            how='inner',
+                            left_index=True,
+                            right_index=True)
+    result = pd.concat([merged, missing_rows]).sort_values(by='int')
+    result.set_index('int', inplace=True)
+
+    torch.save(torch.tensor(result.values, dtype=torch.float32), Path(config.train_dir) / 'pretrained_embedding.pt')
+    print((
+        f'Vocabulary Size  : {len(word2int)}\n'
+        f'Missed Embeddings: {len(missing_rows)}\n'
+        f'Intersection     : {len(merged)}\n'
+        f'Missing Rate     : {len(missing_rows) / len(word2int):.4f}\n'
+        f'Elapsed Time     : {time_since(start_time, "seconds"):.2f} seconds\n'
+        f'Embedding file has been successfully.'
+    ))
 if __name__ == '__main__':
-    parse_behaviors(BaseConfig(), 'valid')
-    parse_news(BaseConfig(), 'valid')
+    # parse_behaviors(BaseConfig(), 'valid')
+    # parse_news(BaseConfig(), 'valid')
+    generate_word_embedding(BaseConfig())

@@ -59,20 +59,21 @@ class NewsDataset(Dataset):
         self.__news = pd.read_csv(news_path,
                                   sep='\t',
                                   index_col='news_id')
-        
         result_path = src_dir / f'{mode}.pt' 
         if result_path.exists():
-            self.result = torch.load(result_path)
+            data = torch.load(result_path)
+            self.result, self.users = data['result'], data['users']
         else:
             logging.info(f"Cannot locate file {mode}.pt in '{src_dir}'.")
             logging.info(f"Starting data processing.")
-            self.result = self.__process_result(result_path)
+            self.result, self.users = self.__process_result(result_path)
 
     def __process_result(self, filepath):
         get_title = lambda news_id: torch.tensor(literal_eval(self.__news.loc[news_id]['title']))
         get_title_mask = lambda news_id: torch.tensor(literal_eval(self.__news.loc[news_id]['title_attention_mask']))
     
         result = []
+        users = []
         for _, row in tqdm(self.__behaviors.iterrows(), total=len(self.__behaviors)):
             # Clicked news
             clicked_news_ids = row['clicked_news'].split(' ')
@@ -103,11 +104,18 @@ class NewsDataset(Dataset):
                     'clicked_news': clicked_news,
                     'candidate_news': candidate_news,
                 })
-
+            users.append({
+                'user_id': row['user_id'],
+                'clicked_news_ids': clicked_news_ids,
+                'candidate_news_ids': candidate_news_ids
+            })
         # Save
-        torch.save(result, filepath)
+        torch.save({
+            'result': result,
+            'users': users
+        }, filepath)
         logging.info(f"{self.mode}.pt saved successfully.")
-        return result
+        return result, users
     def __len__(self):
         return len(self.result)
     def __getitem__(self, index):
@@ -117,15 +125,4 @@ class NewsDataset(Dataset):
         return self.result[index]
 
 if __name__ == '__main__':
-
-
-    config = BaseConfig()
-    dataset = NewsDataset(config, 'valid')
-    loader = DataLoader(dataset, batch_size=2)
-
-    for item in loader:
-        x1 = item['clicked_news']
-        x2 = item['candidate_news']
-        pdb.set_trace()
-        y = item['clicked']
-        pdb.set_trace()
+    pass

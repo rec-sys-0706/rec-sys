@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from .encoder import Encoder
 from config import BaseConfig
-
 class NRMS(nn.Module):
     """
     NewsEncoder: (candidate_news) -> news_vector
@@ -12,15 +11,22 @@ class NRMS(nn.Module):
     def __init__(
             self,
             config: BaseConfig,
-            device):
+            pretrained_embedding=None):
         super().__init__()
         self.config = config
-        self.device = device
-        self.to(device)
+        self.device = config.device
         # ---- Layers ---- #
-        self.embedding = nn.Embedding(config.vocab_size, config.embedding_dim)
+        if pretrained_embedding is None:
+            self.embedding = nn.Embedding(config.vocab_size,
+                                          config.embedding_dim,
+                                          padding_idx=0) # TODO padding_idx
+        else:
+            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding,
+                                                          freeze=False,
+                                                          padding_idx=0)
         self.news_encoder = Encoder(config.num_heads, config.embedding_dim)
         self.user_encoder = Encoder(config.num_heads, config.embedding_dim)
+        self.to(self.device)
     
     def forward(self,
                 clicked_news: dict,

@@ -1,2 +1,4 @@
 app.py
-templates/
+./templates
+./static
+./data

@@ -9,9 +9,9 @@
             text-align: center;
             padding: 40px;
             background-image: url('{{ url_for('static', filename='images/header-background.jpg') }}');
-            background-size: cover; /* 讓背景圖片覆蓋整個 header */
-            background-position: center; /* 背景圖片居中顯示 */
-            background-repeat: no-repeat; /* 避免圖片重複 */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             color: white;
         }
         nav {
@@ -22,7 +22,7 @@
             padding: 0;
             margin: 0;
             text-align: center;
-            position: relative; /* Relative positioning for the underline cursor */
+            position: relative;
         }
         nav ul li {
             display: inline;
@@ -41,9 +41,9 @@
         .underline {
             position: absolute;
             height: 2px;
-            background-color: #8cc9ff; /* 游標顏色 */
+            background-color: #8cc9ff;
             width: 0;
-            bottom: -10px; /* 游標與導航的間距 */
+            bottom: -10px;
             transition: left 0.3s ease, width 0.3s ease;
         }
         .home-container {
@@ -62,6 +62,31 @@
         .news-block h3 {
             margin-top: 0;
         }
+        #contact {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        .profile-info {
+            width: 25%;
+            border: 1px solid #ddd;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-right: 20px;
+        }
+        .history-list {
+            width: 40%;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        #chart-container {
+            width: 30%;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -73,7 +98,7 @@
             <li><a href="#home" class="active" onclick="toggleContent('home', this)">Home</a></li>
             <li><a href="#recommend" onclick="toggleContent(null, this)">Recommend Change</a></li>
             <li><a href="#about" onclick="toggleContent(null, this)">About Us</a></li>
-            <li><a href="#contact" onclick="toggleContent(null, this)">Meterial Supply</a></li>
+            <li><a href="#contact" onclick="toggleContent('contact', this)">Profile</a></li>
             <div class="underline"></div>
         </ul>
     </nav>
@@ -94,18 +119,33 @@
             <h3><a href="{{ url_for('news_article', db_name='news2', news_id=4) }}" target="_blank">News Title 4</a></h3>
             <p>A brief description of the fourth news article.</p>
         </div>
-        <!-- 可以根據需要增加更多的news-block -->
     </div>
     <div id="recommend" class="home-container">
-        <!-- 清空內容 -->
+        <!-- content clear -->
     </div>
     <div id="about" class="home-container">
-        <!-- 清空內容 -->
+        <!-- content clear -->
     </div>
     <div id="contact" class="home-container">
-        <!-- 清空內容 -->
+        <div class="profile-info">
+            <h2>Profile</h2>
+            <p>Name: John Doe</p>
+            <p>Email: john.doe@example.com</p>
+            <p>Joined: January 1, 2023</p>
+        </div>
+        <div class="history-list">
+            <h3>History</h3>
+            <ul id="history-list">
+                <!-- history list will display here -->
+            </ul>
+        </div>
+        <div id="chart-container">
+            <h3>Favorite News Tags</h3>
+            <canvas id="tagChart"></canvas>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         var currentActiveLink = document.querySelector('nav ul li a.active');
 
@@ -126,7 +166,68 @@
 
             underline.style.width = element.offsetWidth + 'px';
             underline.style.left = element.offsetLeft + 'px';
+
+            // display history list on profile page
+            if (id === 'contact') {
+                displayHistory();
+                renderTagChart();
+            }
         }
+
+        // save news title into localStorage
+        function saveToHistory(newsTitle) {
+            let history = JSON.parse(localStorage.getItem('newsHistory')) || [];
+            
+            // delete the lastest click if it already exists
+            history = history.filter(title => title !== newsTitle);
+        
+            // add lastest click on top
+            history.unshift(newsTitle);
+            
+            localStorage.setItem('newsHistory', JSON.stringify(history));
+        }        
+
+        // display history
+        function displayHistory() {
+            let history = JSON.parse(localStorage.getItem('newsHistory')) || [];
+            let historyList = document.getElementById('history-list');
+            historyList.innerHTML = ''; // clear history list
+            
+            history.forEach(title => {
+                let listItem = document.createElement('li');
+                listItem.textContent = title;
+                historyList.appendChild(listItem);
+            });
+        }
+
+        // Render the tag chart
+        function renderTagChart() {
+            var ctx = document.getElementById('tagChart').getContext('2d');
+            var tagData = {
+                labels: ['Technology', 'Health', 'Sports', 'Finance', 'Politics'], // Example tags
+                datasets: [{
+                    data: [12, 19, 3, 5, 2], // Example data for the tags
+                    backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#ffce56', '#4bc0c0']
+                }]
+            };
+            
+            var tagChart = new Chart(ctx, {
+                type: 'pie',
+                data: tagData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // news block click
+        document.querySelectorAll('.news-block a').forEach(newsLink => {
+            newsLink.addEventListener('click', function() {
+                let newsTitle = this.textContent;
+                saveToHistory(newsTitle);
+            });
+        });
 
         // Initialize underline position and content display
         window.onload = function() {

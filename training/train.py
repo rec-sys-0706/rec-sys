@@ -180,3 +180,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
     train()
     # test()
+    # TODO fix seed
+    # TODO pyplot
+    # TODO recall metrics

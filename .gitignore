@@ -6,3 +6,4 @@ checkpoint/
 __pycache__/
 .env
 .venv/
+*.exe

@@ -141,22 +141,22 @@ def train():
         f'Best Valid/Loss: {-early_stopping.best_loss:6.4f}\n'
     ))
 
-def test():
+def valid():
     model: nn.Module = Model(CONFIG)
     checkpoint = torch.load(Path(CONFIG.ckpt_dir) / 'ckpt-latest.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Test loop
     model.eval()
-    test_dataset = NewsDataset(CONFIG, mode='test')
-    test_loader = DataLoader(test_dataset,
+    valid_dataset = NewsDataset(CONFIG, mode='valid')
+    valid_loader = DataLoader(valid_dataset,
                              batch_size=CONFIG.valid_batch_size,
                              pin_memory=True)
-    users_iter = iter(test_dataset.users)
+    users_iter = iter(valid_dataset.users)
 
     y_preds = []
     users = []
-    for item in tqdm(test_loader, desc='Testing', leave=False):
+    for item in tqdm(valid_loader, desc='Validation', leave=False):
         y_pred = model(item['clicked_news'], item['candidate_news'])
         y_preds.append(y_pred.detach().cpu())
 
@@ -168,7 +168,8 @@ def test():
                 'user_id': user['user_id'],
                 'clicked_news': user['clicked_news_ids'],
                 'candidate_news': user['candidate_news_ids'],
-                'clicked': clicked
+                'clicked': clicked,
+                'labels': user['labels']
             })
     y_preds = torch.concat(y_preds)
     # Save
@@ -178,8 +179,8 @@ def test():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
-    train()
-    # test()
+    # train()
+    valid()
     # TODO fix seed
     # TODO pyplot
     # TODO recall metrics

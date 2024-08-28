@@ -7,7 +7,6 @@ from config import BaseConfig
 import random
 import logging
 from pathlib import Path
-import pdb
 
 class NewsDataset(Dataset):
     """
@@ -91,7 +90,7 @@ class NewsDataset(Dataset):
                 'title': torch.stack([get_title(news_id) for news_id in candidate_news_ids]),
                 'title_mask': torch.stack([get_title_mask(news_id) for news_id in candidate_news_ids])
             }
-            
+
             if self.mode in {'train', 'valid'}:
                 labels = row['clicked'].split(' ')
                 result.append({
@@ -99,16 +98,22 @@ class NewsDataset(Dataset):
                     'candidate_news': candidate_news,
                     'clicked': torch.tensor([int(y) for y in labels], dtype=torch.float32),
                 })
+                users.append({
+                    'user_id': row['user_id'],
+                    'clicked_news_ids': clicked_news_ids,
+                    'candidate_news_ids': candidate_news_ids,
+                    'labels': labels
+                })
             elif self.mode == 'test':
                 result.append({
                     'clicked_news': clicked_news,
                     'candidate_news': candidate_news,
                 })
-            users.append({
-                'user_id': row['user_id'],
-                'clicked_news_ids': clicked_news_ids,
-                'candidate_news_ids': candidate_news_ids
-            })
+                users.append({
+                    'user_id': row['user_id'],
+                    'clicked_news_ids': clicked_news_ids,
+                    'candidate_news_ids': candidate_news_ids,
+                })
         # Save
         torch.save({
             'result': result,
@@ -125,4 +130,4 @@ class NewsDataset(Dataset):
         return self.result[index]
 
 if __name__ == '__main__':
-    pass
+    dataset = NewsDataset(BaseConfig(), mode='test')

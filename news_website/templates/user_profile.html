@@ -28,12 +28,12 @@
                     <th class="table_text">Category</th>
                     <th class="table_text">Title</th>
                 </tr>
-                {% for articles in clicked_articles %}
+                {% for article in clicked_articles %}
                     <tr class="table_text">
-                        <th class="table_text">{{ articles.NO }}</th>
-                        <th class="table_text">{{ articles.ID }}</th>
-                        <th class="table_text">{{ articles.Category }}</th>
-                        <th class="table_text">{{ articles.Title }}</th>
+                        <th class="table_text">{{ article[8] }}</th>
+                        <th class="table_text">{{ article[0] }}</th>
+                        <th class="table_text">{{ article[1] }}</th>
+                        <th class="table_text">{{ article[3] }}</th>
                     </tr>
                 {% endfor %}
             </table>
@@ -42,15 +42,16 @@
             <img src="{{ url_for('wordcloud_image') }}" alt="Word Cloud">
             <table class="table caption-top table-bordered border-dark">
                 <tr>
-                    <th colspan="3" class="candidate_title">
+                    <th colspan="4" class="candidate_title">
                         <strong>Top5 News Recommended by {{ user }}</strong>
                     </th>
                 </tr>
                 {% for articles in candidate_articles %}
                     <tr>
-                        <th  class="table_text {{ articles.color }}">{{ articles.ID }}</th>
-                        <th  class="table_text {{ articles.color }}">{{ articles.Category }}</th>
-                        <th  class="table_text {{ articles.color }}">{{ articles.Title }}</th>
+                        <th class="table_text {{ articles[8] }}">{{ articles[0] }}</th>
+                        <th class="table_text {{ articles[8] }}">{{ articles[1] }}</th>
+                        <th class="table_text {{ articles[8] }}">{{ articles[3] }}</th>
+                        <th class="table_text {{ articles[8] }}">{{ articles[8] }}</th>
                     </tr>
                 {% endfor %}
             </table>

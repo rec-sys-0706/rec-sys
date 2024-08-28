@@ -70,8 +70,12 @@ a:hover {
     vertical-align: middle;
 }
 
-.candidate_news .color {
+.candidate_news .red {
     background-color: rgb(251, 239, 238);
+}
+
+.candidate_news .green {
+    background-color: rgb(244, 251, 238);
 }
 
 .candidate_news .candidate_title {

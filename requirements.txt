@@ -11,3 +11,7 @@ scikit-learn
 pillow
 matplotlib
 wordcloud
+os
+whisper
+tempfile
+jieba.analyse

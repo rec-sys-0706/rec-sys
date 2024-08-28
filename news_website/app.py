@@ -12,9 +12,7 @@ app.secret_key = 'wqF1rXGsOgY8NyKslxTZXE8YFqnbv0FG'
 news_path = './news_website/data/news.tsv'
 
 with open(news_path, encoding = 'utf-8') as csvfile:
-    news_file = csv.reader(csvfile, delimiter = "\t")
-    # 根據類別開頭字母排序
-    news_article = sorted(news_file, key = lambda row: row[1])
+    news_file = list(csv.reader(csvfile, delimiter="\t"))
 
 result_path = './news_website/data/result.csv'
 
@@ -46,25 +44,45 @@ def user():
 
     candidate_news = json.loads(user_data[2].replace("'", '"'))
     # user clicked_news 的新聞資訊
-    clicked_articles = [x for x in news_article for y in clicked_news if x[0] == y]
+    clicked_articles = [x for x in news_file for y in clicked_news if x[0] == y]
     # 找到user candidate_news 的新聞資訊
-    candidate_articles = [x for x in news_article for y in candidate_news if x[0] == y]
+    candidate_articles = [x for x in news_file for y in candidate_news if x[0] == y]
+
+    # result檔案內新聞的排序
+    clicked_list = [x for x in candidate_news for y in news_file if y[0] == x]
+
+    articles_list = []
+
+    # 照result檔案內的新聞排序內容
+    for time in clicked_list:
+        for times in candidate_articles:
+            if(times[0] == time):
+                articles_list.append(times)
 
     # 判定user是否有點擊(添加class的功能)
-    num = 0
+    num = 0 # 第幾個位置添加顏色
+    num1 = 0    #判斷0和1在哪個位置
     for time in user_data[3]:
         if time == '1' or time == '0':
-            if(time == '0'):
-                candidate_articles[num].append("nocolor")
+            if(time == '0' and time == user_data[4][num1]):
+                articles_list[num].append("green") # 兩個數字一樣就填綠色
             else:
-                candidate_articles[num].append("color") # 若點擊則上色
+                articles_list[num].append("red") # 兩個數字不一樣就填紅色
             num = num + 1
+        num1 = num1 + 1
 
-    #添加編號
+    # 根據類別開頭字母排序
+    news_article = sorted(articles_list, key = lambda row: row[1])
+
+    # 添加順序
     for index, item in enumerate(clicked_articles, start = 1):
         item.append(index)
 
-    return render_template('user_profile.html',user = user_id, clicked_articles = clicked_articles, candidate_articles = candidate_articles)
+    #添加編號
+    for index, item in enumerate(news_article, start = 1):
+        item.append(index)
+
+    return render_template('user_profile.html',user = user_id, clicked_articles = clicked_articles, candidate_articles = news_article)
 
 # 文字雲
 @app.route('/wordcloud.png')
@@ -78,7 +96,7 @@ def wordcloud_image():
     
     clicked_news = json.loads(user_data[1].replace("'", '"'))
 
-    clicked_articles = [x for x in news_article for y in clicked_news if x[0] == y]
+    clicked_articles = [x for x in news_file for y in clicked_news if x[0] == y]
 
     titles = []
     # 將文章標題存進list裡面

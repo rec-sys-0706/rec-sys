@@ -3,35 +3,23 @@ from wordcloud import WordCloud
 import numpy as np
 from PIL import Image
 import io
-import json
-import csv
+import pandas as pd
+import ast
 
 app = Flask(__name__)
 app.secret_key = 'wqF1rXGsOgY8NyKslxTZXE8YFqnbv0FG'
 
-news_path = './news_website/data/news.tsv'
+news = pd.read_csv('./news_website/data/news.tsv',
+                    sep='\t',
+                    names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
+                    index_col='news_id')
 
-with open(news_path, encoding = 'utf-8') as csvfile:
-    news_file = csv.reader(csvfile, delimiter = "\t")
-    # 根據類別開頭字母排序
-    news_article = sorted(news_file, key = lambda row: row[1])
-
-result_path = './news_website/data/result.csv'
-
-with open(result_path, newline = '') as csvfile:
-    result_file = list(csv.reader(csvfile))
-    
-    # 添加順序
-    for index, item in enumerate(result_file, start = 0):
-        item.append(index)
-
-#刪除數據中的第一列
-del result_file[0]
+result = pd.read_csv('./news_website/data/result.csv', index_col='user_id')
 
 @app.route('/')
 def index():
-    return render_template('backstage.html', users = result_file)
-
+    result['id'] = range(1, len(result) + 1)
+    return render_template('backstage.html', users = result)
 
 @app.route('/user')
 def user():
@@ -39,31 +27,28 @@ def user():
     user_id = request.args.get('user_id')
     # 將id保存到session中
     session['username'] = user_id
-    # 根據獲取的id從找到對應的數據
-    user_data = [data for data in result_file if user_id in data][0]
+    # 根據獲取的id從找到clicked_news的新聞資訊
+    clicked_news_id = ast.literal_eval(result.loc[user_id]['clicked_news'])
+    clicked_news = news.loc[clicked_news_id]
+    # 按照category進行排序
+    clicked_articles = clicked_news.sort_values('category')
 
-    clicked_news = json.loads(user_data[1].replace("'", '"'))
-
-    candidate_news = json.loads(user_data[2].replace("'", '"'))
-    # user clicked_news 的新聞資訊
-    clicked_articles = [x for x in news_article for y in clicked_news if x[0] == y]
-    # 找到user candidate_news 的新聞資訊
-    candidate_articles = [x for x in news_article for y in candidate_news if x[0] == y]
-
-    # 判定user是否有點擊(添加class的功能)
-    num = 0
-    for time in user_data[3]:
-        if time == '1' or time == '0':
-            if(time == '0'):
-                candidate_articles[num].append("nocolor")
-            else:
-                candidate_articles[num].append("color") # 若點擊則上色
-            num = num + 1
-
-    #添加編號
-    for index, item in enumerate(clicked_articles, start = 1):
-        item.append(index)
-
+    clicked_articles['id'] = range(1, len(clicked_articles) + 1)
+    # 根據獲取的id從找到candidate_news的新聞資訊
+    candidate_news_id = ast.literal_eval(result.loc[user_id]['candidate_news'])
+    candidate_news = news.loc[candidate_news_id]
+    # 取得user的點擊預測和實際標籤
+    clicked = ast.literal_eval(result.loc[user_id]['clicked'])
+    label = ast.literal_eval(result.loc[user_id]['label'])
+    # 建立包含預測值和實際值的 DataFrame
+    df = pd.DataFrame({'y_pred': clicked, 'y_true':label})
+    # 根據預測是否正確設定顏色（綠色表示正確，紅色表示錯誤）
+    df['color'] = np.where(df['y_pred'] == df['y_true'], 'green', 'red')
+    # 將顏色添加到candidate_news
+    candidate_news['color'] = df['color'].values
+    # 按照category進行排序
+    candidate_articles = candidate_news.sort_values('category')
+    
     return render_template('user_profile.html',user = user_id, clicked_articles = clicked_articles, candidate_articles = candidate_articles)
 
 # 文字雲
@@ -73,26 +58,20 @@ def wordcloud_image():
 
     # 從session中獲取點擊ID
     user_id =  session.get('username', None)
-
-    user_data = [data for data in result_file if user_id in data][0]
     
-    clicked_news = json.loads(user_data[1].replace("'", '"'))
-
-    clicked_articles = [x for x in news_article for y in clicked_news if x[0] == y]
-
-    titles = []
-    # 將文章標題存進list裡面
-    for title in clicked_articles:
-        titles.append(title[3])
+    clicked_news_id = ast.literal_eval(result.loc[user_id]['clicked_news'])
     
-    # 將所有標題合併成一個字串
-    wordcloud_text = ' '.join(titles)
+    clicked_news = news.loc[clicked_news_id]
+    # 取得clicked_news的title
+    clicked_news_titles = clicked_news['title']
+
+    # 將所有title合併成一個字串
+    wordcloud_text = ' '.join(clicked_news_titles)
     mask = np.array(Image.open("./news_website/static/mask.png"))
     wordcloud = WordCloud(width=800, height=250, background_color='white', mask=mask, contour_color='white', contour_width=1).generate(wordcloud_text)
     wordcloud.to_image().save(img, format='PNG')
     img.seek(0)
     return send_file(img, mimetype='image/png')
-
 
 if __name__ == '__main__':
     app.run(debug=True)

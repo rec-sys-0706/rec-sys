@@ -28,12 +28,12 @@
                     <th class="table_text">Category</th>
                     <th class="table_text">Title</th>
                 </tr>
-                {% for article in clicked_articles %}
+                {% for index, news in clicked_articles.iterrows() %}
                     <tr class="table_text">
-                        <th class="table_text">{{ article[8] }}</th>
-                        <th class="table_text">{{ article[0] }}</th>
-                        <th class="table_text">{{ article[1] }}</th>
-                        <th class="table_text">{{ article[3] }}</th>
+                        <th class="table_text">{{ news['id'] }}</th>
+                        <th class="table_text">{{ news.name }}</th>
+                        <th class="table_text">{{ news['category'] }}</th>
+                        <th class="table_text">{{ news['title'] }}</th>
                     </tr>
                 {% endfor %}
             </table>
@@ -46,11 +46,11 @@
                         <strong>Top5 News Recommended by {{ user }}</strong>
                     </th>
                 </tr>
-                {% for articles in candidate_articles %}
+                {% for index, news in candidate_articles.iterrows() %}
                     <tr>
-                        <th class="table_text {{ articles[8] }}">{{ articles[0] }}</th>
-                        <th class="table_text {{ articles[8] }}">{{ articles[1] }}</th>
-                        <th class="table_text {{ articles[8] }}">{{ articles[3] }}</th>
+                        <th class="table_text {{ news['color'] }}">{{ news.name }}</th>
+                        <th class="table_text {{ news['color'] }}">{{ news['category'] }}</th>
+                        <th class="table_text {{ news['color'] }}">{{ news['title'] }}</th>
                     </tr>
                 {% endfor %}
             </table>

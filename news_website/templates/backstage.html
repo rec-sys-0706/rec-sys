@@ -20,10 +20,10 @@
                     <th  class="table_text">#</th>
                     <th  class="table_text">User</th>
                 </tr>
-                {% for user in users %}
+                {% for index, user in users.iterrows() %}
                     <tr>
-                        <th  class="table_text">{{ user[5] }}</th>
-                        <th  class="table_text"><a class="link_text" href="/user?user_id={{ user[0] }}">{{ user[0] }}</a></th>
+                        <th  class="table_text">{{ user['id'] }}</th>
+                        <th  class="table_text"><a class="link_text" href="/user?user_id={{ user.name }}">{{ user.name }}</a></th>
                     </tr>
                 {% endfor %}
             </table>

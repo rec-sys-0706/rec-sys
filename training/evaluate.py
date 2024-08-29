@@ -47,6 +47,10 @@ def recall(y_pred, y_true):
     # Calculate Mean Recall across all batches
     return np.mean(recalls)
 
+def accuracy(y_pred, y_true):
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
+    return np.mean(y_pred == y_true)
 def ROC_AUC(y_pred, y_true):
     y_pred = np.array(y_pred)
     y_true = np.array(y_true)

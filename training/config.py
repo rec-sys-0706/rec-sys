@@ -21,7 +21,7 @@ class BaseConfig():
     num_heads = 6
     dropout_rate = 0.2
     # Training Process
-    max_epochs = 10
+    max_epochs = 50
     valid_interval = 1000         # The interval for validation checks between steps.
     patience = 3                  # Early stopping.
     learning_rate = 0.0005

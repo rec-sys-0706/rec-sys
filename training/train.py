@@ -173,8 +173,8 @@ def valid():
             })
     y_preds = torch.concat(y_preds)
     # Save
-    (pd.DataFrame(users, columns=['user_id', 'clicked_news', 'candidate_news', 'clicked'])
-     .to_csv(Path(CONFIG.test_dir) / 'result.csv',
+    (pd.DataFrame(users, columns=['user_id', 'clicked_news', 'candidate_news', 'clicked', 'labels'])
+     .to_csv(Path(CONFIG.val_dir) / 'result.csv',
              index=False))
 
 if __name__ == '__main__':

@@ -124,7 +124,6 @@ def parse_news(config: BaseConfig,
         news_parsed.tsv: (category, subcategory, title, abstract, title_attention_mask, abstract_attention_mask)
     """
     # TODO entity
-    # TODO threshold
 
     if mode == 'train':
         src_dir = Path(config.train_dir)
@@ -167,9 +166,9 @@ def parse_news(config: BaseConfig,
             "<pad>": 0,
             "<unk>": 1,
         }
-        for idx, (key, _) in enumerate(tf, start=2):
-            # tf_threshold = 100 # TODO
-            # filtered_tf = {key: value for key, value in tf.items() if value >= tf_threshold}
+        for idx, (key, count) in enumerate(tf, start=2):
+            if count < config.tf_threshold:
+                break
             word2int[key] = idx
     elif mode in {'valid', 'test'}: # Load category2int and word2int.
         category2int_path = Path(config.train_dir) / 'category2int.tsv'
@@ -261,5 +260,5 @@ def generate_word_embedding(config: BaseConfig):
     ))
 if __name__ == '__main__':
     # parse_behaviors(BaseConfig(), 'valid')
-    # parse_news(BaseConfig(), 'valid')
-    generate_word_embedding(BaseConfig())
+    parse_news(BaseConfig(), 'train')
+    # generate_word_embedding(BaseConfig())

@@ -102,7 +102,7 @@ class NewsDataset(Dataset):
                     'user_id': row['user_id'],
                     'clicked_news_ids': clicked_news_ids,
                     'candidate_news_ids': candidate_news_ids,
-                    'labels': labels
+                    'labels': [int(y) for y in labels]
                 })
             elif self.mode == 'test':
                 result.append({

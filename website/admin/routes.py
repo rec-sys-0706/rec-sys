@@ -21,7 +21,7 @@ result = pd.read_csv('./news_website/data/result.csv', index_col='user_id')
 @app.route('/')
 def index():
     result['id'] = range(1, len(result) + 1)
-    return render_template('backstage.html', users = result)
+    return render_template('backstage/backstage.html', users = result)
 
 @app.route('/user')
 def user():
@@ -53,7 +53,7 @@ def user():
     # 按照category進行排序
     candidate_articles = candidate_news.sort_values('category')
     
-    return render_template('user_profile.html', user=user_id, clicked_articles=clicked_articles, candidate_articles=candidate_articles)
+    return render_template('backstage/user_profile.html', user=user_id, clicked_articles=clicked_articles, candidate_articles=candidate_articles)
 
 # 文字雲
 @app.route('/wordcloud.png')
@@ -76,6 +76,3 @@ def wordcloud_image():
     wordcloud.to_image().save(img, format='PNG')
     img.seek(0)
     return send_file(img, mimetype='image/png')
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='8080', debug=True)

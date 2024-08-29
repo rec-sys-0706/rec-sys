@@ -8,8 +8,8 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import logging
-from evaluate import nDCG, ROC_AUC
-from utils import EarlyStopping, time_since, detokenize, get_now
+from evaluate import nDCG, ROC_AUC, recall
+from utils import EarlyStopping, time_since, detokenize, get_now, fix_all_seeds
 from pathlib import Path
 import time
 import pandas as pd
@@ -22,7 +22,7 @@ except AttributeError:
 except ImportError:
     raise ImportError(f"Error importing {CONFIG.model_name} model.")
 
-evaluate = lambda _pred, _true: (ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10))
+evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10))
 
 def train():
     """Training loop"""
@@ -103,16 +103,18 @@ def train():
                 valid_loss /= len(valid_loader)
                 y_preds = torch.concat(y_preds)
                 y_trues = torch.concat(y_trues)
-                roc_auc, ndcg5, ndcg10 = evaluate(y_preds, y_trues)
+                recall, roc_auc, ndcg5, ndcg10 = evaluate(y_preds, y_trues)
                 stop_training, is_better = early_stopping(-roc_auc)
                 # Logging - valid
                 tqdm.write((
                     f'Elapsed Time: {time_since(start_time)}\n'
                     f'Best Valid/ROC_AUC: {-early_stopping.best_loss:6.4f}\n'
+                    f'Valid/Recall: {recall:6.4f}\n'
                     f'Valid/ROC_AUC: {roc_auc:6.4f}\n'
                     f'Valid/nDCG@5: {ndcg5:6.4f}\n'
                     f'Valid/nDCG@10: {ndcg10:6.4f}'
                 ))
+                writer.add_scalar('Valid/Recall', recall, step)
                 writer.add_scalar('Valid/ROC_AUC', roc_auc, step)
                 writer.add_scalar('Valid/nDCG@5', ndcg5, step)
                 writer.add_scalar('Valid/nDCG@10', ndcg10, step)
@@ -179,8 +181,6 @@ def valid():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
-    # train()
-    valid()
-    # TODO fix seed
-    # TODO pyplot
-    # TODO recall metrics
+    fix_all_seeds(1337)
+    train()
+    # valid()

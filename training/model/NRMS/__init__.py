@@ -1,5 +1,5 @@
-import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from .encoder import Encoder
 from config import BaseConfig
 class NRMS(nn.Module):
@@ -26,6 +26,7 @@ class NRMS(nn.Module):
                                                           padding_idx=0)
         self.news_encoder = Encoder(config.num_heads, config.embedding_dim)
         self.user_encoder = Encoder(config.num_heads, config.embedding_dim)
+        self.dropout = nn.Dropout(config.dropout_rate)
         self.to(self.device)
     
     def forward(self,
@@ -40,7 +41,7 @@ class NRMS(nn.Module):
             candidate_news_vec: (batch_size, num_candidate_news, d_embed)
         """
         # Clicked news
-        embed = self.embedding(clicked_news['title'].to(self.device))
+        embed = self.dropout(self.embedding(clicked_news['title'].to(self.device)))
         clicked_news_vec = self.news_encoder(embed, clicked_news['title_mask'].to(self.device))
         final_representation = self.user_encoder(clicked_news_vec).unsqueeze(dim=-1)
         # Candidate news

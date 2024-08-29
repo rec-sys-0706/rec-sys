@@ -1,9 +1,7 @@
-import torch.nn as nn
 import numpy as np
-from sklearn.metrics import roc_auc_score
 
 def DCG(y_pred, y_true, k=10):
-    y_pred = np.array(y_pred) 
+    y_pred = np.array(y_pred)
     y_true = np.array(y_true)
     if y_pred.shape != y_true.shape:
         raise ValueError(f"Expect y_pred and y_ture have same shape but got {y_pred.shape} and {y_true.shape}.")
@@ -33,8 +31,24 @@ def nDCG(y_pred, y_true, k=10):
 #     rr_score = y_true / (np.arange(len(y_true)) + 1) # Assuming that y_true is one-hot vector.
 #     return np.sum(rr_score) / np.sum(y_true)
 
+def recall(y_pred, y_true):
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
+    if y_pred.shape != y_true.shape:
+        raise ValueError(f"Expect y_pred and y_ture have same shape but got {y_pred.shape} and {y_true.shape}.")
+
+    # Calculate True Positives (TP) and False Negatives (FN)
+    TP = np.sum(y_true * y_pred, axis=-1)
+    FN = np.sum(y_true * (1 - y_pred), axis=-1)
+
+    # Calculate Recall for each batch.
+    recalls = TP / (TP + FN)
+
+    # Calculate Mean Recall across all batches
+    return np.mean(recalls)
+
 def ROC_AUC(y_pred, y_true):
-    y_pred = np.array(y_pred) 
+    y_pred = np.array(y_pred)
     y_true = np.array(y_true)
     if y_pred.shape != y_true.shape:
         raise ValueError(f"Expect y_pred and y_ture have same shape but got {y_pred.shape} and {y_true.shape}.")

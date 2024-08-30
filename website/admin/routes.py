@@ -1,29 +1,20 @@
-from flask import Flask, render_template, send_file, request, session
+from flask import Blueprint, render_template, send_file, request, session
 from wordcloud import WordCloud
 import numpy as np
 from PIL import Image
 import io
 import pandas as pd
 import ast
-# Init
-app = Flask(__name__)
-app.secret_key = 'wqF1rXGsOgY8NyKslxTZXE8YFqnbv0FG'
+from config import news, result
 
-news = pd.read_csv('./news_website/data/news.tsv',
-                    sep='\t',
-                    names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
-                    index_col='news_id')
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-result = pd.read_csv('./news_website/data/result.csv', index_col='user_id')
-
-
-# ---- Endpoints ---- #
-@app.route('/')
+@admin_bp.route('/')
 def index():
     result['id'] = range(1, len(result) + 1)
     return render_template('backstage/backstage.html', users = result)
 
-@app.route('/user')
+@admin_bp.route('/user')
 def user():
     # 獲取點擊id
     user_id = request.args.get('user_id')
@@ -56,7 +47,7 @@ def user():
     return render_template('backstage/user_profile.html', user=user_id, clicked_articles=clicked_articles, candidate_articles=candidate_articles)
 
 # 文字雲
-@app.route('/wordcloud.png')
+@admin_bp.route('/wordcloud.png')
 def wordcloud_image():
     img = io.BytesIO()
 

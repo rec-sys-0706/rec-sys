@@ -74,8 +74,8 @@ def train():
     for epoch in range(1, CONFIG.max_epochs + 1):
 
         train_loss = 0.0
-        model.train()
         for item in tqdm(train_loader, desc='Training'):
+            model.train()
             y_pred = model(item['clicked_news'], item['candidate_news'])
             y_true = item['clicked'].to(CONFIG.device)
             loss = criterion(y_pred, y_true)
@@ -123,9 +123,7 @@ def train():
                 writer.add_scalar('Valid/nDCG@10', ndcg10, step)
                 writer.add_scalar('Valid/Accuracy', acc, step)
 
-                if stop_training:
-                    break
-                elif is_better:
+                if is_better:
                     torch.save({'model_state_dict': model.state_dict(),
                                 'optimizer_state_dict': optimizer.state_dict(),
                                 'epoch': epoch},  ckpt_now_dir / f'ckpt-{step}.pth')

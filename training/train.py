@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import logging
-from evaluate import nDCG, ROC_AUC, recall
+from evaluate import nDCG, ROC_AUC, recall, accuracy
 from utils import EarlyStopping, time_since, detokenize, get_now, fix_all_seeds
 from pathlib import Path
 import time
@@ -22,7 +22,7 @@ except AttributeError:
 except ImportError:
     raise ImportError(f"Error importing {CONFIG.model_name} model.")
 
-evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10))
+evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 
 def train():
     """Training loop"""
@@ -32,6 +32,8 @@ def train():
     )
     if not Path(CONFIG.ckpt_dir).exists():
         Path(CONFIG.ckpt_dir).mkdir()
+    ckpt_now_dir = Path(CONFIG.ckpt_dir) / get_now() 
+    ckpt_now_dir.mkdir()
 
 
     if CONFIG.use_pretrained_embedding:
@@ -72,8 +74,8 @@ def train():
     for epoch in range(1, CONFIG.max_epochs + 1):
 
         train_loss = 0.0
-        model.train()
         for item in tqdm(train_loader, desc='Training'):
+            model.train()
             y_pred = model(item['clicked_news'], item['candidate_news'])
             y_true = item['clicked'].to(CONFIG.device)
             loss = criterion(y_pred, y_true)
@@ -103,29 +105,29 @@ def train():
                 valid_loss /= len(valid_loader)
                 y_preds = torch.concat(y_preds)
                 y_trues = torch.concat(y_trues)
-                recall, roc_auc, ndcg5, ndcg10 = evaluate(y_preds, y_trues)
-                stop_training, is_better = early_stopping(-roc_auc)
+                recall, roc_auc, ndcg5, ndcg10, acc = evaluate(y_preds, y_trues)
+                stop_training, is_better = early_stopping(-recall)
                 # Logging - valid
                 tqdm.write((
                     f'Elapsed Time: {time_since(start_time)}\n'
-                    f'Best Valid/ROC_AUC: {-early_stopping.best_loss:6.4f}\n'
+                    f'Valid/Best Recall: {-early_stopping.best_loss:6.4f}\n'
                     f'Valid/Recall: {recall:6.4f}\n'
                     f'Valid/ROC_AUC: {roc_auc:6.4f}\n'
                     f'Valid/nDCG@5: {ndcg5:6.4f}\n'
-                    f'Valid/nDCG@10: {ndcg10:6.4f}'
+                    f'Valid/nDCG@10: {ndcg10:6.4f}\n'
+                    f'Valid/Accuracy: {acc:6.4f}\n'
                 ))
                 writer.add_scalar('Valid/Recall', recall, step)
                 writer.add_scalar('Valid/ROC_AUC', roc_auc, step)
                 writer.add_scalar('Valid/nDCG@5', ndcg5, step)
                 writer.add_scalar('Valid/nDCG@10', ndcg10, step)
-                writer.add_scalar('Valid/nDCG@10', ndcg10, step)
+                writer.add_scalar('Valid/Accuracy', acc, step)
 
-                if stop_training:
-                    break
-                elif is_better:
+                if is_better:
                     torch.save({'model_state_dict': model.state_dict(),
                                 'optimizer_state_dict': optimizer.state_dict(),
-                                'epoch': epoch},  Path(CONFIG.ckpt_dir) / f'ckpt-{step}.pth')
+                                'epoch': epoch},  ckpt_now_dir / f'ckpt-{step}.pth')
+                    tqdm.write('Model performance improved, model is saved.')
         if early_stopping.stop_training:
             break
         train_loss /= len(train_loader)
@@ -137,15 +139,16 @@ def train():
 
     torch.save({'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'epoch': epoch},  Path(CONFIG.ckpt_dir) / f'ckpt-latest.pth') # TODO checkpoint folder
+                'epoch': epoch},  ckpt_now_dir / f'ckpt-latest.pth') # TODO checkpoint folder
     tqdm.write((
         f'Training process ended at Epoch {epoch:3}/{CONFIG.max_epochs}\n'
-        f'Best Valid/Loss: {-early_stopping.best_loss:6.4f}\n'
+        f'Valid/Best Recall: {-early_stopping.best_loss:6.4f}\n'
     ))
 
 def valid():
     model: nn.Module = Model(CONFIG)
-    checkpoint = torch.load(Path(CONFIG.ckpt_dir) / 'ckpt-latest.pth')
+    ckpt_latest_dir = sorted([d for d in Path(CONFIG.ckpt_dir).iterdir() if d.is_dir()])[-1]
+    checkpoint = torch.load(ckpt_latest_dir / 'ckpt-latest.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Test loop
@@ -182,5 +185,5 @@ def valid():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
     fix_all_seeds(1337)
-    train()
-    # valid()
+    # train()
+    valid()

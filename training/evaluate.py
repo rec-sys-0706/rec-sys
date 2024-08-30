@@ -36,7 +36,7 @@ def recall(y_pred, y_true):
     y_true = np.array(y_true)
     if y_pred.shape != y_true.shape:
         raise ValueError(f"Expect y_pred and y_ture have same shape but got {y_pred.shape} and {y_true.shape}.")
-
+    y_pred = np.where(y_pred > 0.5, 1, 0)
     # Calculate True Positives (TP) and False Negatives (FN)
     TP = np.sum(y_true * y_pred, axis=-1)
     FN = np.sum(y_true * (1 - y_pred), axis=-1)
@@ -47,6 +47,13 @@ def recall(y_pred, y_true):
     # Calculate Mean Recall across all batches
     return np.mean(recalls)
 
+def accuracy(y_pred, y_true):
+    y_pred = np.array(y_pred)
+    y_true = np.array(y_true)
+    if y_pred.shape != y_true.shape:
+        raise ValueError(f"Expect y_pred and y_ture have same shape but got {y_pred.shape} and {y_true.shape}.")
+    y_pred = np.where(y_pred > 0.5, 1, 0)
+    return np.mean(y_pred == y_true)
 def ROC_AUC(y_pred, y_true):
     y_pred = np.array(y_pred)
     y_true = np.array(y_true)

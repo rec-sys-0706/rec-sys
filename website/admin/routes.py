@@ -7,12 +7,13 @@ import pandas as pd
 import ast
 from config import news, result
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+admin_bp = Blueprint('admin', __name__, template_folder='templates',
+    static_folder='static', url_prefix='/admin')
 
 @admin_bp.route('/')
 def index():
     result['id'] = range(1, len(result) + 1)
-    return render_template('backstage/backstage.html', users = result)
+    return render_template('backstage.html', users = result)
 
 @admin_bp.route('/user')
 def user():
@@ -44,7 +45,7 @@ def user():
     # 按照category進行排序
     candidate_articles = candidate_news.sort_values('category')
     
-    return render_template('backstage/user_profile.html', user=user_id, clicked_articles=clicked_articles, candidate_articles=candidate_articles)
+    return render_template('user_profile.html', user=user_id, clicked_articles=clicked_articles, candidate_articles=candidate_articles)
 
 # 文字雲
 @admin_bp.route('/wordcloud.png')
@@ -52,8 +53,9 @@ def wordcloud_image():
     img = io.BytesIO()
 
     # 從session中獲取點擊ID
-    user_id =  session.get('username', None)
-    
+    #user_id =  session.get('username', None)
+
+    user_id = "U10"
     clicked_news_id = ast.literal_eval(result.loc[user_id]['clicked_news'])
     
     clicked_news = news.loc[clicked_news_id]
@@ -62,8 +64,9 @@ def wordcloud_image():
 
     # 將所有title合併成一個字串
     wordcloud_text = ' '.join(clicked_news_titles)
-    mask = np.array(Image.open("./news_website/static/mask.png"))
+    mask = np.array(Image.open("./website/admin/static/mask.png"))
     wordcloud = WordCloud(width=800, height=250, background_color='white', mask=mask, contour_color='white', contour_width=1).generate(wordcloud_text)
     wordcloud.to_image().save(img, format='PNG')
     img.seek(0)
     return send_file(img, mimetype='image/png')
+    

@@ -2,11 +2,17 @@ from flask import Blueprint, render_template
 
 main_bp = Blueprint('main',
                     __name__,
+                    template_folder='./website/main/templates',
+                    static_folder='./website/main/static',
                     url_prefix='/main')
 
 @main_bp.route('/')
 def home():
     return render_template('index.html')
+
+@main_bp.route('/recommend')
+def recommend():
+    return render_template('recommend.html')
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
 def news_article(db_name, news_id):

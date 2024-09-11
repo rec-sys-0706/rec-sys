@@ -11,21 +11,25 @@
 <body>
     <div class="background"></div>
     <div class="container2">
-        <div class="user_table">
-            <table class="table table-bordered border-dark">
-                <tr>
-                    <th colspan="4" class="user_title"><strong>User ID</strong></th>
-                </tr>
-                <tr>
-                    <th  class="table_text">#</th>
-                    <th  class="table_text">User</th>
-                </tr>
-                {% for index, user in users.iterrows() %}
+        <div class="user">
+            <table class="table table-bordered border-dark user_table">
+                <thead>
                     <tr>
-                        <th  class="table_text">{{ user['id'] }}</th>
-                        <th  class="table_text"><a class="link_text" href="/admin/user?user_id={{ user.name }}">{{ user.name }}</a></th>
+                        <th colspan="4" class="user_title"><strong>User ID</strong></th>
                     </tr>
-                {% endfor %}
+                    <tr>
+                        <th  class="table_text">#</th>
+                        <th  class="table_text">User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for index, user in users.iterrows() %}
+                        <tr>
+                            <td  class="table_text">{{ user['id'] }}</td>
+                            <td  class="table_text"><a class="link_text" href="/admin/user?user_id={{ user.name }}">{{ user.name }}</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
     </div>

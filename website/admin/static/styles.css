@@ -56,18 +56,10 @@ th {
     background-color: rgba(255, 255, 255, 0.8);
 }
 
-a {
-    color: black;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
 .table_text {
     text-align: center; 
     vertical-align: middle;
+    font-weight: bold;
 }
 
 .candidate_news .red {
@@ -106,7 +98,7 @@ a:hover {
     justify-content: center;
 }
 
-.user_table {
+.user {
     width: 50%;
 }
 
@@ -116,5 +108,14 @@ a:hover {
 }
 
 .link_text {
-    color: black;
+    text-decoration: none;
+    font-weight: bold;
 }
+
+.link_text:hover {
+    text-decoration: underline;
+}
+
+.user_table tbody>tr:hover td {
+    background-color: #fafafa;
+  }

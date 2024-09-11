@@ -8,7 +8,7 @@
         header {
             text-align: center;
             padding: 40px;
-            background-image: url('{{ url_for('static', filename='images/header-background.jpg') }}');
+            background-image: url("{{ url_for('main.static', filename='images/header-background.jpg') }}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -102,24 +102,29 @@
             <div class="underline"></div>
         </ul>
     </nav>
+    
     <div id="home" class="home-container">
-        <div class="news-block">
-            <h3><a href="{{ url_for('news_article', db_name='news1', news_id=1) }}" target="_blank">News Title 1</a></h3>
-            <p>A brief description of the first news article.</p>
-        </div>
-        <div class="news-block">
-            <h3><a href="{{ url_for('news_article', db_name='news1', news_id=2) }}" target="_blank">News Title 2</a></h3>
-            <p>A brief description of the second news article.</p>
-        </div>
-        <div class="news-block">
-            <h3><a href="{{ url_for('news_article', db_name='news2', news_id=3) }}" target="_blank">News Title 3</a></h3>
-            <p>A brief description of the third news article.</p>
-        </div>
-        <div class="news-block">
-            <h3><a href="{{ url_for('news_article', db_name='news2', news_id=4) }}" target="_blank">News Title 4</a></h3>
-            <p>A brief description of the fourth news article.</p>
-        </div>
+        {% for index, news in news_date.iterrows() %}
+            <div  class="news-block">
+                <h3><a href="#{{ news.name }}" onclick="toggleContent('{{ news.name }}', this)">{{ news['date'] }}</a></h3>
+                <!--<p>A brief description of the first news article.</p>-->
+            </div>
+        {% endfor %}
     </div>
+
+    {% for index, news in news_date.iterrows() %}
+        <div id="{{ news.name }}" class="home-container">
+            {% for index, new in news_article[news_article['date'] == news['date']].iterrows() %}
+                <div class="news-block news-block1">
+                    <h3><a href="{{ url_for('main.news_article', db_name='news1', news_id=1) }}" target="_blank">{{ new['title'] }}</a></h3>
+                    <p>Category: {{ new['category'] }}</p>
+                    <p>Date: {{ new['date'] }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+
     <div id="recommend" class="home-container">
         <!-- content clear -->
     </div>
@@ -222,7 +227,7 @@
         }
 
         // news block click
-        document.querySelectorAll('.news-block a').forEach(newsLink => {
+        document.querySelectorAll('.news-block1 a').forEach(newsLink => {
             newsLink.addEventListener('click', function() {
                 let newsTitle = this.textContent;
                 saveToHistory(newsTitle);

@@ -8,7 +8,8 @@
         header {
             text-align: center;
             padding: 40px;
-            background-image: url('{{ url_for('static', filename='./main/static/images/header-background.jpg') }}');
+            background-image: url("{{ url_for('main.static', filename='images/header-background.jpg') }}");
+            background-image: url("{{ url_for('main.static', filename='images/header-background.jpg') }}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -133,6 +134,7 @@
             <div class="underline"></div>
         </ul>
     </nav>
+
     <div id="login" class="home-container">
         <h2>Log In</h2>
         <form>
@@ -154,6 +156,32 @@
                 <button type="button" onclick="redirectToHome()">Sign Up</button>
             </a>
         </form>
+    </div>
+
+
+    <div id="recommend" class="home-container">
+        <!-- content clear -->
+    </div>
+    <div id="about" class="home-container">
+        <!-- content clear -->
+    </div>
+    <div id="contact" class="home-container">
+        <div class="profile-info">
+            <h2>Profile</h2>
+            <p>Name: John Doe</p>
+            <p>Email: john.doe@example.com</p>
+            <p>Joined: January 1, 2023</p>
+        </div>
+        <div class="history-list">
+            <h3>History</h3>
+            <ul id="history-list">
+                <!-- history list will display here -->
+            </ul>
+        </div>
+        <div id="chart-container">
+            <h3>Favorite News Tags</h3>
+            <canvas id="tagChart"></canvas>
+        </div>
     </div>
 
     <script src="../static/script.js" defer></script>

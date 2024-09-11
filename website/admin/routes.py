@@ -7,8 +7,11 @@ import pandas as pd
 import ast
 from config import news, result
 
-admin_bp = Blueprint('admin', __name__, template_folder='./website/admin/templates',
-    static_folder='./website/admin/static', url_prefix='/admin')
+admin_bp = Blueprint('admin', 
+                    __name__, 
+                    template_folder='templates',
+                    static_folder='static', 
+                    url_prefix='/admin')
 
 @admin_bp.route('/')
 def index():

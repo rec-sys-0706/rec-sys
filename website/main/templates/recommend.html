@@ -8,7 +8,7 @@
         header {
             text-align: center;
             padding: 40px;
-            background-image: url('{{ url_for('static', filename='./main/static/images/header-background.jpg') }}');
+            background-image: url("{{ url_for('main.static', filename='images/header-background.jpg') }}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -96,7 +96,7 @@
     <nav>
         <ul>
             <li><a href="#today_news" class="active" onclick="toggleContent('today_news', this)">Today News</a></li>
-            <li><a href="#all_news" onclick="toggleContent(null, this)">All News</a></li>
+            <li><a href="#all_news" onclick="toggleContent('all_news', this)">All News</a></li>
             <li><a href="#about" onclick="toggleContent(null, this)">About Us</a></li>
             <li><a href="#profile" onclick="toggleContent('profile', this)">Profile</a></li>
             <div class="underline"></div>
@@ -120,9 +120,28 @@
             <p>A brief description of the fourth news article.</p>
         </div>
     </div>
+
     <div id="all_news" class="home-container">
-        <!-- news -->
+        {% for index, news in news_date.iterrows() %}
+            <div  class="news-block">
+                <h3><a href="#{{ news.name }}" onclick="toggleContent('{{ news.name }}', this)">{{ news['date'] }}</a></h3>
+                <!--<p>A brief description of the first news article.</p>-->
+            </div>
+        {% endfor %}
     </div>
+
+    {% for index, news in news_date.iterrows() %}
+        <div id="{{ news.name }}" class="home-container">
+            {% for index, new in news_article[news_article['date'] == news['date']].iterrows() %}
+                <div class="news-block news-block1">
+                    <h3><a href="{{ url_for('main.news_article', db_name='news1', news_id=1) }}" target="_blank">{{ new['title'] }}</a></h3>
+                    <p>Category: {{ new['category'] }}</p>
+                    <p>Date: {{ new['date'] }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
     <div id="about" class="home-container">
         <!-- about us -->
     </div>

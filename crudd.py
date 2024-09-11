@@ -4,11 +4,11 @@ from flask import Flask, jsonify, request, abort
 app = Flask(__name__)
 
 # SQL Server 连接配置
-server = 'LAPTOP-IGBO7T9O\SQLEXPRESS01'  # 替换为你的SQL Server服务器名称,1433
-database = 'news'  # 替换为你的数据库名称
-username = 'admin'  # 替换为你的用户名
-password = '1234'  # 替换为你的密码
-driver = '{ODBC Driver 17 for SQL Server}'  # 确保你已经安装了相应的ODBC驱动程序
+server = ''
+database = ''
+username = ''  
+password = ''  
+driver = '{}'
 
 def get_db_connection():
     try:

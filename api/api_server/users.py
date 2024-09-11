@@ -5,12 +5,11 @@ import uuid
 app = Flask(__name__)
 
 # SQL Server 連接配置
-server = 'DESKTOP-KTKE5PO,1433'
-database = 'news'
-username = 'admin'  
-password = 'FJU0922'  
-driver = '{ODBC Driver 17 for SQL Server}'
-
+server = ''
+database = ''
+username = ''  
+password = ''  
+driver = '{}'
 # 獲取SQL Server資料庫連接
 def get_db_connection():
     conn_str = f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};'

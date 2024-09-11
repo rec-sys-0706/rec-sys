@@ -14,49 +14,38 @@
                 <h1>User Info</h1>
                 <thead>
                     <tr>
-                        <th scope="col">Name</th>
-                        <th scope="col">Age</th>
-                        <th scope="col">Gender</th>
-                        <th scope="col">Most interest in</th>
+                        <th>Account</th>
+                        <td>{{ user_info['Account'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Password</th>
+                        <td>{{ user_info['password'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ user_info['email'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>{{ user_info['phone'] }}</td>
                     </tr>
                 </thead>
-                <tbody>
-                    <th scope="row">AAA</th>
-                    <th scope="row">30</th>
-                    <th scope="row">F</th>
-                    <th scope="row">Sports</th>
-                </tbody>
             </table>
-            <h1>CNN News</h1>
+            <div class="buttons">
+                <button class="exit_user_info" type="button">修改資料</button>
+                <button class="line" type="button">Line</button>  
+            </div>
+            <h1>Article Category Distribution</h1>
+                <img src="{{ url_for('donut_chart') }}" alt="Donut Chart">
+        </div>
+        <div class="candidate_news">
+            <h1>History list</h1>
             {% for article in articles %}
             <div class="article">
                 <h2>{{ article.title }}</h2>
-                <p><strong>Content:</strong> {{ article.content }}</p>
-                <p><strong>Author:</strong> {{ article.author }}</p>
                 <p><strong>Date:</strong> {{ article.date }}</p>
             </div>
             {% endfor %}
-        </div>
-        <div class="candidate_news">
-            <img src="{{ url_for('wordcloud_image') }}" alt="Word Cloud">
-            <h1>top5 news recommend by XXX</h1>
-            <ul>
-                {% for article in articles[:5] %}
-                <li>{{ article.title }}</li>
-                {% endfor %}
-            </ul>
-            <h1>top5 news recommend by YYY</h1>
-            <ul>
-                {% for article in articles[6:11] %}
-                <li>{{ article.title }}</li>
-                {% endfor %}
-            </ul>
-            <h1>top5 news recommend by ZZZ</h1>
-            <ul>
-                {% for article in articles[-10:-5] %}
-                <li>{{ article.title }}</li>
-                {% endfor %}
-            </ul>
         </div>
     </div>
 </body>

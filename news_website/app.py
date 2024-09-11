@@ -1,10 +1,10 @@
-from flask import Flask, render_template, send_file
+from flask import Flask, render_template, send_file, request, redirect, url_for
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud
 import numpy as np
 from PIL import Image
 import io
 import os
+from collections import Counter
 
 app = Flask(__name__)
 
@@ -132,32 +132,45 @@ articles = [
     # Add more news articles here
 ]
 
-categories = [article['category'] for article in articles]
-wordcloud_text = ' '.join(categories)
-
-mask = np.array(Image.open("static/mask.png"))
-wordcloud = WordCloud().generate(wordcloud_text)
-# Save the wordcloud to a BytesIO object
-img = io.BytesIO()
-wordcloud.to_image().save(img, format='PNG')
-img.seek(0)
+user_info = {
+    
+        'Account': 'John',
+        'password': 'xxxxxxxxx',
+        'email': 'johndoe@example.com',
+        'phone': '123-456-7890'
+    
+}
 
 
 @app.route('/')
 def index():
-    return render_template('index.html', img = img, articles=articles)
+    return render_template('index.html', articles=articles, user_info=user_info)
 
-@app.route('/wordcloud.png')
-def wordcloud_image():
-    img = io.BytesIO()
+@app.route('/donut_chart.png')
+def donut_chart():
     categories = [article['category'] for article in articles]
-    wordcloud_text = ' '.join(categories)
-    mask = np.array(Image.open("static/mask.png"))
-    wordcloud = WordCloud(width=800, height=400, background_color='white', mask=mask, contour_color='white', contour_width=1).generate(wordcloud_text)
-    wordcloud.to_image().save(img, format='PNG')
-    img.seek(0)
-    return send_file(img, mimetype='image/png')
+    category_counts = Counter(categories)
 
+    labels = category_counts.keys()
+    sizes = category_counts.values()
+
+    # Create a pie chart with a hole in the center (donut chart)
+    fig, ax = plt.subplots()
+    ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, wedgeprops={'width': 0.4})
+
+    # Draw a circle in the center to make it a donut chart
+    center_circle = plt.Circle((0, 0), 0.70, fc='white')
+    fig.gca().add_artist(center_circle)
+
+    # Ensure the chart is a circle
+    ax.axis('equal')
+
+    # Save the chart to a BytesIO object
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+
+    return send_file(img, mimetype='image/png')
 
 if __name__ == '__main__':
     app.run(debug=True)

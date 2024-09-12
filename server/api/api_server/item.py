@@ -1,34 +1,16 @@
-from flask import Flask, jsonify, request, abort
-import pyodbc
+from flask import Blueprint, jsonify, request
+from utils import get_db_connection, check_api_key
 
-app = Flask(__name__)
+news_blueprint = Blueprint('news', __name__)
 
-# SQL Server 連接配置
-server = ''
-database = ''
-username = ''  
-password = ''  
-driver = '{}'
-
-# 獲取SQL Server資料庫連接
-def get_db_connection():
-    conn_str = f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};'
-    conn = pyodbc.connect(conn_str)
-    return conn
-
-# 暫時不檢查API密鑰
-def check_api_key(req):
-    pass  # 在測試期間不檢查API密鑰
-
-# 獲取新聞資料的API端點
-@app.route('/api/news', methods=['GET'])
+@news_blueprint.route('/', methods=['GET'])
 def get_news():
-    check_api_key(request)
+    check_api_key(request)  
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # 選取新聞表中的所有欄位
-        cursor.execute('SELECT Title, Date, Category,  abstract FROM dbo.News')
+       
+        cursor.execute('SELECT Title, Date, Category, Abstract FROM dbo.News')
         rows = cursor.fetchall()
         news_list = []
         for row in rows:
@@ -36,12 +18,31 @@ def get_news():
                 'title': row.Title,
                 'date': row.Date,
                 'category': row.Category,
-                'abstract': row. abstract
+                'abstract': row.Abstract
             }
             news_list.append(news_item)
         return jsonify(news_list)
     finally:
         conn.close()
 
-if __name__ == '__main__':
-   app.run(debug=False, host='0.0.0.0', port='5000')
+@news_blueprint.route('/<title>', methods=['GET'])
+def get_news_by_title(title):
+    check_api_key(request)  
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        
+        cursor.execute('SELECT Title, Date, Category, Abstract FROM dbo.News WHERE Title = ?', title)
+        row = cursor.fetchone()
+        if row:
+            news_item = {
+                'title': row.Title,
+                'date': row.Date,
+                'category': row.Category,
+                'abstrate': row.Abstract
+            }
+            return jsonify(news_item)
+        else:
+            return jsonify({'error': 'News item not found'}), 404
+    finally:
+        conn.close()

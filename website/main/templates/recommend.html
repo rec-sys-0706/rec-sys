@@ -87,6 +87,76 @@
             border: 1px solid #ddd;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+
+        #profile.home-container{
+            display: flex;
+            flex-direction: row;
+        }
+        .first-col {
+            display: flex;
+            flex-direction: column;
+        }
+        caption {
+            text-align: center;
+            padding-bottom: 10px;
+            font-size: 180%;
+            font-family: "Times New Roman";
+            font-weight: bold;
+        }
+        table{
+            border-collapse: collapse;
+            border: 2px solid rgb(140 140 140);
+            font-family: sans-serif;
+            letter-spacing: 1px;
+        }
+        th, td{
+            border:  1px solid rgb(160 160 160);
+            padding: 8px 10px;
+        }
+        th{
+            background-color: #66CDAA;
+        }
+        .buttons {
+            position: relative;
+            margin-top: 20px;
+            text-align: right;
+        }
+        .btn,
+        .btn:focus {
+            justify-content: center;
+            margin: 10px;
+            min-width: 200px;
+            border: none;
+            border-radius: 2px;
+            background-position: center;
+            background-color: #8FBC8F;
+            color: #FFFFFF;
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: background 0.8s;
+            padding: 10px 20px;
+            box-shadow: 0 0 4px #999;
+        }
+        .btn:hover {
+            color: #FFFFFF;
+            background: #47a7f5 radial-gradient(circle, transparent 1%, #47a7f5 1%) center/15000%;
+        }
+        .btn:active {
+            background-color: #6eb9f7;
+            background-size: 100%;
+            transition: background 0s;
+        }
+        figcaption {
+            padding: 3px;
+            text-align: center;
+            font-size: 200%;
+            margin-top: 10%;
+            font-weight: bold;
+        }
+        
     </style>
 </head>
 <body>
@@ -147,6 +217,46 @@
     </div>
     <div id="profile" class="home-container">
         <!-- profile -->
+        <div class="first-col">
+            <table class="user-info">
+                <caption>User Info</caption>
+                <tbody>
+                    <tr>
+                        <th>Account</th>
+                        <td>{{ user_info['Account'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Password</th>
+                        <td>{{ user_info['password'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ user_info['email'] }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>{{ user_info['phone'] }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class = buttons>
+                <a href="javascript: void(0)" class="btn">修改資料</a>
+                <a href="javascript: void(0)" class="btn">Line</a>
+            </div>
+            <figure class="donut_chart">
+                <figcaption>Article Category Distribution</figcaption>
+                <img src="{{ url_for('main.donut_chart') }}" alt="Donut Chart">
+            </figure>
+        </div>
+        <div class="history-list">
+            <h1>History list</h1>
+            {% for article in articles %}
+            <div class="article">
+                <h2>{{ article.title }}</h2>
+                <p><strong>Date:</strong> {{ article.date }}</p>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

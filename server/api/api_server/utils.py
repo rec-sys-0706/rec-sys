@@ -1,20 +1,19 @@
 import pyodbc
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+def env_var(key, default_value=None):
+    return os.environ.get(key, default_value)
 
 def get_db_connection():
-    server = os.getenv('SQL_SERVER')
-    database = os.getenv('SQL_DATABASE')
-    username = os.getenv('SQL_USERNAME')
-    password = os.getenv('SQL_PASSWORD')
-    driver = os.getenv('SQL_DRIVER')
+    server = env_var('SQL_SERVER')
+    database = env_var('SQL_DATABASE')
+    username = env_var('SQL_USERNAME')
+    password = env_var('SQL_PASSWORD')
+    driver = env_var('SQL_DRIVER')
 
     conn_str = f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};'
     conn = pyodbc.connect(conn_str)
     return conn
 
-
 def check_api_key(req):
-    pass 
+    pass

@@ -5,11 +5,10 @@ news_blueprint = Blueprint('news', __name__)
 
 @news_blueprint.route('/', methods=['GET'])
 def get_news():
-    check_api_key(request)  
+    check_api_key(request)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-       
         cursor.execute('SELECT Title, Date, Category, Abstract FROM dbo.News')
         rows = cursor.fetchall()
         news_list = []
@@ -27,11 +26,10 @@ def get_news():
 
 @news_blueprint.route('/<title>', methods=['GET'])
 def get_news_by_title(title):
-    check_api_key(request)  
+    check_api_key(request)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        
         cursor.execute('SELECT Title, Date, Category, Abstract FROM dbo.News WHERE Title = ?', title)
         row = cursor.fetchone()
         if row:
@@ -39,7 +37,7 @@ def get_news_by_title(title):
                 'title': row.Title,
                 'date': row.Date,
                 'category': row.Category,
-                'abstrate': row.Abstract
+                'abstract': row.Abstract
             }
             return jsonify(news_item)
         else:

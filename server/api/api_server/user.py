@@ -3,10 +3,9 @@ from utils import get_db_connection, check_api_key
 
 user_blueprint = Blueprint('users', __name__)
 
-
 @user_blueprint.route('/', methods=['GET'])
 def get_users():
-    check_api_key(request)  
+    check_api_key(request)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -26,14 +25,12 @@ def get_users():
     finally:
         conn.close()
 
-
 @user_blueprint.route('/<uuid>', methods=['GET'])
 def get_user(uuid):
-    check_api_key(request) 
+    check_api_key(request)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-       
         cursor.execute('SELECT UUID, Account, Password, Email, Phone FROM dbo.Users WHERE UUID = ?', uuid)
         row = cursor.fetchone()
         if row:

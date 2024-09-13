@@ -1,11 +1,12 @@
-from flask import Blueprint, jsonify, request
-from utils import get_db_connection, check_api_key
+from flask import Blueprint, jsonify, abort, request
+from api.utils import get_db_connection, check_api_key
 
 news_blueprint = Blueprint('news', __name__)
 
 @news_blueprint.route('/', methods=['GET'])
 def get_news():
-    check_api_key(request)
+    if not check_api_key(request):
+        abort(403)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:

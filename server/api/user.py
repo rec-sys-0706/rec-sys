@@ -1,11 +1,12 @@
-from flask import Blueprint, jsonify, request
-from utils import get_db_connection, check_api_key
+from flask import Blueprint, jsonify, abort, request
+from api.utils import get_db_connection, check_api_key
 
-user_blueprint = Blueprint('users', __name__)
+user_blueprint = Blueprint('user', __name__)
 
 @user_blueprint.route('/', methods=['GET'])
 def get_users():
-    check_api_key(request)
+    if not check_api_key(request):
+        abort(403)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:

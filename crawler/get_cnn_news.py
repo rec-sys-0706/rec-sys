@@ -1,21 +1,11 @@
 #文章
-import pyodbc
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import time
 
-def setup_database_connection():
-    conn = pyodbc.connect('Driver={ODBC Driver 17 for SQL Server};'
-                          'Server=SQLSERVER;'
-                          'Database=SQL_DATABASE;'
-                          'UID=SQL_USERNAME;'
-                          'PWD=SQL_PASSWORD;'
-                          'Trusted_Connection=yes;')
-    return conn
-
-def setup_webdriver(chrome_path):
-    service = Service(chrome_path)
+def setup_webdriver():
+    service = Service()
     driver = webdriver.Chrome(service=service)
     driver.implicitly_wait(10)
     return driver
@@ -30,17 +20,17 @@ def perform_search(driver, url, keyword):
     driver.find_element(By.XPATH, '//*[@id="search"]/div[1]/div[2]/div/div/ul/li[2]/label').click()
     time.sleep(10)
 
-def extract_articles(driver, cur, page_count=1):
+def extract_articles(driver, page_count=1):
     for _ in range(page_count):
         content_div = driver.find_element(By.CLASS_NAME, 'container__field-links')
         divs_in_content = content_div.find_elements(By.XPATH, './div')
         div_count = len(divs_in_content)
         
         for x in range(1, div_count + 1):
-            extract_and_save_article(driver, cur, x)
+            extract_and_save_article(driver, x)
         navigate_to_next_page(driver)
 
-def extract_and_save_article(driver, cur, index):
+def extract_and_save_article(driver, index):
     titles = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[1]/span').text
     publication_dates = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[2]').text
     abstracts = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[3]').text
@@ -51,9 +41,6 @@ def extract_and_save_article(driver, cur, index):
     categories, subcategories = extract_categories(driver)
     content = extract_content(driver)
 
-    cur.execute('''INSERT INTO stories(category,subcategory,title,date,abstract,contents,url) 
-                   VALUES(?,?,?,?,?,?,?);''', (categories, subcategories, titles, publication_dates, abstracts, content, urls))
-    cur.connection.commit()
     driver.back()
     time.sleep(1)
 
@@ -85,19 +72,13 @@ def navigate_to_next_page(driver):
         print("No more pages.")
 
 def main():
-    conn = setup_database_connection()
-    cur = conn.cursor()
-    cur.fast_executemany = True
-
-    chrome_path = "../chromedriver-win32/chromedriver.exe"
-
-    driver = setup_webdriver(chrome_path)
+    driver = setup_webdriver()
 
     url = 'https://edition.cnn.com/'
     keyword = 'Artificial Intelligence'
     
     perform_search(driver, url, keyword)
-    extract_articles(driver, cur, page_count=4)  # 控制頁數
+    extract_articles(driver, page_count=4)  # 控制頁數
     driver.quit()
 
 if __name__ == '__main__':

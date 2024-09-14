@@ -5,6 +5,8 @@ import torch
 import pandas as pd
 from datetime import datetime
 from typing import Literal
+import tiktoken
+
 
 class EarlyStopping:
     """EarlyStopping references tensorflow.keras.callbacks.EarlyStopping."""
@@ -27,6 +29,26 @@ class EarlyStopping:
                 self.stop_training = True
 
         return stop_training, is_better
+
+class CustomTokenizer:
+    """This is deprecated, will be replaced by Huggingface.Tokenizer."""
+    def __init__(self, name: Literal['gpt-4o']='gpt-4o'):
+        self.ENC = tiktoken.get_encoding("o200k_base") # gpt-4o
+
+    def tokenize(self, text: str) -> list[str]:
+        # return [ENC.decode([token]) for token in tokens] # TODO optmize
+        # return list(text.lower()) # character only, 123
+        # return re.sub(r'[^a-z0-9\s]', '', text.lower()).split() # 36306
+        # return nltk.word_tokenize(text.lower()) # 37539
+        pass
+        # For encoding: [int(word2int.get(token, 0)) for token in tokenize(text)]
+
+    def encode(self, text: str) -> list[int]:
+        token_ids = self.ENC.encode(text)
+        return token_ids
+
+    def decode():
+        pass
 
 def time_since(base: float, format: None|Literal['seconds']=None):
     now = time.time()
@@ -65,5 +87,16 @@ def fix_all_seeds(seed):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
+def tru_pad(tokens: list[str], max_length: int):
+    """truncation and padding"""
+    if len(tokens) < max_length:
+        result = tokens + [0] * (max_length - len(tokens))
+    else:
+        result = tokens[:max_length]
+    attention_mask = [1 if i < len(tokens) else 0 for i in range(max_length)]
+    return result, attention_mask
+    # ! truncation and padding
+    # news[['title', 'title_attention_mask']] = news['title'].apply(lambda t: pd.Series(tru_pad(t, args.num_tokens_title)))
+    # news[['abstract', 'abstract_attention_mask']] = news['abstract'].apply(lambda t: pd.Series(tru_pad(t, args.num_tokens_abstract)))
 if __name__ == '__main__':
     print(get_now())

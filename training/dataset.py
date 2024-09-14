@@ -3,13 +3,68 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 from ast import literal_eval
 from tqdm import tqdm
-from config import BaseConfig
+from parameters import parse_args
 import random
 import logging
 from pathlib import Path
 
+def sample_users(consent_dict, k):
+
+
+    # Ensure there is at least 1 accepted and k declined users available
+    if len(accepted_users) < 1 or len(declined_users) < k:
+        raise ValueError("Not enough users to sample from!")
+
+    # Randomly select 1 accepted user
+    selected_accepted = random.choice(accepted_users)
+
+    # Randomly select k declined users
+    selected_declined = random.sample(declined_users, k)
+
+    # Combine the selected samples into a dictionary
+    sample_dict = {selected_accepted: 1}
+    sample_dict.update({user: 0 for user in selected_declined})
+
+    return sample_dict
+def sample(true_set: set[str], false_set: set[str], negative_sampling_ratio=4) -> tuple[str, str]:
+    """negative sampling"""
+    true_set = list(true_set)
+    false_set = list(false_set)
+
+    random.shuffle(true_set)
+    random.shuffle(false_set)
+
+    true_set = true_set[:1]
+    false_set = false_set[:negative_sampling_ratio]
+
+    news_id = true_set + false_set
+    clicked = [1] * len(true_set) + [0] * len(false_set)
+
+    if len(clicked) == (negative_sampling_ratio + 1):
+        return (str(news_id), str(clicked))
+    else:
+        return None, None
+    # # Create candidate_news & clicked columns
+    # k = config.negative_sampling_ratio
+    # behaviors[['candidate_news', 'clicked']] = [None, None]
+    # for idx, row in tqdm(behaviors['impressions'].items(), total=len(behaviors)):
+    #     true_set = set()
+    #     false_set = set()
+    #     counter = Counter()
+    #     for e in row:
+    #         news_id, clicked = e.split('-') # TODO assert size 2
+    #         counter.update([news_id])
+    #     filtered = {item: count for item, count in counter.items() if count > 1}
+    #     if filtered:
+    #         pdb.set_trace()
+    #     for e in row:
+    #         news_id, clicked = e.split('-') # TODO assert size 2
+    #         true_set.add(news_id) if clicked == '1' else false_set.add(news_id)
+    #     false_set -= true_set # Duplicated news_id is saved by true_set
+    #     behaviors.loc[idx, ['candidate_news', 'clicked']] = sample(true_set, false_set, k) # TODO config
+    # # behaviors = behaviors[behaviors['clicked'].apply(len) == 2*k+1] # Drop insufficient rows.
 class NewsDataset(Dataset):
-    """
+    """Sample data form `behaviors.tsv` and create dataset based on `news.tsv`
 
     If mode=='train', it
     For each element {
@@ -58,7 +113,7 @@ class NewsDataset(Dataset):
         self.__news = pd.read_csv(news_path,
                                   sep='\t',
                                   index_col='news_id')
-        result_path = src_dir / f'{mode}.pt' 
+        result_path = src_dir / f'{mode}.pt'
         if result_path.exists():
             data = torch.load(result_path)
             self.result, self.users = data['result'], data['users']

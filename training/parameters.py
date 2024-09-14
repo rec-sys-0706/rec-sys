@@ -27,6 +27,11 @@ class Arguments:
     learning_rate: float
     train_batch_size: int
     valid_batch_size: int
+    drop_insufficient: bool
+
+    def __post_init__(self):
+        self.drop_insufficient=True
+
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()
     # System
@@ -56,6 +61,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--learning-rate', type=float, default=0.0005)
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--valid-batch-size', type=int, default=512)
+    parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate.")
     # use_pretrained_embedding = False # True
 
     parsed_args = parser.parse_args()

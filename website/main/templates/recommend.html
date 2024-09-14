@@ -103,22 +103,14 @@
         </ul>
     </nav>
     <div id="today_news" class="home-container">
-        <div class="news-block">
-            <h3><a href="{{ url_for('main.news_article', db_name='news1', news_id=1) }}" target="_blank">News Title 1</a></h3>
-            <p>A brief description of the first news article.</p>
-        </div>
-        <div class="news-block">
-            <h3><a href="{{ url_for('main.news_article', db_name='news2', news_id=2) }}" target="_blank">News Title 2</a></h3>
-            <p>A brief description of the second news article.</p>
-        </div>
-        <div class="news-block">
-            <h3><a href="{{ url_for('main.news_article', db_name='news3', news_id=3) }}" target="_blank">News Title 3</a></h3>
-            <p>A brief description of the third news article.</p>
-        </div>
-        <div class="news-block">
-            <h3><a href="{{ url_for('main.news_article', db_name='news4', news_id=4) }}" target="_blank">News Title 4</a></h3>
-            <p>A brief description of the fourth news article.</p>
-        </div>
+        {% for index, news in all_news[all_news['date'] == today_time].iterrows() %}
+            <div  class="news-block">
+                <h3><a href="{{ url_for('main.news_article', db_name='news1', news_id=1) }}" target="_blank">{{ news['title'] }}</a></h3>
+                <p>Category: {{ news['category'] }}</p>
+                <p>Date: {{ news['date'] }}</p>
+                <!--<p>A brief description of the first news article.</p>-->
+            </div>
+        {% endfor %}
     </div>
 
     <div id="all_news" class="home-container">
@@ -132,7 +124,7 @@
 
     {% for index, news in news_date.iterrows() %}
         <div id="{{ news.name }}" class="home-container">
-            {% for index, new in news_article[news_article['date'] == news['date']].iterrows() %}
+            {% for index, new in all_news[all_news['date'] == news['date']].iterrows() %}
                 <div class="news-block news-block1">
                     <h3><a href="{{ url_for('main.news_article', db_name='news1', news_id=1) }}" target="_blank">{{ new['title'] }}</a></h3>
                     <p>Category: {{ new['category'] }}</p>

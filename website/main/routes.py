@@ -18,7 +18,7 @@ def recommend():
     all_news = test_news.sort_values('title')
     today = datetime.date.today()
     #today_time = today.strftime('%b %d, %Y') 
-    today_time = today.strftime('%b 01, %Y') 
+    today_time = today.strftime('%b 01, %Y')    #測試
     print(today_time)
     return render_template('recommend.html', news_date = news_date, all_news = all_news, today_time = today_time)
 

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from flask import Blueprint, render_template, send_file
 from config import test_news
 import matplotlib.pyplot as plt
@@ -8,6 +9,12 @@ from collections import Counter
 import datetime
 
 
+=======
+from flask import Blueprint, render_template
+from config import test_news
+import datetime
+
+>>>>>>> b422ad343eaa1bae5c805a85ce7e95c2688a0b2c
 main_bp = Blueprint('main', 
                     __name__, 
                     template_folder='templates',
@@ -29,9 +36,16 @@ def recommend():
     news_date = test_news.sort_values('date').drop_duplicates(subset=['date'])
     all_news = test_news.sort_values('title')
     today = datetime.date.today()
+<<<<<<< HEAD
     today_time = today.strftime('%b %d, %Y') 
     print(today_time)
     return render_template('recommend.html', news_date = news_date, all_news = all_news, today_time = today_time, user_info = user_info)
+=======
+    #today_time = today.strftime('%b %d, %Y') 
+    today_time = today.strftime('%b 01, %Y')    #測試
+    print(today_time)
+    return render_template('recommend.html', news_date = news_date, all_news = all_news, today_time = today_time)
+>>>>>>> b422ad343eaa1bae5c805a85ce7e95c2688a0b2c
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
 def news_article(db_name, news_id):
@@ -39,6 +53,7 @@ def news_article(db_name, news_id):
     title = f"News Title {news_id}"  # example
     content = "This is a static news article content."  # static content
     return render_template('news.html', title=title, content=content)
+<<<<<<< HEAD
 
 # Sample news data
 articles = [
@@ -111,3 +126,5 @@ def donut_chart():
     img.seek(0)
 
     return send_file(img, mimetype='image/png')
+=======
+>>>>>>> b422ad343eaa1bae5c805a85ce7e95c2688a0b2c

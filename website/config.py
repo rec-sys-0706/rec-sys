@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
+ROOT = os.environ.get('ROOT')
 def get_signature(payload=''):
     # Get SQL_SECRET
     #secret_key = '123'
@@ -32,6 +32,6 @@ result = pd.read_csv('./website/admin/data/result.csv', index_col='user_id')
 def format_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
 
-response = requests.get('http://140.136.149.181:5000/api/news/', headers = headers)
+response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
 test_news = pd.DataFrame(response.json())
 test_news['date'] = test_news['date'].apply(format_date)

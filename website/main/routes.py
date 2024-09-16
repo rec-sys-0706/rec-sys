@@ -5,6 +5,7 @@ import io
 import os
 from PIL import Image
 from collections import Counter
+import datetime
 
 
 main_bp = Blueprint('main', 
@@ -22,10 +23,9 @@ def recommend():
     news_date = test_news.sort_values('date').drop_duplicates(subset=['date'])
     all_news = test_news.sort_values('title')
     today = datetime.date.today()
-    #today_time = today.strftime('%b %d, %Y') 
-    today_time = today.strftime('%b 01, %Y')    #測試
+    today_time = today.strftime('%b %d, %Y') 
     print(today_time)
-    return render_template('recommend.html', news_date = news_date, all_news = all_news, today_time = today_time)
+    return render_template('recommend.html', news_date = news_date, all_news = all_news, today_time = today_time, user_info = user_info)
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
 def news_article(db_name, news_id):

@@ -21,12 +21,6 @@ def home():
 @main_bp.route('/recommend')
 def recommend():
     news_date = test_news.sort_values('date').drop_duplicates(subset=['date'])
-    news = test_news.sort_values('title')
-    return render_template('recommend.html', news_date = news_date, news_article = news)
-
-@main_bp.route('/recommend')
-def recommend():
-    news_date = test_news.sort_values('date').drop_duplicates(subset=['date'])
     all_news = test_news.sort_values('title')
     today = datetime.date.today()
     today_time = today.strftime('%b %d, %Y') 

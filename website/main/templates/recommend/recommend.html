@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="{{ url_for('main.static', filename='styles.css') }}">
-    <title>News Recommend</title>
+    <title>Home</title>
+    <style>
+
+        
+    </style>
 </head>
 <body>
     <header>
@@ -13,9 +16,10 @@
     </header>
     <nav>
         <ul>
-            <li><a href="/main/about" class="tab">About Us</a></li>
-            <li><a href="/main" class="tab">Log In</a></li>
-            <li><a href="/main/signup" class="tab">Sign Up</a></li>
+            <li><a href="/main/today_news" class="tab">Today News</a></li>
+            <li><a href="/main/all_dates" class="tab">All News</a></li>
+            <li><a href="/main/recommend" class="tab">About Us</a></li>
+            <li><a href="/main/profile" class="tab">Profile</a></li>
         </ul>
     </nav>
     {% block content %}

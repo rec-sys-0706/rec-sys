@@ -1,11 +1,11 @@
-from flask import Blueprint, render_template, send_file
-from config import test_news
+from flask import Blueprint, render_template, send_file, request
+from config import test_news, users_data
 import matplotlib.pyplot as plt
 import io
-import os
 from PIL import Image
 from collections import Counter
 import datetime
+import re
 
 
 main_bp = Blueprint('main', 
@@ -14,17 +14,81 @@ main_bp = Blueprint('main',
                     static_folder='static', 
                     url_prefix='/main')
 
-@main_bp.route('/')
-def home():
-    return render_template('index.html')
+# index 資料夾
+@main_bp.route('/', methods = ['GET','POST'])
+def index():
+    status = 'T'
+    if request.method == 'POST':
+        username = request.form['username']
+        user_date = users_data.loc[users_data['account'] == username]
+        password = request.form['password']
+        password_date = users_data.loc[users_data['password'] == password]
 
+        if not (user_date.empty and password_date.empty):
+            return render_template('./recommend/about.html')
+        else:
+            status = 'F'
+    return render_template('./main/login.html', status = status)
+
+@main_bp.route('/about')
+def about():
+    return render_template('./main/about.html')
+
+def is_valid_email(email):
+    #電子郵件格式
+    pattern = r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+    
+    if re.fullmatch(pattern, email):
+        return True
+    else:
+        return False
+
+@main_bp.route('/signup', methods = ['GET','POST'])
+def signup():
+    status = 'T'
+    if request.method == 'POST':
+        email = request.form['email']
+        username = request.form['username']
+        password = request.form['password']
+
+        if is_valid_email(email):
+            status = 'True'
+            return render_template('./main/signup.html', status = status)
+        else:
+            status = 'False'
+            return render_template('./main/signup.html', status = status)
+        
+    return render_template('./main/signup.html', status = status)
+
+
+# recommend 資料夾
 @main_bp.route('/recommend')
 def recommend():
-    news_date = test_news.sort_values('date').drop_duplicates(subset=['date'])
-    all_news = test_news.sort_values('title')
+    return render_template('./recommend/about.html')
+
+news_dates = test_news.sort_values('date').drop_duplicates(subset=['date'])
+all_news = test_news.sort_values('title')
+
+@main_bp.route('/today_news')
+def today_news():
     today = datetime.date.today()
-    today_time = today.strftime('%b %d, %Y') 
-    return render_template('recommend.html', news_date = news_date, all_news = all_news, today_time = today_time, user_info = user_info)
+    today_time = today.strftime('%b %d, %Y')
+    return render_template('./recommend/today_news.html', news_date = news_dates, 
+                           today_time = today_time, all_news = all_news)
+
+@main_bp.route('/all_dates')
+def all_dates():
+    return render_template('./recommend/all_dates.html', news_date = news_dates)
+
+@main_bp.route('/all_news')
+def allnews():
+    date = request.args.get('date')
+    news_date = test_news.loc[test_news['date'] == date]
+    return render_template('./recommend/all_news.html', news_date = news_date, all_news = all_news)
+
+@main_bp.route('/profile')
+def profile():
+    return render_template('./recommend//profile.html', user_info = user_info)
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
 def news_article(db_name, news_id):

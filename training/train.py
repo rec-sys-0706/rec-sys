@@ -1,83 +1,69 @@
-import importlib
-from config import BaseConfig
+import logging
+import time
+from pathlib import Path
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from dataset import NewsDataset
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-import logging
-from evaluate import nDCG, ROC_AUC, recall, accuracy
-from utils import EarlyStopping, time_since, detokenize, get_now, fix_all_seeds
-from pathlib import Path
-import time
-import pandas as pd
 
-CONFIG = BaseConfig()
-try:
-    Model = getattr(importlib.import_module(f'model.{CONFIG.model_name}'), CONFIG.model_name)
-except AttributeError:
-    raise AttributeError(f'{CONFIG.model_name} not included!')
-except ImportError:
-    raise ImportError(f"Error importing {CONFIG.model_name} model.")
+from model import NRMS
+from parameters import Arguments, parse_args
+from utils import CustomTokenizer, EarlyStopping, time_since, get_datetime_now, fix_all_seeds
+from dataset import NewsDataset, CustomDataCollator
+from evaluate import nDCG, ROC_AUC, recall, accuracy
+
 
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 
-def train():
-    """Training loop"""
-    
+
+def train(args: Arguments):
+    """Trainer"""
     writer = SummaryWriter(
-        log_dir=f"./runs/{get_now()}"
+        log_dir=f"./runs/{get_datetime_now()}"
     )
-    if not Path(CONFIG.ckpt_dir).exists():
-        Path(CONFIG.ckpt_dir).mkdir()
-    ckpt_now_dir = Path(CONFIG.ckpt_dir) / get_now() 
+    if not Path(args.ckpt_dir).exists():
+        Path(args.ckpt_dir).mkdir()
+    ckpt_now_dir = Path(args.ckpt_dir) / get_datetime_now() 
     ckpt_now_dir.mkdir()
 
-
-    if CONFIG.use_pretrained_embedding:
-        pretrained_embedding = torch.load(Path(CONFIG.train_dir) / 'pretrained_embedding.pt')
-        if pretrained_embedding.shape != (CONFIG.vocab_size, CONFIG.embedding_dim):
-            raise ValueError((
-                "Error: Expected pretrained embeddings to have the same shape as (config.vocab_size, config.embedding_dim), "
-                f"but got {pretrained_embedding.shape} and ({CONFIG.vocab_size}, {CONFIG.embedding_dim})."
-                "Please regenerating pretrained word embeddings."
-            ))
-        model: nn.Module = Model(CONFIG, pretrained_embedding)
-    else:
-        model: nn.Module = Model(CONFIG)
+    model: nn.Module = NRMS(args)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=CONFIG.learning_rate)
-
-    # Training Loop
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    tokenizer = CustomTokenizer(args)
+    data_collator = CustomDataCollator(tokenizer)
+    # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
-    train_dataset = NewsDataset(CONFIG, mode='train')
+    train_dataset = NewsDataset(args, tokenizer, mode='train')
     train_loader = DataLoader(train_dataset,
-                              batch_size=CONFIG.train_batch_size,
+                              batch_size=args.train_batch_size,
                               shuffle=True,
                               drop_last=True,
-                              pin_memory=True)
+                              pin_memory=True,
+                              collate_fn=data_collator)
 
-    valid_dataset = NewsDataset(CONFIG, mode='valid')
+    valid_dataset = NewsDataset(args, tokenizer, mode='valid')
     valid_loader = DataLoader(valid_dataset,
-                              batch_size=CONFIG.valid_batch_size,
-                              pin_memory=True)
+                              batch_size=args.valid_batch_size,
+                              pin_memory=True,
+                              collate_fn=data_collator)
     logging.info(f'Datasets loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
 
-    early_stopping = EarlyStopping(patience=CONFIG.patience)
+    # Training Loop
+    early_stopping = EarlyStopping(patience=args.patience)
+    step = 0 # A counter to count model updated times.
 
-    step = 0
     start_time = time.time()
-    for epoch in range(1, CONFIG.max_epochs + 1):
+    for epoch in range(1, args.epochs + 1):
 
         train_loss = 0.0
-        for item in tqdm(train_loader, desc='Training'):
+        for batch in tqdm(train_loader, desc='Training'):
             model.train()
-            y_pred = model(item['clicked_news'], item['candidate_news'])
-            y_true = item['clicked'].to(CONFIG.device)
+            y_pred = model(batch['clicked_news'], batch['candidate_news'])
+            y_true = batch['clicked'].to(args.device)
             loss = criterion(y_pred, y_true)
 
             loss.backward()
@@ -88,15 +74,15 @@ def train():
 
 
             step += 1
-            if step % CONFIG.valid_interval == 0:
+            if step % args.valid_interval == 0:
                 tqdm.write(f'Starting validation process in step {step:5}.')
                 model.eval()
                 y_preds = []
                 y_trues = []
                 valid_loss = 0.0
-                for item in tqdm(valid_loader, desc='Validation', leave=False):
-                    y_pred = model(item['clicked_news'], item['candidate_news'])
-                    y_true = item['clicked'].to(CONFIG.device)
+                for batch in tqdm(valid_loader, desc='Validation', leave=False):
+                    y_pred = model(batch['clicked_news'], batch['candidate_news'])
+                    y_true = batch['clicked'].to(args.device)
                     loss = criterion(y_pred, y_true)
                     valid_loss += loss.item()
                     
@@ -106,7 +92,7 @@ def train():
                 y_preds = torch.concat(y_preds)
                 y_trues = torch.concat(y_trues)
                 recall, roc_auc, ndcg5, ndcg10, acc = evaluate(y_preds, y_trues)
-                stop_training, is_better = early_stopping(-recall)
+                stop_training, is_better = early_stopping(-recall) # TODO
                 # Logging - valid
                 tqdm.write((
                     f'Elapsed Time: {time_since(start_time)}\n'
@@ -132,7 +118,7 @@ def train():
             break
         train_loss /= len(train_loader)
         tqdm.write((
-            f'Epoch: {epoch:3}/{CONFIG.max_epochs} Elapsed Time: {time_since(start_time)}\n'
+            f'Epoch: {epoch:3}/{args.epochs} Elapsed Time: {time_since(start_time)}\n'
             f'Train/Loss: {train_loss}\n'
         ))
         writer.add_scalar('Train/Loss', loss, epoch)
@@ -141,49 +127,58 @@ def train():
                 'optimizer_state_dict': optimizer.state_dict(),
                 'epoch': epoch},  ckpt_now_dir / f'ckpt-latest.pth') # TODO checkpoint folder
     tqdm.write((
-        f'Training process ended at Epoch {epoch:3}/{CONFIG.max_epochs}\n'
+        f'Training process ended at Epoch {epoch:3}/{args.epochs}\n'
         f'Valid/Best Recall: {-early_stopping.best_loss:6.4f}\n'
     ))
 
-def valid():
-    model: nn.Module = Model(CONFIG)
-    ckpt_latest_dir = sorted([d for d in Path(CONFIG.ckpt_dir).iterdir() if d.is_dir()])[-1]
-    checkpoint = torch.load(ckpt_latest_dir / 'ckpt-latest.pth')
-    model.load_state_dict(checkpoint['model_state_dict'])
-
-    # Test loop
-    model.eval()
-    valid_dataset = NewsDataset(CONFIG, mode='valid')
-    valid_loader = DataLoader(valid_dataset,
-                             batch_size=CONFIG.valid_batch_size,
-                             pin_memory=True)
-    users_iter = iter(valid_dataset.users)
-
-    y_preds = []
-    users = []
-    for item in tqdm(valid_loader, desc='Validation', leave=False):
-        y_pred = model(item['clicked_news'], item['candidate_news'])
-        y_preds.append(y_pred.detach().cpu())
-
-        clickeds = torch.where(y_pred > 0.5, torch.tensor(1), torch.tensor(0)).tolist()
-
-        for clicked in clickeds:
-            user = next(users_iter)
-            users.append({
-                'user_id': user['user_id'],
-                'clicked_news': user['clicked_news_ids'],
-                'candidate_news': user['candidate_news_ids'],
-                'clicked': clicked,
-                'labels': user['labels']
-            })
-    y_preds = torch.concat(y_preds)
-    # Save
-    (pd.DataFrame(users, columns=['user_id', 'clicked_news', 'candidate_news', 'clicked', 'labels'])
-     .to_csv(Path(CONFIG.val_dir) / 'result.csv',
-             index=False))
-
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
-    fix_all_seeds(1337)
-    # train()
-    valid()
+    start = time.time()
+    args = parse_args()
+    train(args)
+
+
+    # tokenizer = CustomTokenizer(args)
+    # dataset = NewsDataset(args, tokenizer, 'train')
+    # data_collator = CustomDataCollator()
+    # # Create DataLoader
+    # dataloader = DataLoader(
+    #     dataset,
+    #     batch_size=4,
+    #     shuffle=False,
+    #     collate_fn=data_collator,
+    # )
+    # print(time_since(start))
+    # # Iterate over DataLoader and print batch shapes
+    # for _ in range(10):
+    #     for batch in dataloader:
+    #         pass
+    #         # print(batch['clicked_news_title']['input_ids'].shape)
+    #         # print(batch['candidate_news_title']['input_ids'].shape)
+    #         # print(batch['labels'].shape)
+    #     print(time_since(start))
+
+
+
+# args = TrainingArguments(
+#     Path(CONFIG.ckpt_dir) / f'ckpt-{step}.pth',
+#     evaluation_strategy = "epoch",
+#     save_strategy = "epoch",
+#     learning_rate=2e-5,
+#     per_device_train_batch_size=batch_size,
+#     per_device_eval_batch_size=batch_size,
+#     num_train_epochs=5,
+#     weight_decay=0.01,
+#     load_best_model_at_end=True,
+#     metric_for_best_model=metric_name,
+#     push_to_hub=True,
+# )
+#     learning_rate=2e-5,
+#     per_device_train_batch_size=16,
+#     per_device_eval_batch_size=16,
+#     num_train_epochs=2,
+#     weight_decay=0.01,
+#     eval_strategy="epoch",
+#     save_strategy="epoch",
+#     load_best_model_at_end=True,
+#     push_to_hub=True,
+# )

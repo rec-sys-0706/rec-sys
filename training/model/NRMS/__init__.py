@@ -1,33 +1,31 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from .encoder import Encoder
-from config import BaseConfig
+from parameters import Arguments
 class NRMS(nn.Module):
     """
     NewsEncoder: (candidate_news) -> news_vector
     UserEncoder: (clicked_news) -> user_vector
     model      : (clicked_news, candidate_news) -> click_probability
     """
-    def __init__(
-            self,
-            config: BaseConfig,
-            pretrained_embedding=None):
+    def __init__(self, args: Arguments, pretrained_embedding=None) -> None:
         super().__init__()
-        self.config = config
-        self.device = config.device
-        # ---- Layers ---- #
-        if pretrained_embedding is None:
-            self.embedding = nn.Embedding(config.vocab_size,
-                                          config.embedding_dim,
-                                          padding_idx=0) # TODO padding_idx
-        else:
-            self.embedding = nn.Embedding.from_pretrained(pretrained_embedding,
-                                                          freeze=False,
-                                                          padding_idx=0)
-        self.news_encoder = Encoder(config.num_heads, config.embedding_dim)
-        self.user_encoder = Encoder(config.num_heads, config.embedding_dim)
-        self.dropout = nn.Dropout(config.dropout_rate)
-        self.to(self.device)
+        pass
+        # self.args = args
+        # self.device = args.device
+        # # ---- Layers ---- #
+        # if pretrained_embedding is None:
+        #     self.embedding = nn.Embedding(args.vocab_size,
+        #                                   args.embedding_dim,
+        #                                   padding_idx=0) # TODO padding_idx
+        # else:
+        #     self.embedding = nn.Embedding.from_pretrained(pretrained_embedding,
+        #                                                   freeze=False,
+        #                                                   padding_idx=0)
+        # self.news_encoder = Encoder(args.num_heads, args.embedding_dim)
+        # self.user_encoder = Encoder(args.num_heads, args.embedding_dim)
+        # self.dropout = nn.Dropout(args.dropout_rate)
+        # self.to(self.device)
     
     def forward(self,
                 clicked_news: dict,

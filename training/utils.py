@@ -6,6 +6,8 @@ import pandas as pd
 from datetime import datetime
 from typing import Literal
 import tiktoken
+from transformers import AutoTokenizer
+from parameters import Arguments
 
 
 class EarlyStopping:
@@ -32,8 +34,18 @@ class EarlyStopping:
 
 class CustomTokenizer:
     """This is deprecated, will be replaced by Huggingface.Tokenizer."""
-    def __init__(self, name: Literal['gpt-4o']='gpt-4o'):
+    def __init__(self, args: Arguments):
+        self.args = args
         self.ENC = tiktoken.get_encoding("o200k_base") # gpt-4o
+        self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+        self.title_padding = self.tokenize_title('')
+        self.abstract_padding = self.tokenize_abstract('')
+    def tokenize_title(self, text):
+        return self.tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_title)
+    def tokenize_abstract(self, text):
+        return self.tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_abstract)
+    def __call__(self, text):
+        pass
 
     def tokenize(self, text: str) -> list[str]:
         # return [ENC.decode([token]) for token in tokens] # TODO optmize
@@ -69,7 +81,7 @@ def detokenize(word2int_path, seq):
     decode_map = np.vectorize(int2word.get)
     return decode_map(seq)
 
-def get_now():
+def get_datetime_now():
     now = datetime.now()
     return now.strftime("%Y-%m-%dT%H%M%S")
 
@@ -77,7 +89,7 @@ def format_duration(sec):
     return time.strftime("%H:%M:%S", time.gmtime(sec))
     
 def fix_all_seeds(seed):
-    '''Fixes RNG seeds for reproducibility.'''
+    """Fixes RNG seeds for reproducibility"""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -98,5 +110,37 @@ def tru_pad(tokens: list[str], max_length: int):
     # ! truncation and padding
     # news[['title', 'title_attention_mask']] = news['title'].apply(lambda t: pd.Series(tru_pad(t, args.num_tokens_title)))
     # news[['abstract', 'abstract_attention_mask']] = news['abstract'].apply(lambda t: pd.Series(tru_pad(t, args.num_tokens_abstract)))
+
+def list_to_dict(objs: list[dict]):
+    """Convert list[dict] to dict[list]"""
+    result = {}
+
+    for obj in objs:
+        for key, value in obj.items():
+            if key not in result:
+                result[key] = []
+            result[key].append(value)
+
+    return result
+
+def dict_to_tensors(obj: dict):
+    """Convert dictionary values to tensors recursively"""
+    for key, value in obj.items():
+        if isinstance(value, dict): # is a dictionary
+            dict_to_tensors(value) # recursively
+        else:
+            obj[key] = torch.tensor(value)
+    return obj
+
+def flatten_dict(d, parent_key='', sep='_'):
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items) # TODO
+
 if __name__ == '__main__':
     print(get_now())

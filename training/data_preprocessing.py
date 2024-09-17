@@ -36,9 +36,9 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     """Parse behaviors.tsv and news.tsv into behaviors_parsed.tsv and news_parsed.tsv""" # TODO
     start = time.time()
     src_dir = get_src_dir(args, mode)
-    parse_behaviors(src_dir)
+    # parse_behaviors(src_dir)
     print(time_since(start))
-    tokenizer = CustomTokenizer() # TODO if using glove or nltk, must build tokenizer first.
+    tokenizer = CustomTokenizer(args) # TODO if using glove or nltk, must build tokenizer first.
     parse_news(src_dir, tokenizer)
     print(time_since(start))
 
@@ -162,7 +162,7 @@ def build_tokenizer():
 
 # TODO use entity?
 def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
-    """Parse news.tsv file
+    """Parse news.tsv to tokenized text.
     Output File Format:
         The resulting CSV file will contain the following columns:
         - category: int
@@ -181,8 +181,8 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
     news = news.sort_index()
     # news['category'] = news['category'].apply(lambda c: category2int.get(c, 0)) # TODO category2int in tokenizer.
     # news['subcategory'] = news['subcategory'].apply(lambda c: category2int.get(c, 0))
-    news['title'] = news['title'].apply(lambda text: tokenizer.encode(text))
-    news['abstract'] = news['abstract'].apply(lambda text: tokenizer.encode(text))
+    news['title'] = news['title'].apply(lambda text: tokenizer.tokenize_title(text))
+    news['abstract'] = news['abstract'].apply(lambda text: tokenizer.tokenize_abstract(text)) # TODO Don't need to tokenize here.
     news.to_csv(src_dir / 'news_parsed.csv')
 
 def generate_word_embedding(config: Arguments):

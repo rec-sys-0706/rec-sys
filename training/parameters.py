@@ -1,8 +1,15 @@
 from dataclasses import dataclass
 import argparse
+from typing import Any
+
+import torch
 
 @dataclass
 class Arguments:
+    # System
+    seed: int
+    cpu: bool
+    device: Any
     # Directory
     train_dir: str
     val_dir: str
@@ -31,13 +38,19 @@ class Arguments:
 
     def __post_init__(self):
         self.drop_insufficient=True
+        if self.cpu:
+            self.device = torch.device('cpu')
+        else:
+            self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()
     # System
+    parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
         # model_name = 'NRMS'
         # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # num_workers = 1
+    parser.add_argument('--seed', type=int, default=1337)
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
@@ -46,8 +59,8 @@ def parse_args() -> Arguments:
         # glove_embedding_path = './data/glove.840B.300d/glove.840B.300d.txt'
     # Model
     parser.add_argument('--tf-threshold', type=int, default=1, help="Term frequencies threshold")
-    parser.add_argument('--negative-sampling-ratio', type=int, default=3)
-    parser.add_argument('--num-tokens-title', type=int, default=24, help="The number of tokens in title (context_length)")
+    parser.add_argument('--negative-sampling-ratio', type=int, default=1)
+    parser.add_argument('--num-tokens-title', type=int, default=24, help="The number of tokens in title (aka. context_length)")
     parser.add_argument('--num-tokens-abstract', type=int, default=50, help="The number of tokens in abstract")
     parser.add_argument('--num-clicked-news', type=int, default=64, help="The number of clicked news sampled for each user")
     # vocab_size = 68878 + 1

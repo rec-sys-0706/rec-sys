@@ -1,0 +1,12 @@
+{% extends "./recommend/recommend.html" %}
+
+{% block content %}
+    <div id="all_dates" class="home">
+        {% for index, news in news_date.iterrows() %}
+            <div  class="news-block">
+                <h3><a  href="/main/all_news?date={{ news['date'] }}" >{{ news['date'] }}</a></h3>
+                <!--<p>A brief description of the first news article.</p>-->
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -33,5 +33,8 @@ def format_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
 
 response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
+    
 test_news = pd.DataFrame(response.json())
 test_news['date'] = test_news['date'].apply(format_date)
+
+users_data = pd.read_csv('./website/admin/data/user_data.csv', index_col='uuid')

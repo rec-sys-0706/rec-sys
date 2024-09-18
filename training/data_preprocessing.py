@@ -32,16 +32,6 @@ def get_src_dir(args: Arguments, mode) -> Path:
         raise ValueError(f"[ERROR] Expected `mode` be str['train'|'valid'|'test'] but got `{mode}` instead.")
     return src_dir
 
-def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test']):
-    """Parse behaviors.tsv and news.tsv into behaviors_parsed.tsv and news_parsed.tsv""" # TODO
-    start = time.time()
-    src_dir = get_src_dir(args, mode)
-    # parse_behaviors(src_dir)
-    print(time_since(start))
-    tokenizer = CustomTokenizer(args) # TODO if using glove or nltk, must build tokenizer first.
-    parse_news(src_dir, tokenizer)
-    print(time_since(start))
-
 def parse_behaviors(src_dir: Path):
     """Parses behaviors.tsv file
     
@@ -92,7 +82,7 @@ def parse_behaviors(src_dir: Path):
                      index=False,
                      columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
 
-def build_tokenizer():
+def build_tokenizer(src_dir: Path, mode) -> CustomTokenizer:
     """
     Args:
         src_dir (Path)
@@ -102,39 +92,43 @@ def build_tokenizer():
     If mode=='train', it will save category2int.tsv, word2int.tsv to `src_dir`.
     Otherwise model==['valid', 'test'], don't build.
     """
-    return
     news = pd.read_csv(src_dir / 'news.tsv',
                        sep='\t',
                        names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
                        index_col='news_id')
+
+    # ! processing category
+    categories = pd.concat([news['category'], news['subcategory']]).unique()
+    category2int = {
+        "<pad>": 0
+    }
+    category2int.update({category: idx for idx, category in enumerate(categories, 1)})
+    # ! processing words
+    tokens = []
+    for text in pd.concat([news['title'], news['abstract']]):
+        tokens += tokenize(text) # list concat
+        # TODO [optimize]
+        # token = df[text_column].apply(tokenize)
+        # tokens = sum(token.tolist(), [])
+    tf = Counter(tokens).most_common() # term frequency
+    word2int = {
+        "<pad>": 0,
+        "<unk>": 1,
+    }
+    for idx, (key, count) in enumerate(tf, start=2):
+        if count < args.tf_threshold:
+            break
+        word2int[key] = idx
+
+    return
+
     # Handle missing values
     news['title_entities'] = news['title_entities'].fillna('[]')
     news['abstract_entities'] = news['abstract_entities'].fillna('[]')
     news['abstract'] = news['abstract'].fillna('')
     """ When use `tokenize` funciton...
     if mode == 'train': # Create category2int and word2int, then save.
-        # ! processing category
-        categories = pd.concat([news['category'], news['subcategory']]).unique()
-        category2int = {
-            "<pad>": 0
-        }
-        category2int.update({category: idx for idx, category in enumerate(categories, 1)})
-        # ! processing words
-        tokens = []
-        for text in pd.concat([news['title'], news['abstract']]):
-            tokens += tokenize(text) # list concat
-            # TODO [optimize]
-            # token = df[text_column].apply(tokenize)
-            # tokens = sum(token.tolist(), [])
-        tf = Counter(tokens).most_common() # term frequency
-        word2int = {
-            "<pad>": 0,
-            "<unk>": 1,
-        }
-        for idx, (key, count) in enumerate(tf, start=2):
-            if count < args.tf_threshold:
-                break
-            word2int[key] = idx
+
     elif mode in {'valid', 'test'}: # Load category2int and word2int from `train_dir`
         category2int_path = Path(args.train_dir) / 'category2int.tsv'
         word2int_path = Path(args.train_dir) / 'word2int.tsv'
@@ -238,6 +232,18 @@ def generate_word_embedding(config: Arguments):
         f'Embedding file has been successfully.'
     ))
 
+
+def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test']):
+    """Parse behaviors.tsv and news.tsv into behaviors_parsed.tsv and news_parsed.tsv""" # TODO
+    start = time.time()
+    src_dir = get_src_dir(args, mode)
+    # parse_behaviors(src_dir)
+    print(time_since(start))
+    tokenizer = CustomTokenizer(args) # TODO if using glove or nltk, must build tokenizer first.
+    parse_news(src_dir, tokenizer)
+    print(time_since(start))
+
 if __name__ == '__main__':
-    data_preprocessing(parse_args(), 'train')
+    args = parse_args()
+    data_preprocessing(args, 'train')
     # # TODO generate_word_embedding random

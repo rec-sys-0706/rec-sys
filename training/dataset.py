@@ -8,25 +8,12 @@ import torch
 from torch.utils.data import Dataset
 import pandas as pd
 from tqdm import tqdm
-from pydantic import BaseModel
 
 from parameters import Arguments
 from data_preprocessing import get_src_dir
-from utils import CustomTokenizer, list_to_dict, dict_to_tensors
+from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors
 
-class Encoding(BaseModel):
-    input_ids: list[int]
-    token_type_ids: list[int]
-    attention_mask: list[int]
 
-class GroupedNews(BaseModel):
-    title: list[Encoding]
-    abstract: list[Encoding]
-
-class Example(BaseModel):
-    clicked_news: GroupedNews
-    candidate_news: GroupedNews
-    clicked: list[int]
 
 class NewsDataset(Dataset):
     """Sample data form `behaviors.tsv` and create dataset based on `news.tsv`

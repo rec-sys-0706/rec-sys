@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import argparse
-from typing import Any
+from typing import Any, Literal
 
 import torch
 
@@ -26,6 +26,7 @@ class Arguments:
     embedding_dim: int
     num_heads: int
     dropout_rate: float
+    tokenizer_mode: Literal['bert', 'gpt-4o', 'vanilla']
 
     # Training Process
     epochs: int
@@ -67,6 +68,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--embedding-dim', type=int, default=768)
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
+    parser.add_argument('tokenizer-mode', type=str, default='vanilla')
     # Training Process
     parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--valid-interval', type=int, default=1000, help="The interval for validation checks between steps")

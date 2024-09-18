@@ -1,14 +1,29 @@
 import time
 import random
+from datetime import datetime
+from typing import Literal
+
 import numpy as np
 import torch
 import pandas as pd
-from datetime import datetime
-from typing import Literal
 import tiktoken
 from transformers import AutoTokenizer
 from parameters import Arguments
+from pydantic import BaseModel
 
+class Encoding(BaseModel):
+    input_ids: list[int]
+    token_type_ids: list[int]
+    attention_mask: list[int]
+
+class GroupedNews(BaseModel):
+    title: list[Encoding]
+    abstract: list[Encoding]
+
+class Example(BaseModel):
+    clicked_news: GroupedNews
+    candidate_news: GroupedNews
+    clicked: list[int]
 
 class EarlyStopping:
     """EarlyStopping references tensorflow.keras.callbacks.EarlyStopping."""
@@ -36,14 +51,12 @@ class CustomTokenizer:
     """This is deprecated, will be replaced by Huggingface.Tokenizer."""
     def __init__(self, args: Arguments):
         self.args = args
+        self.mode = args.tokenizer_mode
         self.ENC = tiktoken.get_encoding("o200k_base") # gpt-4o
         self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
         self.title_padding = self.tokenize_title('')
         self.abstract_padding = self.tokenize_abstract('')
-    def tokenize_title(self, text):
-        return self.tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_title)
-    def tokenize_abstract(self, text):
-        return self.tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_abstract)
+
     def __call__(self, text):
         pass
 
@@ -55,12 +68,18 @@ class CustomTokenizer:
         pass
         # For encoding: [int(word2int.get(token, 0)) for token in tokenize(text)]
 
-    def encode(self, text: str) -> list[int]:
+    def encode(self, text: str) -> Encoding:
         token_ids = self.ENC.encode(text)
         return token_ids
 
+    def encode_title(self, text) -> Encoding:
+        return self.tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_title)
+    def encode_abstract(self, text) -> Encoding:
+        return self.tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_abstract)
+
     def decode():
         pass
+    # TODO build tokenizer
 
 def time_since(base: float, format: None|Literal['seconds']=None):
     now = time.time()

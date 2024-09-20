@@ -23,7 +23,7 @@ def index():
         user_date = users_data.loc[users_data['account'] == username]
         password = request.form['password']
         password_date = users_data.loc[users_data['password'] == password]
-
+        
         if not (user_date.empty and password_date.empty):
             return render_template('./recommend/about.html')
         else:
@@ -53,10 +53,8 @@ def signup():
 
         if is_valid_email(email):
             status = 'True'
-            return render_template('./main/signup.html', status = status)
         else:
             status = 'False'
-            return render_template('./main/signup.html', status = status)
         
     return render_template('./main/signup.html', status = status)
 
@@ -88,7 +86,22 @@ def allnews():
 
 @main_bp.route('/profile')
 def profile():
-    return render_template('./recommend//profile.html', user_info = user_info)
+    return render_template('./recommend/profile.html', user_info = user_info)
+
+@main_bp.route('/revise', methods = ['GET','POST'])
+def revise():
+    status = 'T'
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        email = request.form['email']
+        phone = request.form['phone']
+        
+        if is_valid_email(email):
+            status = 'True'
+        else:
+            status = 'False'
+    return render_template('./recommend/revise.html', status = status)
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
 def news_article(db_name, news_id):

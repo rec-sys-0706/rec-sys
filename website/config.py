@@ -35,6 +35,26 @@ def format_date(date_str):
 response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
     
 test_news = pd.DataFrame(response.json())
+print(test_news)
 test_news['date'] = test_news['date'].apply(format_date)
 
 users_data = pd.read_csv('./website/admin/data/user_data.csv', index_col='uuid')
+
+
+# 測試
+responses = requests.get(f'{ROOT}:5000/api/reader_record/2', headers=headers)
+
+try:
+    data = responses.json()
+    
+    if isinstance(data, dict):  # Single user (a dictionary)
+        # Convert the single user data into a DataFrame
+        user = pd.DataFrame([data])  # Wrap the dictionary in a list
+        print(user)
+    elif isinstance(data, list):  # Multiple users (a list)
+        users = pd.DataFrame(data)
+        print(users)
+    else:
+        print("Unexpected data format:", data)
+except ValueError as e:
+    print("Error while parsing JSON:", e)

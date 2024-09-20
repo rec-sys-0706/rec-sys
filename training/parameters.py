@@ -6,10 +6,6 @@ import torch
 
 @dataclass
 class Arguments:
-    # System
-    seed: int
-    cpu: bool
-    device: Any
     # Directory
     train_dir: str
     val_dir: str
@@ -37,6 +33,10 @@ class Arguments:
     valid_batch_size: int
     drop_insufficient: bool
 
+    # System
+    seed: int
+    cpu: bool
+    device: Any = None
     def __post_init__(self):
         self.drop_insufficient=True
         if self.cpu:
@@ -68,7 +68,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--embedding-dim', type=int, default=768)
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
-    parser.add_argument('tokenizer-mode', type=str, default='vanilla')
+    parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
     # Training Process
     parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--valid-interval', type=int, default=1000, help="The interval for validation checks between steps")

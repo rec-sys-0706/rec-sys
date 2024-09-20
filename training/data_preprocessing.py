@@ -82,7 +82,7 @@ def parse_behaviors(src_dir: Path):
                      index=False,
                      columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
 
-def build_tokenizer(src_dir: Path, mode) -> CustomTokenizer:
+def build_tokenizer(args: Arguments) -> CustomTokenizer:
     """
     Args:
         src_dir (Path)
@@ -92,33 +92,33 @@ def build_tokenizer(src_dir: Path, mode) -> CustomTokenizer:
     If mode=='train', it will save category2int.tsv, word2int.tsv to `src_dir`.
     Otherwise model==['valid', 'test'], don't build.
     """
-    news = pd.read_csv(src_dir / 'news.tsv',
+    news = pd.read_csv(Path(args.train_dir) / 'news.tsv',
                        sep='\t',
                        names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
                        index_col='news_id')
-
-    # ! processing category
-    categories = pd.concat([news['category'], news['subcategory']]).unique()
-    category2int = {
-        "<pad>": 0
-    }
-    category2int.update({category: idx for idx, category in enumerate(categories, 1)})
-    # ! processing words
-    tokens = []
-    for text in pd.concat([news['title'], news['abstract']]):
-        tokens += tokenize(text) # list concat
-        # TODO [optimize]
-        # token = df[text_column].apply(tokenize)
-        # tokens = sum(token.tolist(), [])
-    tf = Counter(tokens).most_common() # term frequency
-    word2int = {
-        "<pad>": 0,
-        "<unk>": 1,
-    }
-    for idx, (key, count) in enumerate(tf, start=2):
-        if count < args.tf_threshold:
-            break
-        word2int[key] = idx
+    print(pd.concat((news['title'], news['abstract'])).iloc[0]) # TODO
+    # # ! processing category
+    # categories = pd.concat([news['category'], news['subcategory']]).unique()
+    # category2int = {
+    #     "<pad>": 0
+    # }
+    # category2int.update({category: idx for idx, category in enumerate(categories, 1)})
+    # # ! processing words
+    # tokens = []
+    # for text in pd.concat([news['title'], news['abstract']]):
+    #     tokens += tokenize(text) # list concat
+    #     # TODO [optimize]
+    #     # token = df[text_column].apply(tokenize)
+    #     # tokens = sum(token.tolist(), [])
+    # tf = Counter(tokens).most_common() # term frequency
+    # word2int = {
+    #     "<pad>": 0,
+    #     "<unk>": 1,
+    # }
+    # for idx, (key, count) in enumerate(tf, start=2):
+    #     if count < args.tf_threshold:
+    #         break
+    #     word2int[key] = idx
 
     return
 
@@ -245,5 +245,6 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
 
 if __name__ == '__main__':
     args = parse_args()
-    data_preprocessing(args, 'train')
+    build_tokenizer(args)
+    # data_preprocessing(args, 'train')
     # # TODO generate_word_embedding random

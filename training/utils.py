@@ -1,3 +1,4 @@
+import string
 import time
 import random
 from datetime import datetime
@@ -8,6 +9,10 @@ import torch
 import pandas as pd
 import tiktoken
 from transformers import AutoTokenizer
+from tokenizers import Tokenizer
+from tokenizers.models import WordLevel
+from tokenizers.pre_tokenizers import Whitespace
+from tokenizers.trainers import WordLevelTrainer
 from parameters import Arguments
 from pydantic import BaseModel
 
@@ -79,6 +84,13 @@ class CustomTokenizer:
 
     def decode():
         pass
+
+    def __build_tokenizer():
+        tokenizer = Tokenizer(WordLevel())
+        tokenizer.pre_tokenizer = Whitespace()
+        trainer = WordLevelTrainer()
+        data = [""]
+        pass
     # TODO build tokenizer
 
 def time_since(base: float, format: None|Literal['seconds']=None):
@@ -106,7 +118,7 @@ def get_datetime_now():
 
 def format_duration(sec):
     return time.strftime("%H:%M:%S", time.gmtime(sec))
-    
+
 def fix_all_seeds(seed):
     """Fixes RNG seeds for reproducibility"""
     random.seed(seed)
@@ -129,6 +141,21 @@ def tru_pad(tokens: list[str], max_length: int):
     # ! truncation and padding
     # news[['title', 'title_attention_mask']] = news['title'].apply(lambda t: pd.Series(tru_pad(t, args.num_tokens_title)))
     # news[['abstract', 'abstract_attention_mask']] = news['abstract'].apply(lambda t: pd.Series(tru_pad(t, args.num_tokens_abstract)))
+
+def test_string() -> str:
+    mixed_case = "No"
+    accents = "HÉLLOcafé"
+    unicode = "你好こんにちは😊"
+    control = r"\x00\x07"
+    currency = "$100 €50 ₹200"
+    full_width = "Ｈｅｌｌｏ"
+    url = "http://example.com"
+    file_path = "C:\\Users\\Name"
+    text = (f'   {mixed_case}, {accents}, {unicode}, {string.punctuation}, {control}, {currency}, {full_width}, مرحبا بالعالم , 𝒜𝓁𝓅𝒽𝒶, {url}'
+            f', {file_path},½ ⅓ H₂O x² ∑ √ œuvre'
+            f'<body></body>   ')
+    return text
+
 
 def list_to_dict(objs: list[dict]):
     """Convert list[dict] to dict[list]"""
@@ -162,4 +189,4 @@ def flatten_dict(d, parent_key='', sep='_'):
     return dict(items) # TODO
 
 if __name__ == '__main__':
-    print(get_now())
+    pass

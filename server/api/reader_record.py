@@ -52,9 +52,12 @@ def get_reader_record_by_id(record_id):
     finally:
         conn.close()
 
+# OK
 @reader_record_blueprint.route('/', methods=['POST'])
 def create_reader_record():
     check_api_key(request)
+    conn = get_db_connection()
+    cursor = conn.cursor()
     try:
         new_record = request.json
         # Validate required fields
@@ -67,8 +70,6 @@ def create_reader_record():
         except ValueError:
             return jsonify({'error': 'ReadDate format must be YYYY-MM-DD HH:MM:SS'}), 400
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO dbo.ReaderRecord (UserUUID, NewsID, ReadDate)
             VALUES (?, ?, ?)
@@ -80,9 +81,12 @@ def create_reader_record():
     finally:
         conn.close()
 
+# OK
 @reader_record_blueprint.route('/<int:record_id>', methods=['PUT'])
 def update_reader_record(record_id):
     check_api_key(request)
+    conn = get_db_connection()
+    cursor = conn.cursor()
     try:
         updated_record = request.json
         # Validate required fields
@@ -94,9 +98,7 @@ def update_reader_record(record_id):
             updated_record['read_date'] = datetime.datetime.strptime(updated_record['read_date'], '%Y-%m-%d %H:%M:%S')
         except ValueError:
             return jsonify({'error': 'ReadDate format must be YYYY-MM-DD HH:MM:SS'}), 400
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        
         cursor.execute('''
             UPDATE dbo.ReaderRecord
             SET UserUUID = ?, NewsID = ?, ReadDate = ?
@@ -109,15 +111,16 @@ def update_reader_record(record_id):
     finally:
         conn.close()
 
+# OK
 @reader_record_blueprint.route('/<int:record_id>', methods=['DELETE'])
 def delete_reader_record(record_id):
     check_api_key(request)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('DELETE FROM dbo.ReaderRecord WHERE RecordID = ?', record_id)
+        cursor.execute('DELETE FROM dbo.ReaderRecord WHERE RecordID = ?', (record_id,))
         conn.commit()
-        return jsonify({'message': 'Reader record deleted successfully'}), 204
+        return jsonify({'message': 'Reader record deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

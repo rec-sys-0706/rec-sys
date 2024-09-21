@@ -58,6 +58,7 @@ def get_user(uuid):
     finally:
         conn.close()
 
+# OK
 # Create a new user
 @user_blueprint.route('/', methods=['POST'])
 def create_user():
@@ -75,9 +76,10 @@ def create_user():
     cursor = conn.cursor()
     try:
         cursor.execute('''
-            INSERT INTO dbo.User (UUID, Account, Password, Email, Phone, LineID)
-            VALUES (NEWID(), @account, @password, @email, @phone, @line_id)
-        ''', {'account': new_user['account'], 'password': new_user['password'], 'email': new_user['email'], 'phone': new_user.get('phone'), 'line_id': new_user.get('line_id')})
+            INSERT INTO dbo.[User] (UUID, Account, Password, Email, Phone, LineID)
+            VALUES (NEWID(), ?, ?, ?, ?, ?)
+        ''', (new_user['account'], new_user['password'], new_user['email'], new_user.get('phone'), new_user.get('lineid')))  # 用元組替代字典
+        
         conn.commit()
         return jsonify({'message': 'User created successfully'}), 201
     except Exception as e:
@@ -85,6 +87,7 @@ def create_user():
     finally:
         conn.close()
 
+# OK
 # Update a user by UUID
 @user_blueprint.route('/<uuid>', methods=['PUT'])
 def update_user(uuid):
@@ -102,10 +105,11 @@ def update_user(uuid):
     cursor = conn.cursor()
     try:
         cursor.execute('''
-            UPDATE dbo.User
-            SET Account = @account, Password = @password, Email = @email, Phone = @phone, LineID = @line_id
-            WHERE UUID = @uuid
-        ''', {'account': updated_user['account'], 'password': updated_user['password'], 'email': updated_user['email'], 'phone': updated_user.get('phone'), 'line_id': updated_user.get('line_id'), 'uuid': uuid})
+            UPDATE dbo.[User]
+            SET Account = ?, Password = ?, Email = ?, Phone = ?, LineID = ?
+            WHERE UUID = ?
+        ''', (updated_user['account'], updated_user['password'], updated_user['email'], updated_user.get('phone'), updated_user.get('line_id'), uuid))
+        
         conn.commit()
         return jsonify({'message': 'User updated successfully'})
     except Exception as e:
@@ -113,6 +117,7 @@ def update_user(uuid):
     finally:
         conn.close()
 
+# OK
 # Delete a user by UUID
 @user_blueprint.route('/<uuid>', methods=['DELETE'])
 def delete_user(uuid):
@@ -120,9 +125,9 @@ def delete_user(uuid):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('DELETE FROM dbo.User WHERE UUID = @uuid', {'uuid': uuid})
+        cursor.execute('DELETE FROM dbo.[User] WHERE UUID = ?', (uuid,))
         conn.commit()
-        return jsonify({'message': 'User deleted successfully'}), 204
+        return jsonify({'message': 'User deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

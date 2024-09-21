@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, send_file, request
-from config import test_news, users_data
+from config import test_news
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -20,14 +20,8 @@ def index():
     status = 'T'
     if request.method == 'POST':
         username = request.form['username']
-        user_date = users_data.loc[users_data['account'] == username]
         password = request.form['password']
-        password_date = users_data.loc[users_data['password'] == password]
         
-        if not (user_date.empty and password_date.empty):
-            return render_template('./recommend/about.html')
-        else:
-            status = 'F'
     return render_template('./main/login.html', status = status)
 
 @main_bp.route('/about')

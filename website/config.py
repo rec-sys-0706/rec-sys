@@ -22,13 +22,6 @@ headers = {
     'x-fju-signature-256': f'sha256={get_signature()}'
 }
 
-news = pd.read_csv('./website/admin/data/news.tsv',
-                    sep='\t',
-                    names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
-                    index_col='news_id')
-
-result = pd.read_csv('./website/admin/data/result.csv', index_col='user_id')
-
 def format_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
 
@@ -37,9 +30,6 @@ response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
 test_news = pd.DataFrame(response.json())
 print(test_news)
 test_news['date'] = test_news['date'].apply(format_date)
-
-users_data = pd.read_csv('./website/admin/data/user_data.csv', index_col='uuid')
-
 
 # 測試
 responses = requests.get(f'{ROOT}:5000/api/reader_record/2', headers=headers)

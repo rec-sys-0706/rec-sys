@@ -26,6 +26,7 @@ class Arguments:
 
     # Training Process
     epochs: int
+    valid_timing: Literal['interval', 'end']
     valid_interval: int
     patience: int
     learning_rate: float
@@ -59,21 +60,22 @@ def parse_args() -> Arguments:
     parser.add_argument('--ckpt-dir', type=str, default='data/checkpoint')
         # glove_embedding_path = './data/glove.840B.300d/glove.840B.300d.txt'
     # Model
-    parser.add_argument('--max-vocab-size', type=int, default=60000, help="The maximum number of unique tokens")
-    parser.add_argument('--min-frequency', type=int, default=1, help="Term frequency threshold")
+    parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")
+    parser.add_argument('--min-frequency', type=int, default=2, help="Term frequency threshold")
     parser.add_argument('--negative-sampling-ratio', type=int, default=1)
     parser.add_argument('--num-tokens-title', type=int, default=24, help="The number of tokens in title (aka. context_length)")
     parser.add_argument('--num-tokens-abstract', type=int, default=50, help="The number of tokens in abstract")
     parser.add_argument('--num-clicked-news', type=int, default=64, help="The number of clicked news sampled for each user")
-    parser.add_argument('--embedding-dim', type=int, default=768)
+    parser.add_argument('--embedding-dim', type=int, default=300) # 768
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
     # Training Process
-    parser.add_argument('--epochs', type=int, default=1)
-    parser.add_argument('--valid-interval', type=int, default=100, help="The interval for validation checks between steps")
+    parser.add_argument('--epochs', type=int, default=3)
+    parser.add_argument('--valid-timing', type=str, default='interval', help="The timing to validate model, it could be either `invertal` or `end`")
+    parser.add_argument('--valid-interval', type=int, default=800, help="The interval for validation checks between steps")
     parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
-    parser.add_argument('--learning-rate', type=float, default=0.001)
+    parser.add_argument('--learning-rate', type=float, default=0.0005)
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--valid-batch-size', type=int, default=512)
     parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate.")

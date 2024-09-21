@@ -57,7 +57,7 @@ class NewsDataset(Dataset):
                     title, abstract = get_news(news_id)
                     title_list.append(title)
                     abstract_list.append(abstract)
-                return list_to_dict(title_list), list_to_dict(abstract_list)
+                return dict_to_tensors(list_to_dict(title_list)), dict_to_tensors(list_to_dict(abstract_list))
 
             result = []
             for _, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
@@ -102,46 +102,46 @@ class NewsDataset(Dataset):
     def __getitem__(self, index):
         return self.result[index]
 
-@dataclass
-class CustomDataCollator:
-    def __call__(self, features: list[Example]) -> dict[str, Any]:
-        """
-        DataLoader will shuffle and sample features(batch), and input `features` into DataCollator,
-        DataCollator is just a callable function, given a batch, return a processed batch.
+# @dataclass
+# class CustomDataCollator:
+#     def __call__(self, features: list[Example]) -> dict[str, Any]:
+#         """
+#         DataLoader will shuffle and sample features(batch), and input `features` into DataCollator,
+#         DataCollator is just a callable function, given a batch, return a processed batch.
 
-        batch: {
-            clicked_news: list[GroupedNews]
-            candidate_news: list[GroupedNews]
-            clicked: list[list[int]]
-        }
+#         batch: {
+#             clicked_news: list[GroupedNews]
+#             candidate_news: list[GroupedNews]
+#             clicked: list[list[int]]
+#         }
 
-        output: {
-            clicked_news: {
-                title   : Encoding with (batch_size, num_clicked_news, num_title_tokens)
-                abstract: Encoding with (batch_size, num_clicked_news, num_abstract_tokens)
-            }
-            candidate_news: {
-                title   : Encoding with (batch_size, k+1, num_title_tokens)
-                abstract: Encoding with (batch_size, k+1, num_abstract_tokens)
-            }
-            clicked     : (batch_size, k+1)
-        }
-        """ # TODO
-        batch = list_to_dict(features)
+#         output: {
+#             clicked_news: {
+#                 title   : Encoding with (batch_size, num_clicked_news, num_title_tokens)
+#                 abstract: Encoding with (batch_size, num_clicked_news, num_abstract_tokens)
+#             }
+#             candidate_news: {
+#                 title   : Encoding with (batch_size, k+1, num_title_tokens)
+#                 abstract: Encoding with (batch_size, k+1, num_abstract_tokens)
+#             }
+#             clicked     : (batch_size, k+1)
+#         }
+#         """ # TODO
+#         batch = list_to_dict(features)
 
-        def convert(d: dict):
-            d = list_to_dict(d)
-            d['title'] = list_to_dict(d['title'])
-            d['abstract'] = list_to_dict(d['abstract'])
-            return d
+#         def convert(d: dict):
+#             d = list_to_dict(d)
+#             d['title'] = list_to_dict(d['title'])
+#             d['abstract'] = list_to_dict(d['abstract'])
+#             return d
         
-        batch['clicked_news'] = convert(batch['clicked_news'])
-        batch['candidate_news'] = convert(batch['candidate_news'])
-        return {
-            'clicked_news': dict_to_tensors(batch['clicked_news']),
-            'candidate_news': dict_to_tensors(batch['candidate_news']),
-            'clicked': torch.stack(batch['clicked'])
-        }
+#         batch['clicked_news'] = convert(batch['clicked_news'])
+#         batch['candidate_news'] = convert(batch['candidate_news'])
+#         return {
+#             'clicked_news': dict_to_tensors(batch['clicked_news']),
+#             'candidate_news': dict_to_tensors(batch['candidate_news']),
+#             'clicked': torch.stack(batch['clicked'])
+#         }
 
 if __name__ == '__main__':
     from parameters import parse_args
@@ -150,8 +150,9 @@ if __name__ == '__main__':
     args = parse_args()
     tokenizer = CustomTokenizer(args)
     train_dataset = NewsDataset(args, tokenizer, mode='train')
-    train_loader = DataLoader(train_dataset, collate_fn=CustomDataCollator(), batch_size=4)
+    train_loader = DataLoader(train_dataset, batch_size=4)
 
     for i in train_loader:
         print(i)
+        pdb.set_trace()
         pass

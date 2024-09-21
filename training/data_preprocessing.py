@@ -147,7 +147,6 @@ def generate_word_embedding(config: Arguments):
         f'Embedding file has been successfully.'
     ))
 
-
 def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test']):
     """Parse behaviors.tsv and news.tsv into behaviors_parsed.tsv and news_parsed.tsv""" # TODO
     start = time.time()

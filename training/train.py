@@ -11,7 +11,7 @@ from tqdm import tqdm
 from model.NRMS import NRMS
 from parameters import Arguments, parse_args
 from utils import CustomTokenizer, EarlyStopping, time_since, get_datetime_now, fix_all_seeds
-from dataset import NewsDataset, CustomDataCollator
+from dataset import NewsDataset
 from evaluate import nDCG, ROC_AUC, recall, accuracy
 
 
@@ -20,6 +20,7 @@ evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nD
 
 def train(args: Arguments):
     """Trainer"""
+    fix_all_seeds(args.seed)
     writer = SummaryWriter(
         log_dir=f"./runs/{get_datetime_now()}"
     )
@@ -33,7 +34,6 @@ def train(args: Arguments):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    data_collator = CustomDataCollator()
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -42,14 +42,12 @@ def train(args: Arguments):
                               batch_size=args.train_batch_size,
                               shuffle=True,
                               drop_last=True,
-                              pin_memory=True,
-                              collate_fn=data_collator)
+                              pin_memory=True)
 
     valid_dataset = NewsDataset(args, tokenizer, mode='valid')
     valid_loader = DataLoader(valid_dataset,
                               batch_size=args.valid_batch_size,
-                              pin_memory=True,
-                              collate_fn=data_collator)
+                              pin_memory=True)
     logging.info(f'Datasets loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
 
     # Training Loop
@@ -74,7 +72,8 @@ def train(args: Arguments):
 
 
             step += 1
-            if step % args.valid_interval == 0:
+            writer.add_scalar('Train/Loss', loss.item(), step)
+            if args.valid_timing == 'interval' and step % args.valid_interval == 0:
                 tqdm.write(f'Starting validation process in step {step:5}.')
                 model.eval()
                 y_preds = []
@@ -114,6 +113,9 @@ def train(args: Arguments):
                                 'optimizer_state_dict': optimizer.state_dict(),
                                 'epoch': epoch},  ckpt_now_dir / f'ckpt-{step}.pth')
                     tqdm.write('Model performance improved, model is saved.')
+        
+        
+        
         if early_stopping.stop_training:
             break
         train_loss /= len(train_loader)

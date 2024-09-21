@@ -4,9 +4,7 @@ app = Flask(__name__)
 app.secret_key = 'wqF1rXGsOgY8NyKslxTZXE8YFqnbv0FG'
 
 # Register Blueprints
-from admin.routes import admin_bp
 from main.routes import main_bp
-app.register_blueprint(admin_bp)
 app.register_blueprint(main_bp)
 
 if __name__ == '__main__':

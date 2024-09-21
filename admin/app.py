@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, send_file, request, session
+from flask import render_template, send_file, request, session, Flask
 from wordcloud import WordCloud
 import numpy as np
 from PIL import Image
@@ -7,11 +7,9 @@ import pandas as pd
 import ast
 from config import news, result
 
-admin_bp = Blueprint('admin', 
-                    __name__, 
-                    template_folder='templates',
-                    static_folder='static', 
-                    url_prefix='/admin')
+admin_bp = Flask(__name__)
+
+admin_bp.secret_key = 'wqF1rXGsOgY8NyKslxTZXE8YFqnbv0FG'
 
 @admin_bp.route('/')
 def index():
@@ -55,10 +53,8 @@ def user():
 def wordcloud_image():
     img = io.BytesIO()
 
-    # 從session中獲取點擊ID
-    #user_id =  session.get('username', None)
+    user_id =  session.get('username', None)
 
-    user_id = "U10"
     clicked_news_id = ast.literal_eval(result.loc[user_id]['clicked_news'])
     
     clicked_news = news.loc[clicked_news_id]
@@ -67,9 +63,13 @@ def wordcloud_image():
 
     # 將所有title合併成一個字串
     wordcloud_text = ' '.join(clicked_news_titles)
-    mask = np.array(Image.open("./website/admin/static/mask.png"))
+    mask = np.array(Image.open("./admin/static/mask.png"))
     wordcloud = WordCloud(width=800, height=250, background_color='white', mask=mask, contour_color='white', contour_width=1).generate(wordcloud_text)
     wordcloud.to_image().save(img, format='PNG')
     img.seek(0)
     return send_file(img, mimetype='image/png')
+
+
+if __name__ == '__main__':
+    admin_bp.run(host='0.0.0.0', port='3000')
     

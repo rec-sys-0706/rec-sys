@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from model import NRMS
+from model.NRMS import NRMS
 from parameters import Arguments, parse_args
 from utils import CustomTokenizer, EarlyStopping, time_since, get_datetime_now, fix_all_seeds
 from dataset import NewsDataset, CustomDataCollator
@@ -28,12 +28,12 @@ def train(args: Arguments):
     ckpt_now_dir = Path(args.ckpt_dir) / get_datetime_now() 
     ckpt_now_dir.mkdir()
 
-    model: nn.Module = NRMS(args)
+    tokenizer = CustomTokenizer(args)
+    model = NRMS(args=args, vocab_size=tokenizer.vocab_size)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    tokenizer = CustomTokenizer(args)
-    data_collator = CustomDataCollator(tokenizer)
+    data_collator = CustomDataCollator()
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -132,6 +132,7 @@ def train(args: Arguments):
     ))
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     start = time.time()
     args = parse_args()
     train(args)

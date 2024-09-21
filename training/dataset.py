@@ -3,6 +3,7 @@ import logging
 import random
 from typing import Any
 from dataclasses import dataclass
+import pdb
 
 import torch
 from torch.utils.data import Dataset
@@ -10,8 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from parameters import Arguments
-from data_preprocessing import get_src_dir
-from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors
+from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors, get_src_dir
 
 
 
@@ -30,20 +30,22 @@ class NewsDataset(Dataset):
     def __init__(self, args: Arguments, tokenizer: CustomTokenizer, mode) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
-        __news = pd.read_csv(src_dir / 'news_parsed.csv', index_col='news_id')
-        __news['title'] = __news['title'].apply(literal_eval)
-        __news['abstract'] = __news['abstract'].apply(literal_eval) # literal_eval first, this is an improvement from 05:00 to 00:15
-        __news = __news.to_dict(orient='index')
-        __behaviors = pd.read_csv(src_dir / 'behaviors_parsed.csv')
-
-        if args.drop_insufficient:
-            __behaviors = __behaviors.dropna(subset=['clicked_news'])
-
         result_path = src_dir / f'{mode}.pt'
         if result_path.exists():
             data = torch.load(result_path)
             self.result = data['result']
         else:
+            logging.info(f"Cannot locate file {mode}.pt in '{src_dir}'.")
+            logging.info(f"Starting data processing.")
+            __news = pd.read_csv(src_dir / 'news_parsed.csv', index_col='news_id')
+            __news['title'] = __news['title'].apply(literal_eval)
+            __news['abstract'] = __news['abstract'].apply(literal_eval) # literal_eval first, this is an improvement from 05:00 to 00:15
+            __news = __news.to_dict(orient='index')
+            __behaviors = pd.read_csv(src_dir / 'behaviors_parsed.csv')
+
+            if args.drop_insufficient:
+                __behaviors = __behaviors.dropna(subset=['clicked_news'])
+
             def get_news(news_id):
                 title = tokenizer.title_padding if news_id is None else __news[news_id]['title']
                 abstract = tokenizer.abstract_padding if news_id is None else __news[news_id]['abstract']
@@ -56,8 +58,7 @@ class NewsDataset(Dataset):
                     title_list.append(title)
                     abstract_list.append(abstract)
                 return list_to_dict(title_list), list_to_dict(abstract_list)
-            logging.info(f"Cannot locate file {mode}.pt in '{src_dir}'.")
-            logging.info(f"Starting data processing.")
+
             result = []
             for _, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
                 clicked_news_ids = literal_eval(row['clicked_news'])
@@ -87,7 +88,8 @@ class NewsDataset(Dataset):
                 result.append({
                     'clicked_news': clicked_news,
                     'candidate_news': candidate_news,
-                    'clicked': [1] + [0] * args.negative_sampling_ratio # TODO if mode == test
+                    'clicked': torch.tensor([1] + [0] * args.negative_sampling_ratio, dtype=torch.float32) # TODO if mode == test
+                    # ! important for [RuntimeError: Expected floating point type for target with class probabilities, got Long]
                 })
             # Save
             torch.save({
@@ -135,5 +137,21 @@ class CustomDataCollator:
         
         batch['clicked_news'] = convert(batch['clicked_news'])
         batch['candidate_news'] = convert(batch['candidate_news'])
+        return {
+            'clicked_news': dict_to_tensors(batch['clicked_news']),
+            'candidate_news': dict_to_tensors(batch['candidate_news']),
+            'clicked': torch.stack(batch['clicked'])
+        }
 
-        return dict_to_tensors(batch)
+if __name__ == '__main__':
+    from parameters import parse_args
+    from torch.utils.data import Dataset, DataLoader
+
+    args = parse_args()
+    tokenizer = CustomTokenizer(args)
+    train_dataset = NewsDataset(args, tokenizer, mode='train')
+    train_loader = DataLoader(train_dataset, collate_fn=CustomDataCollator(), batch_size=4)
+
+    for i in train_loader:
+        print(i)
+        pass

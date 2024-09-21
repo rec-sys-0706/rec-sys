@@ -6,31 +6,18 @@ Returns:
     3. word2int.tsv
     4. category2int.tsv
 """
-import pandas as pd
-import re
-from collections import Counter
-from parameters import parse_args, Arguments
-import random
-from tqdm import tqdm
+import time
 from pathlib import Path
+import logging
+
 import numpy as np
-import time
+import pandas as pd
+from tqdm import tqdm
 import torch
-import time
-from utils import time_since, CustomTokenizer
 from typing import Literal
 
-
-def get_src_dir(args: Arguments, mode) -> Path:
-    if mode == 'train':
-        src_dir = Path(args.train_dir)
-    elif mode == 'valid':
-        src_dir = Path(args.val_dir)
-    elif mode == 'test':
-        src_dir = Path(args.test_dir)
-    else:
-        raise ValueError(f"[ERROR] Expected `mode` be str['train'|'valid'|'test'] but got `{mode}` instead.")
-    return src_dir
+from parameters import Arguments, parse_args
+from utils import CustomTokenizer, time_since, get_src_dir
 
 def parse_behaviors(src_dir: Path):
     """Parses behaviors.tsv file
@@ -82,79 +69,6 @@ def parse_behaviors(src_dir: Path):
                      index=False,
                      columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
 
-def build_tokenizer(args: Arguments) -> CustomTokenizer:
-    """
-    Args:
-        src_dir (Path)
-        config  (BaseConfig)    : for `tf_threshold`, `num_tokens_title`, and `num_tokens_abstract`
-        mode    (Literal['train', 'valid', 'test'])         
-
-    If mode=='train', it will save category2int.tsv, word2int.tsv to `src_dir`.
-    Otherwise model==['valid', 'test'], don't build.
-    """
-    news = pd.read_csv(Path(args.train_dir) / 'news.tsv',
-                       sep='\t',
-                       names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
-                       index_col='news_id')
-    tokens = []
-    print(pd.concat((news['title'], news['abstract'])).iloc[0].__str__()) # TODO
-    # # ! processing category
-    # categories = pd.concat([news['category'], news['subcategory']]).unique()
-    # category2int = {
-    #     "<pad>": 0
-    # }
-    # category2int.update({category: idx for idx, category in enumerate(categories, 1)})
-    # # ! processing words
-    # tokens = []
-    # for text in pd.concat([news['title'], news['abstract']]):
-    #     tokens += tokenize(text) # list concat
-    #     # TODO [optimize]
-    #     # token = df[text_column].apply(tokenize)
-    #     # tokens = sum(token.tolist(), [])
-    # tf = Counter(tokens).most_common() # term frequency
-    # word2int = {
-    #     "<pad>": 0,
-    #     "<unk>": 1,
-    # }
-    # for idx, (key, count) in enumerate(tf, start=2):
-    #     if count < args.tf_threshold:
-    #         break
-    #     word2int[key] = idx
-
-    return
-
-    # Handle missing values
-    news['title_entities'] = news['title_entities'].fillna('[]')
-    news['abstract_entities'] = news['abstract_entities'].fillna('[]')
-    news['abstract'] = news['abstract'].fillna('')
-    """ When use `tokenize` funciton...
-    if mode == 'train': # Create category2int and word2int, then save.
-
-    elif mode in {'valid', 'test'}: # Load category2int and word2int from `train_dir`
-        category2int_path = Path(args.train_dir) / 'category2int.tsv'
-        word2int_path = Path(args.train_dir) / 'word2int.tsv'
-        if not category2int_path.exists():
-            raise FileNotFoundError(f"File '{category2int_path}' does not exist.")
-        elif not word2int_path.exists():
-            raise FileNotFoundError(f"File '{word2int_path}' does not exist.")
-        category2int = dict(pd.read_csv(category2int_path,
-                                        sep='\t',
-                                        index_col=False).values)
-        word2int = dict(pd.read_csv(word2int_path,
-                                    sep='\t',
-                                    index_col=False,
-                                    na_filter=False).values)
-    """
-    # if mode == 'train':
-    #     (pd.DataFrame(category2int.items(), columns=['category', 'int'])
-    #      .to_csv(src_dir / 'category2int.tsv',
-    #              sep='\t',
-    #              index=False))
-    #     (pd.DataFrame(word2int.items(), columns=['word', 'int'])
-    #      .to_csv(src_dir / 'word2int.tsv',
-    #              sep='\t',
-    #              index=False))
-
 # TODO use entity?
 def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
     """Parse news.tsv to tokenized text.
@@ -174,10 +88,10 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
     # ! processing news
     news = news.drop(columns=['subcategory', 'url', 'title_entities', 'abstract_entities'])
     news = news.sort_index()
-    # news['category'] = news['category'].apply(lambda c: category2int.get(c, 0)) # TODO category2int in tokenizer.
-    # news['subcategory'] = news['subcategory'].apply(lambda c: category2int.get(c, 0))
-    news['title'] = news['title'].apply(lambda text: tokenizer.tokenize_title(text))
-    news['abstract'] = news['abstract'].apply(lambda text: tokenizer.tokenize_abstract(text)) # TODO Don't need to tokenize here.
+    news['category'] = news['category'].apply(lambda c: tokenizer.encode_category(c))
+    # news['subcategory'] = news['subcategory'].apply(lambda c: category2int.get(c, 0)) # TODO category2int in tokenizer.
+    news['title'] = news['title'].apply(lambda text: tokenizer.encode_title(text))
+    news['abstract'] = news['abstract'].apply(lambda text: tokenizer.encode_abstract(text)) # TODO Don't need to tokenize here.
     news.to_csv(src_dir / 'news_parsed.csv')
 
 def generate_word_embedding(config: Arguments):
@@ -238,14 +152,17 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     """Parse behaviors.tsv and news.tsv into behaviors_parsed.tsv and news_parsed.tsv""" # TODO
     start = time.time()
     src_dir = get_src_dir(args, mode)
-    # parse_behaviors(src_dir)
-    print(time_since(start))
+    parse_behaviors(src_dir)
+    logging.info(f"[{mode}] Parsing `behaviors.tsv` completed at {time_since(start, 'seconds'):.2f} seconds")
+
+    start = time.time()
     tokenizer = CustomTokenizer(args) # TODO if using glove or nltk, must build tokenizer first.
     parse_news(src_dir, tokenizer)
-    print(time_since(start))
+    logging.info(f"[{mode}] Parsing `news.tsv` completed at {time_since(start, 'seconds'):.2f} seconds")
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    build_tokenizer(args)
-    # data_preprocessing(args, 'train')
+    data_preprocessing(args, 'train')
+    data_preprocessing(args, 'valid')
     # # TODO generate_word_embedding random

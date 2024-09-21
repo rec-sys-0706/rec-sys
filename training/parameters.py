@@ -13,12 +13,12 @@ class Arguments:
     ckpt_dir: str
         # glove_embedding_path: str
     # Model
-    tf_threshold: int
+    max_vocab_size: int
+    min_frequency: int
     negative_sampling_ratio: int
     num_tokens_title: int
     num_tokens_abstract: int
     num_clicked_news: int
-        # vocab_size: int
     embedding_dim: int
     num_heads: int
     dropout_rate: float
@@ -59,21 +59,21 @@ def parse_args() -> Arguments:
     parser.add_argument('--ckpt-dir', type=str, default='data/checkpoint')
         # glove_embedding_path = './data/glove.840B.300d/glove.840B.300d.txt'
     # Model
-    parser.add_argument('--tf-threshold', type=int, default=1, help="Term frequencies threshold")
+    parser.add_argument('--max-vocab-size', type=int, default=60000, help="The maximum number of unique tokens")
+    parser.add_argument('--min-frequency', type=int, default=1, help="Term frequency threshold")
     parser.add_argument('--negative-sampling-ratio', type=int, default=1)
     parser.add_argument('--num-tokens-title', type=int, default=24, help="The number of tokens in title (aka. context_length)")
     parser.add_argument('--num-tokens-abstract', type=int, default=50, help="The number of tokens in abstract")
     parser.add_argument('--num-clicked-news', type=int, default=64, help="The number of clicked news sampled for each user")
-    # vocab_size = 68878 + 1
     parser.add_argument('--embedding-dim', type=int, default=768)
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
     # Training Process
     parser.add_argument('--epochs', type=int, default=1)
-    parser.add_argument('--valid-interval', type=int, default=1000, help="The interval for validation checks between steps")
+    parser.add_argument('--valid-interval', type=int, default=100, help="The interval for validation checks between steps")
     parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
-    parser.add_argument('--learning-rate', type=float, default=0.0005)
+    parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--valid-batch-size', type=int, default=512)
     parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate.")

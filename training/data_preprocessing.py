@@ -96,7 +96,8 @@ def build_tokenizer(args: Arguments) -> CustomTokenizer:
                        sep='\t',
                        names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
                        index_col='news_id')
-    print(pd.concat((news['title'], news['abstract'])).iloc[0]) # TODO
+    tokens = []
+    print(pd.concat((news['title'], news['abstract'])).iloc[0].__str__()) # TODO
     # # ! processing category
     # categories = pd.concat([news['category'], news['subcategory']]).unique()
     # category2int = {

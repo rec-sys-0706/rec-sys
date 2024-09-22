@@ -26,12 +26,12 @@ class Arguments:
 
     # Training Process
     epochs: int
-    valid_timing: Literal['interval', 'end']
-    valid_interval: int
+    eval_strategy: Literal['steps', 'epoch']
+    eval_steps: int
     patience: int
     learning_rate: float
     train_batch_size: int
-    valid_batch_size: int
+    eval_batch_size: int
     drop_insufficient: bool
 
     # System
@@ -72,12 +72,12 @@ def parse_args() -> Arguments:
     parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
     # Training Process
     parser.add_argument('--epochs', type=int, default=3)
-    parser.add_argument('--valid-timing', type=str, default='end', help="The timing to validate model, it could be either `invertal` or `end`")
-    parser.add_argument('--valid-interval', type=int, default=800, help="The interval for validation checks between steps")
+    parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")
+    parser.add_argument('--eval-steps', type=int, default=1000, help="The interval for evaluation between steps")
     parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
-    parser.add_argument('--learning-rate', type=float, default=0.0005)
+    parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--train-batch-size', type=int, default=64)
-    parser.add_argument('--valid-batch-size', type=int, default=512)
+    parser.add_argument('--eval-batch-size', type=int, default=512)
     parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate.")
     # use_pretrained_embedding = False # True
 

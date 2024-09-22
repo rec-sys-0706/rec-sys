@@ -11,7 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from parameters import Arguments
-from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors, get_src_dir
+from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors, get_src_dir, flatten_dict
 
 
 
@@ -57,7 +57,7 @@ class NewsDataset(Dataset):
                     title, abstract = get_news(news_id)
                     title_list.append(title)
                     abstract_list.append(abstract)
-                return dict_to_tensors(list_to_dict(title_list)), dict_to_tensors(list_to_dict(abstract_list))
+                return dict_to_tensors(list_to_dict(title_list), torch.int), dict_to_tensors(list_to_dict(abstract_list), torch.int) # Reduce memory usage
 
             result = []
             for _, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
@@ -78,12 +78,12 @@ class NewsDataset(Dataset):
                 title, abstract = get_grouped_news(clicked_news_ids)
                 clicked_news = {
                     'title': title,
-                    'abstract': abstract
+                    # 'abstract': abstract
                 }
                 title, abstract = get_grouped_news(candidate_news_ids)
                 candidate_news = {
                     'title': title,
-                    'abstract': abstract
+                    # 'abstract': abstract
                 }
                 result.append({
                     'clicked_news': clicked_news,
@@ -144,15 +144,4 @@ class NewsDataset(Dataset):
 #         }
 
 if __name__ == '__main__':
-    from parameters import parse_args
-    from torch.utils.data import Dataset, DataLoader
-
-    args = parse_args()
-    tokenizer = CustomTokenizer(args)
-    train_dataset = NewsDataset(args, tokenizer, mode='train')
-    train_loader = DataLoader(train_dataset, batch_size=4)
-
-    for i in train_loader:
-        print(i)
-        pdb.set_trace()
-        pass
+    pass

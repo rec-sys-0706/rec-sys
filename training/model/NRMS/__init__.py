@@ -23,10 +23,11 @@ class NRMS(nn.Module):
         self.user_encoder = Encoder(args.num_heads, args.embedding_dim)
         self.dropout = nn.Dropout(args.dropout_rate)
         self.to(self.device) # Move all layers to device.
-    
+
     def forward(self,
                 clicked_news: dict,
-                candidate_news: dict):
+                candidate_news: dict,
+                clicked):
         """
         Tensors:
             title             : (batch_size, num_news, ctx_len)
@@ -44,7 +45,10 @@ class NRMS(nn.Module):
         candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device))
         # Dot product
         click_probability = (candidate_news_vec @ final_representation).squeeze(dim=-1)
-        return click_probability
+        return {
+            'loss': F.cross_entropy(click_probability, clicked.to(self.device)),
+            'logits': click_probability
+        }
 
 # class NRMS_Glove(nn.Module):
 #     """

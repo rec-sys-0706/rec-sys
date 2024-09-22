@@ -152,12 +152,12 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     start = time.time()
     src_dir = get_src_dir(args, mode)
     parse_behaviors(src_dir)
-    logging.info(f"[{mode}] Parsing `behaviors.tsv` completed at {time_since(start, 'seconds'):.2f} seconds")
+    logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
 
     start = time.time()
     tokenizer = CustomTokenizer(args) # TODO if using glove or nltk, must build tokenizer first.
     parse_news(src_dir, tokenizer)
-    logging.info(f"[{mode}] Parsing `news.tsv` completed at {time_since(start, 'seconds'):.2f} seconds")
+    logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')

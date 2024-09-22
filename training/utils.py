@@ -159,7 +159,8 @@ class CustomTokenizer:
 
         categorizer = PreTrainedTokenizerFast(tokenizer_object=_categorizer, unk_token="<unk>")
         return categorizer
-    
+    def save_pretrained(self, *args, **kwargs):
+        self.__tokenizer.save_pretrained(*args, **kwargs)
 
 def time_since(base: float, format: None|Literal['seconds']=None):
     now = time.time()
@@ -248,13 +249,13 @@ def list_to_dict(objs: list[dict]):
 
     return result
 
-def dict_to_tensors(obj: dict):
+def dict_to_tensors(obj: dict, dtype=None):
     """Convert dictionary values to tensors recursively"""
     for key, value in obj.items():
         if isinstance(value, dict): # is a dictionary
-            dict_to_tensors(value) # recursively
+            dict_to_tensors(value, dtype) # recursively
         else:
-            obj[key] = torch.tensor(value)
+            obj[key] = torch.tensor(value, dtype=dtype)
     return obj
 
 def flatten_dict(d, parent_key='', sep='_'):

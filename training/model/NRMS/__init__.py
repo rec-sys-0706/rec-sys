@@ -70,27 +70,27 @@ class NRMS(nn.Module):
 #         self.dropout = nn.Dropout(args.dropout_rate)
 #         self.to(self.device)
     
-#     def forward(self,
-#                 clicked_news: dict,
-#                 candidate_news: dict):
-#         """
-#         Args:
-#             title             : (batch_size, num_news, ctx_len)
-#             title_mask        : (batch_size, num_news, ctx_len)
-#             embed             : (batch_size, num_news, ctx_len, d_embed)
-#             clicked_news_vec  : (batch_size, num_clicked_news, d_embed)
-#             candidate_news_vec: (batch_size, num_candidate_news, d_embed)
-#         """
-#         # Clicked news
-#         embed = self.dropout(self.embedding(clicked_news['title'].to(self.device)))
-#         clicked_news_vec = self.news_encoder(embed, clicked_news['title_mask'].to(self.device))
-#         final_representation = self.user_encoder(clicked_news_vec).unsqueeze(dim=-1)
-#         # Candidate news
-#         embed = self.embedding(candidate_news['title'].to(self.device))
-#         candidate_news_vec = self.news_encoder(embed, candidate_news['title_mask'].to(self.device))
-#         # Dot product
-#         click_probability = (candidate_news_vec @ final_representation).squeeze(dim=-1)
-#         return click_probability
+    # def forward(self,
+    #             clicked_news: dict,
+    #             candidate_news: dict):
+    #     """
+    #     Tensors:
+    #         title             : (batch_size, num_news, ctx_len)
+    #         title_mask        : (batch_size, num_news, ctx_len)
+    #         embed             : (batch_size, num_news, ctx_len, d_embed)
+    #         clicked_news_vec  : (batch_size, num_clicked_news, d_embed)
+    #         candidate_news_vec: (batch_size, num_candidate_news, d_embed)
+    #     """
+    #     # Clicked news
+    #     embed = self.dropout(self.embedding(clicked_news['title']['input_ids'].to(self.device)))
+    #     clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device))
+    #     final_representation = self.user_encoder(clicked_news_vec).unsqueeze(dim=-1)
+    #     # Candidate news
+    #     embed = self.embedding(candidate_news['title']['input_ids'].to(self.device))
+    #     candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device))
+    #     # Dot product
+    #     click_probability = (candidate_news_vec @ final_representation).squeeze(dim=-1)
+    #     return click_probability
 # class NRMS_BERT(nn.Module):
 
 #     pass

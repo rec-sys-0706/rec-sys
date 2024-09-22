@@ -72,7 +72,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
     # Training Process
     parser.add_argument('--epochs', type=int, default=3)
-    parser.add_argument('--valid-timing', type=str, default='interval', help="The timing to validate model, it could be either `invertal` or `end`")
+    parser.add_argument('--valid-timing', type=str, default='end', help="The timing to validate model, it could be either `invertal` or `end`")
     parser.add_argument('--valid-interval', type=int, default=800, help="The interval for validation checks between steps")
     parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
     parser.add_argument('--learning-rate', type=float, default=0.0005)

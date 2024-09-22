@@ -30,6 +30,7 @@ def train(args: Arguments):
     fix_all_seeds(args.seed)
     DATETIME_NOW = get_datetime_now()
     log_dir = f"./runs/{DATETIME_NOW}"
+    Path(log_dir).mkdir()
     with open(f'{log_dir}/args.json', 'w') as f:
         args_dict = {k: str(v) for k, v in vars(args).items()}
         json.dump(args_dict, f)
@@ -95,16 +96,13 @@ def train(args: Arguments):
         data_collator=default_collate,
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
-        callbacks=[early_stopping_callback]
+        # callbacks=[early_stopping_callback]
     )
     trainer.train()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    # Modify args here.
-    args.model_name = 'NRMS-Glove'
-    # args.glove_embedding_path = 'data/glove.6B/glove.6B.300d.txt'
     train(args)
 
 # TODO valid

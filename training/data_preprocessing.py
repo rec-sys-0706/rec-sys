@@ -94,30 +94,26 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
     news['abstract'] = news['abstract'].apply(lambda text: tokenizer.encode_abstract(text)) # TODO Don't need to tokenize here.
     news.to_csv(src_dir / 'news_parsed.csv')
 
-def generate_word_embedding(config: Arguments):
+import pdb
+def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
     start_time = time.time()
     print('Initializing processing of pretrained embeddings...')
     # Vocabulary
-    word2int_path = Path(config.train_dir) / 'word2int.tsv'
-    if not word2int_path.exists():
-        raise FileNotFoundError(f"File '{word2int_path}' does not exist.")
-    word2int = pd.read_csv(word2int_path,
-                        sep='\t',
-                        index_col='word',
-                        na_filter=False)
+    word2int = pd.DataFrame.from_dict(tokenizer.get_vocab(), orient='index', columns=['int'])
+    word2int.index.name = 'word'
     # GloVe
     print('Loading GloVe embeddings...')
-    glove_embedding = pd.read_csv(config.glove_embedding_path,
-                                sep=' ',
-                                index_col=0,
-                                quoting=3,
-                                header=None,
-                                na_filter=False)
+    glove_embedding = pd.read_csv(args.glove_embedding_path,
+                                  sep=' ',
+                                  index_col=0,
+                                  quoting=3,
+                                  header=None,
+                                  na_filter=False)
     glove_embedding.index.rename('word', inplace=True)
-    if glove_embedding.shape[1] != config.embedding_dim:
+    if glove_embedding.shape[1] != args.embedding_dim:
         raise ValueError((
             f"Pretrained embedding source dim {glove_embedding.shape[1]} "
-            f"is not equal to config.embedding_dim {config.embedding_dim}\n"
+            f"is not equal to config.embedding_dim {args.embedding_dim}\n"
             "Please check your config.py file."
         ))
     print(f'GloVe embeddings loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
@@ -128,7 +124,7 @@ def generate_word_embedding(config: Arguments):
                           left_index=True,
                           right_index=True)
     missing_rows = temp[temp['_merge'] == 'left_only'].drop(columns='_merge')
-    missing_rows.iloc[:, 1:] = np.random.normal(size=(missing_rows.shape[0], config.embedding_dim))
+    missing_rows.iloc[:, 1:] = np.random.normal(size=(missing_rows.shape[0], args.embedding_dim))
 
     merged = word2int.merge(glove_embedding,
                             how='inner',
@@ -137,7 +133,7 @@ def generate_word_embedding(config: Arguments):
     result = pd.concat([merged, missing_rows]).sort_values(by='int')
     result.set_index('int', inplace=True)
 
-    torch.save(torch.tensor(result.values, dtype=torch.float32), Path(config.train_dir) / 'pretrained_embedding.pt')
+    torch.save(torch.tensor(result.values, dtype=torch.float32), Path(args.train_dir) / 'pretrained_embedding.pt')
     print((
         f'Vocabulary Size  : {len(word2int)}\n'
         f'Missed Embeddings: {len(missing_rows)}\n'
@@ -162,6 +158,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    data_preprocessing(args, 'train')
-    data_preprocessing(args, 'valid')
-    # # TODO generate_word_embedding random
+    args.glove_embedding_path = 'data/glove.6B/glove.6B.300d.txt'
+    # data_preprocessing(args, 'train')
+    # data_preprocessing(args, 'valid')
+    generate_word_embedding(args, CustomTokenizer(args))

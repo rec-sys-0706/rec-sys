@@ -11,7 +11,7 @@ class Arguments:
     val_dir: str
     test_dir: str
     ckpt_dir: str
-        # glove_embedding_path: str
+    glove_embedding_path: str
     # Model
     max_vocab_size: int
     min_frequency: int
@@ -37,6 +37,7 @@ class Arguments:
     # System
     seed: int
     cpu: bool
+    model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient=True
@@ -48,17 +49,15 @@ class Arguments:
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()
     # System
-    parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
-        # model_name = 'NRMS'
-        # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # num_workers = 1
     parser.add_argument('--seed', type=int, default=1337)
+    parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
+    parser.add_argument('--model-name', type=str, default='NRMS')
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
     parser.add_argument('--test-dir', type=str, default='data/test')
     parser.add_argument('--ckpt-dir', type=str, default='data/checkpoint')
-        # glove_embedding_path = './data/glove.840B.300d/glove.840B.300d.txt'
+    parser.add_argument('--glove-embedding-path', type=str, default='data/glove.840B.300d/glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")
     parser.add_argument('--min-frequency', type=int, default=2, help="Term frequency threshold")

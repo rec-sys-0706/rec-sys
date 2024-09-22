@@ -161,7 +161,8 @@ class CustomTokenizer:
         return categorizer
     def save_pretrained(self, *args, **kwargs):
         self.__tokenizer.save_pretrained(*args, **kwargs)
-
+    def get_vocab(self) -> dict[str, int]:
+        return self.__tokenizer.get_vocab()
 def time_since(base: float, format: None|Literal['seconds']=None):
     now = time.time()
     elapsed_time = now - base

@@ -267,19 +267,4 @@ def flatten_dict(d, parent_key='', sep='_'):
             items.extend(flatten_dict(v, new_key, sep=sep).items())
         else:
             items.append((new_key, v))
-    return dict(items) # TODO
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
-    from parameters import parse_args
-    args = parse_args()
-    tokenizer = CustomTokenizer(args)
-
-
-    fake_texts = [
-        "Hello, how are you?",
-        "This is a test sentence for demonstrating the data collator.",
-        "Short sentence.",
-        "我好愛你哦妳這個笨蛋呆頭，橄乾羭茰"
-    ]
-    print(tokenizer(fake_texts, padding=True))
+    return dict(items)

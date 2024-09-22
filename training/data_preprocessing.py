@@ -5,7 +5,7 @@ Returns:
     2. news_parsed.tsv
     3. word2int.tsv
     4. category2int.tsv
-"""
+""" # TODO
 import time
 from pathlib import Path
 import logging
@@ -17,7 +17,7 @@ import torch
 from typing import Literal
 
 from parameters import Arguments, parse_args
-from utils import CustomTokenizer, time_since, get_src_dir
+from utils import CustomTokenizer, time_since, get_src_dir, fix_all_seeds
 
 def parse_behaviors(src_dir: Path):
     """Parses behaviors.tsv file
@@ -94,7 +94,6 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
     news['abstract'] = news['abstract'].apply(lambda text: tokenizer.encode_abstract(text)) # TODO Don't need to tokenize here.
     news.to_csv(src_dir / 'news_parsed.csv')
 
-import pdb
 def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
     start_time = time.time()
     print('Initializing processing of pretrained embeddings...')
@@ -151,14 +150,15 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
 
     start = time.time()
-    tokenizer = CustomTokenizer(args) # TODO if using glove or nltk, must build tokenizer first.
+    tokenizer = CustomTokenizer(args)
     parse_news(src_dir, tokenizer)
     logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
 
+    if mode == 'train':
+        generate_word_embedding(args, tokenizer)
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    args.glove_embedding_path = 'data/glove.6B/glove.6B.300d.txt'
-    # data_preprocessing(args, 'train')
-    # data_preprocessing(args, 'valid')
-    generate_word_embedding(args, CustomTokenizer(args))
+    fix_all_seeds(args.seed)
+    data_preprocessing(args, 'train')
+    data_preprocessing(args, 'valid')

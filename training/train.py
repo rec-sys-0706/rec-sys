@@ -1,6 +1,7 @@
 import logging
 import time
 from pathlib import Path
+import json
 
 import torch
 from torch.utils.data._utils.collate import default_collate
@@ -27,9 +28,14 @@ def compute_metrics(eval_preds):
     }
 def train(args: Arguments):
     fix_all_seeds(args.seed)
+    DATETIME_NOW = get_datetime_now()
+    log_dir = f"./runs/{DATETIME_NOW}"
+    with open(f'{log_dir}/args.json', 'w') as f:
+        args_dict = {k: str(v) for k, v in vars(args).items()}
+        json.dump(args_dict, f)
     if not Path(args.ckpt_dir).exists():
         Path(args.ckpt_dir).mkdir()
-    ckpt_now_dir = Path(args.ckpt_dir) / get_datetime_now() 
+    ckpt_now_dir = Path(args.ckpt_dir) / DATETIME_NOW
     ckpt_now_dir.mkdir()
 
     tokenizer = CustomTokenizer(args)
@@ -66,12 +72,12 @@ def train(args: Arguments):
         save_strategy='epoch',
         num_train_epochs=args.epochs,
         label_names=['clicked'],
-        logging_dir=f"./runs/{get_datetime_now()}", # TensorBoard
+        logging_dir=log_dir, # TensorBoard
         load_best_model_at_end=True,
+        metric_for_best_model='acc'
         # logging_steps=
         #logging_strategy=
         # label_names=[]
-        # metric_for_best_model='acc'
         # optim=
         # warmup_steps=500
         # weight_decay=0.01
@@ -96,31 +102,12 @@ def train(args: Arguments):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
+    # Modify args here.
     args.model_name = 'NRMS-Glove'
     # args.glove_embedding_path = 'data/glove.6B/glove.6B.300d.txt'
     train(args)
 
-
-
-
-
-    
-    # tokenizer = CustomTokenizer(args)
-    # dataset = NewsDataset(args, tokenizer, 'train')
-    # data_collator = CustomDataCollator()
-    # # Create DataLoader
-    # dataloader = DataLoader(
-    #     dataset,
-    #     batch_size=4,
-    #     shuffle=False,
-    #     collate_fn=data_collator,
-    # )
-    # print(time_since(start))
-    # # Iterate over DataLoader and print batch shapes
-    # for _ in range(10):
-    #     for batch in dataloader:
-    #         pass
-    #         # print(batch['clicked_news_title']['input_ids'].shape)
-    #         # print(batch['candidate_news_title']['input_ids'].shape)
-    #         # print(batch['labels'].shape)
-    #     print(time_since(start))
+# TODO valid
+# TODO test
+# TODO dropout?
+# TODO bert

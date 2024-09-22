@@ -70,7 +70,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
     # Training Process
-    parser.add_argument('--epochs', type=int, default=3)
+    parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")
     parser.add_argument('--eval-steps', type=int, default=1000, help="The interval for evaluation between steps")
     parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")

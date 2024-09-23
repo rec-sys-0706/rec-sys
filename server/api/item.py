@@ -53,9 +53,12 @@ def get_news_by_id(news_id):
     finally:
         conn.close()
 
+# OK
 @news_blueprint.route('/', methods=['POST'])
 def create_news():
     check_api_key(request)
+    conn = get_db_connection()
+    cursor = conn.cursor()
     try:
         new_news = request.json
         if not all(k in new_news for k in ('title', 'date')):
@@ -66,8 +69,6 @@ def create_news():
         except ValueError:
             return jsonify({'error': 'Date format must be YYYY-MM-DD HH:MM:SS'}), 400
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO dbo.News (Title, Date, Category, Abstract)
             VALUES (?, ?, ?, ?)
@@ -79,9 +80,12 @@ def create_news():
     finally:
         conn.close()
 
+# OK
 @news_blueprint.route('/<int:news_id>', methods=['PUT'])
 def update_news(news_id):
     check_api_key(request)
+    conn = get_db_connection()
+    cursor = conn.cursor()
     try:
         updated_news = request.json
         # Validate required fields
@@ -94,8 +98,6 @@ def update_news(news_id):
         except ValueError:
             return jsonify({'error': 'Date format must be YYYY-MM-DD HH:MM:SS'}), 400
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
         cursor.execute('''
             UPDATE dbo.News
             SET Title = ?, Date = ?, Category = ?, Abstract = ?
@@ -108,15 +110,16 @@ def update_news(news_id):
     finally:
         conn.close()
 
+# OK
 @news_blueprint.route('/<int:news_id>', methods=['DELETE'])
 def delete_news(news_id):
     check_api_key(request)
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('DELETE FROM dbo.News WHERE NewsID = ?', news_id)
+        cursor.execute('DELETE FROM dbo.News WHERE NewsID = ?', (news_id,))
         conn.commit()
-        return jsonify({'message': 'News deleted successfully'}), 204
+        return jsonify({'message': 'News deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

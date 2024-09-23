@@ -28,15 +28,26 @@ def format_date(date_str):
 response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
     
 test_news = pd.DataFrame(response.json())
-print(test_news)
 test_news['date'] = test_news['date'].apply(format_date)
 
+
 # 測試
-responses = requests.get(f'{ROOT}:5000/api/reader_record/2', headers=headers)
+data = {
+    "account": "alice123",
+    "password": "supersecretpass",
+    "email": "alice123@example.com",
+    "phone": "123-456-7890",
+    "line_id": "wonderland9876"
+}
+
+
+responses = requests.delete(f'{ROOT}:5000/api/user/8eff6f59-f8d3-4e44-8a23-ed654f8430f0', headers = headers)
+
+#responses = requests.delete(f'{ROOT}:5000/api/reader_record/7', headers = headers)
 
 try:
     data = responses.json()
-    
+    print(data)
     if isinstance(data, dict):  # Single user (a dictionary)
         # Convert the single user data into a DataFrame
         user = pd.DataFrame([data])  # Wrap the dictionary in a list

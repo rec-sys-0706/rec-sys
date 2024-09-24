@@ -56,8 +56,11 @@ class NewsDataset(Dataset):
                     abstract_list.append(abstract)
                 return dict_to_tensors(list_to_dict(title_list), torch.int), dict_to_tensors(list_to_dict(abstract_list), torch.int) # Reduce memory usage
 
+            __behaviors = __behaviors.sample(frac=1, random_state=args.seed).reset_index(drop=True)
             result = []
-            for _, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
+            for idx, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
+                if idx == args.max_dataset_size:
+                    break
                 clicked_news_ids = literal_eval(row['clicked_news'])
                 random.shuffle(clicked_news_ids)
                 clicked_news_ids = clicked_news_ids[:args.num_clicked_news] # truncate clicked_news

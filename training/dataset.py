@@ -3,7 +3,6 @@ import logging
 import random
 from typing import Any
 from dataclasses import dataclass
-import pdb
 
 import torch
 from torch.utils.data import Dataset
@@ -30,7 +29,7 @@ class NewsDataset(Dataset):
     def __init__(self, args: Arguments, tokenizer: CustomTokenizer, mode) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
-        if False or args.model_name == 'NRMS-BERT': # TEST
+        if False and args.model_name == 'NRMS-BERT': # TEST
             result_path = src_dir / f'{mode}_bert.pt'
         else:
             result_path = src_dir / f'{mode}.pt'
@@ -86,7 +85,7 @@ class NewsDataset(Dataset):
                 clicked_news_ids += [None] * num_missing_news # padding clicked_news
                 candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
 
-                if False or args.model_name == 'NRMS-BERT':
+                if False and args.model_name == 'NRMS-BERT':
                     clicked_title, clicked_abstract = get_grouped_news_bert(clicked_news_ids)
                     candidate_title, candidate_abstract = get_grouped_news_bert(candidate_news_ids)
                 else:

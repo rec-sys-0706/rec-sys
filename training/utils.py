@@ -48,12 +48,11 @@ class CustomTokenizer:
             'mask_token': '[MASK]'
         }
         self.args = args
-        self.mode = args.tokenizer_mode
         self.tokenizer_file = Path(args.train_dir) / 'tokenizer.json'
         self.categorizer_file = Path(args.train_dir) / 'categorizer.json'
 
         self.__categorizer = self.__build_categorizer()
-        if self.mode == 'vanilla':
+        if args.model_name == 'NRMS' or args.model_name == 'NRMS-Glove':
             if not self.tokenizer_file.exists():
                 logging.info("Tokenizer file not detected.")
                 logging.info("Start building tokenizer and saving to `train_dir`.")
@@ -61,7 +60,7 @@ class CustomTokenizer:
             else:
                 self.__tokenizer = self.__load_tokenizer()
             self.__tokenizer.add_special_tokens(self.SPECIAL_TOKENS)
-        elif self.mode == 'bert':
+        elif args.model_name == 'NRMS-BERT':
             self.__tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
         else:
             pass

@@ -10,7 +10,7 @@ from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
 from model.NRMS import NRMS, NRMS_BERT
 from parameters import Arguments, parse_args
 from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds
-from dataset import NewsDataset, CustomDataCollator
+from dataset import NewsDataset
 from evaluate import nDCG, ROC_AUC, recall, accuracy
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 

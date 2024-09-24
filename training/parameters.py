@@ -22,7 +22,6 @@ class Arguments:
     embedding_dim: int
     num_heads: int
     dropout_rate: float
-    tokenizer_mode: Literal['bert', 'gpt-4o', 'vanilla']
 
     # Training Process
     epochs: int
@@ -71,7 +70,6 @@ def parse_args() -> Arguments:
     parser.add_argument('--embedding-dim', type=int, default=300, help="If using `NRMS-BERT`, then the embedding_dim will be 768")
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
-    parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
     # Training Process
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")

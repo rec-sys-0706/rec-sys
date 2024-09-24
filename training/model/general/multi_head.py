@@ -34,8 +34,7 @@ class Head(nn.Module):
             attn_mask = attn_mask.unsqueeze(-2).repeat(repeats=repeats) # (repeats=(1, 1, dim, 1))
             logits = logits.masked_fill(attn_mask.logical_not(), float(-1e9)) # Mask 0 to -inf
         A = F.softmax(logits, dim=-1)
-        # A = A.masked_fill(attn_mask.logical_not(), 0) # TODO delete
-        return A @ v # ? weighted-sum
+        return A @ v # v is weighted-sum by attention scores.
 class MultiHeadAttention(nn.Module):
     """
     Description:

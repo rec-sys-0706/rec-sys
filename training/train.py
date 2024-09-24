@@ -7,10 +7,10 @@ import torch
 from torch.utils.data._utils.collate import default_collate
 from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
 
-from model.NRMS import NRMS
+from model.NRMS import NRMS, NRMS_BERT
 from parameters import Arguments, parse_args
 from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds
-from dataset import NewsDataset
+from dataset import NewsDataset, CustomDataCollator
 from evaluate import nDCG, ROC_AUC, recall, accuracy
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 
@@ -30,6 +30,8 @@ def train(args: Arguments):
     fix_all_seeds(args.seed)
     DATETIME_NOW = get_datetime_now()
     log_dir = f"./runs/{DATETIME_NOW}"
+    if not Path('runs').exists():
+        Path('runs').mkdir()
     Path(log_dir).mkdir()
     with open(f'{log_dir}/args.json', 'w') as f:
         args_dict = {k: str(v) for k, v in vars(args).items()}
@@ -39,6 +41,7 @@ def train(args: Arguments):
     ckpt_now_dir = Path(args.ckpt_dir) / DATETIME_NOW
     ckpt_now_dir.mkdir()
 
+    # Tokenizer & Model
     tokenizer = CustomTokenizer(args)
     if args.model_name == 'NRMS':
         model = NRMS(args=args, vocab_size=tokenizer.vocab_size)
@@ -54,7 +57,11 @@ def train(args: Arguments):
         model = NRMS(args=args,
                      vocab_size=tokenizer.vocab_size,
                      pretrained_embedding=pretrained_embedding)
-
+    elif args.model_name == 'NRMS-BERT':
+        model = NRMS_BERT(args=args,
+                          pretrained_model_name=args.pretrained_model_name)
+    else:
+        raise ValueError(f"Model name `{args.model_name}` did not supported.")
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -75,7 +82,8 @@ def train(args: Arguments):
         label_names=['clicked'],
         logging_dir=log_dir, # TensorBoard
         load_best_model_at_end=True,
-        metric_for_best_model='acc'
+        metric_for_best_model='loss',
+        seed=args.seed
         # logging_steps=
         #logging_strategy=
         # label_names=[]
@@ -100,12 +108,13 @@ def train(args: Arguments):
     )
     trainer.train()
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
+    args.train_batch_size = 32
+    args.model_name = 'NRMS-BERT'
     train(args)
 
 # TODO valid
 # TODO test
 # TODO dropout?
-# TODO bert

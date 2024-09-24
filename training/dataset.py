@@ -11,7 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from parameters import Arguments
-from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors, get_src_dir, flatten_dict
+from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors, get_src_dir
 
 
 
@@ -30,7 +30,10 @@ class NewsDataset(Dataset):
     def __init__(self, args: Arguments, tokenizer: CustomTokenizer, mode) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
-        result_path = src_dir / f'{mode}.pt'
+        if False or args.model_name == 'NRMS-BERT': # TEST
+            result_path = src_dir / f'{mode}_bert.pt'
+        else:
+            result_path = src_dir / f'{mode}.pt'
         if result_path.exists():
             data = torch.load(result_path)
             self.result = data['result']
@@ -58,6 +61,14 @@ class NewsDataset(Dataset):
                     title_list.append(title)
                     abstract_list.append(abstract)
                 return dict_to_tensors(list_to_dict(title_list), torch.int), dict_to_tensors(list_to_dict(abstract_list), torch.int) # Reduce memory usage
+            def get_grouped_news_bert(news_ids):
+                title_list = []
+                abstract_list = []
+                for news_id in news_ids:
+                    title, abstract = get_news(news_id)
+                    title_list.append(title)
+                    abstract_list.append(abstract)
+                return title_list, abstract_list
 
             result = []
             for _, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
@@ -75,15 +86,21 @@ class NewsDataset(Dataset):
                 clicked_news_ids += [None] * num_missing_news # padding clicked_news
                 candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
 
-                title, abstract = get_grouped_news(clicked_news_ids)
+                if False or args.model_name == 'NRMS-BERT':
+                    clicked_title, clicked_abstract = get_grouped_news_bert(clicked_news_ids)
+                    candidate_title, candidate_abstract = get_grouped_news_bert(candidate_news_ids)
+                else:
+                    clicked_title, clicked_abstract = get_grouped_news(clicked_news_ids)
+                    candidate_title, candidate_abstract = get_grouped_news(candidate_news_ids)
+
                 clicked_news = {
-                    'title': title,
-                    # 'abstract': abstract
+                    'title': clicked_title,
+                    # 'abstract': clicked_abstract
                 }
-                title, abstract = get_grouped_news(candidate_news_ids)
+                
                 candidate_news = {
-                    'title': title,
-                    # 'abstract': abstract
+                    'title': candidate_title,
+                    # 'abstract': candidate_abstract
                 }
                 result.append({
                     'clicked_news': clicked_news,
@@ -127,6 +144,25 @@ class NewsDataset(Dataset):
 #             clicked     : (batch_size, k+1)
 #         }
 #         """ # TODO
+#         pdb.set_trace()
+#         for example in features:
+#             example
+#         batch = {
+#             'clicked_news': {
+#                 'title': []
+#             },
+#             'candidate_news': {
+#                 'title': []
+#             },
+#             'clicked': torch.stack([example['clicked'] for example in features], dim=0)
+#         }
+#         # for key in temp.keys():
+#         #     batched[key] = []
+#         #     for sub_key in temp[key]['title'][0].keys():
+#         #         stacked_tensor = torch.stack([example[key]['title'][0][sub_key] for example in batch], dim=0)
+
+#         #         batched[key].append({sub_key: stacked_tensor})
+#         pdb.set_trace()
 #         batch = list_to_dict(features)
 
 #         def convert(d: dict):

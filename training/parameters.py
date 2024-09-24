@@ -33,11 +33,13 @@ class Arguments:
     train_batch_size: int
     eval_batch_size: int
     drop_insufficient: bool
+    metric_for_best_model: Literal['loss', 'auc', 'acc']
 
     # System
     seed: int
     cpu: bool
     model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
+    pretrained_model_name: Literal['bert-base-uncased']
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient=True
@@ -52,6 +54,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--seed', type=int, default=1337)
     parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
     parser.add_argument('--model-name', type=str, default='NRMS')
+    parser.add_argument('--pretrained-model-name', type=str, default='bert-base-uncased')
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
@@ -65,7 +68,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--num-tokens-title', type=int, default=24, help="The number of tokens in title (aka. context_length)")
     parser.add_argument('--num-tokens-abstract', type=int, default=50, help="The number of tokens in abstract")
     parser.add_argument('--num-clicked-news', type=int, default=64, help="The number of clicked news sampled for each user")
-    parser.add_argument('--embedding-dim', type=int, default=300) # 768
+    parser.add_argument('--embedding-dim', type=int, default=300, help="If using `NRMS-BERT`, then the embedding_dim will be 768")
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--tokenizer-mode', type=str, default='vanilla') # TODO 
@@ -77,8 +80,8 @@ def parse_args() -> Arguments:
     parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--eval-batch-size', type=int, default=512)
-    parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate.")
-    # use_pretrained_embedding = False # True
+    parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate")
+    parser.add_argument('--metric-for-best-model', type=str, default='loss', help="Which metric should be monitored while early stopping")
 
     parsed_args = parser.parse_args()
     args_dict = vars(parsed_args)

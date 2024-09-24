@@ -111,8 +111,6 @@ def train(args: Arguments):
 if __name__ == '__main__': 
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    args.train_batch_size = 32
-    args.model_name = 'NRMS-BERT'
     train(args)
 
 # TODO valid

@@ -1,8 +1,6 @@
 from ast import literal_eval
 import logging
 import random
-from typing import Any
-from dataclasses import dataclass
 
 import torch
 from torch.utils.data import Dataset
@@ -10,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from parameters import Arguments
-from utils import CustomTokenizer, Example, list_to_dict, dict_to_tensors, get_src_dir
+from utils import CustomTokenizer, list_to_dict, dict_to_tensors, get_src_dir
 
 
 
@@ -29,10 +27,7 @@ class NewsDataset(Dataset):
     def __init__(self, args: Arguments, tokenizer: CustomTokenizer, mode) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
-        if False and args.model_name == 'NRMS-BERT': # TEST
-            result_path = src_dir / f'{mode}_bert.pt'
-        else:
-            result_path = src_dir / f'{mode}.pt'
+        result_path = src_dir / f'{mode}.pt'
         if result_path.exists():
             data = torch.load(result_path)
             self.result = data['result']
@@ -60,14 +55,6 @@ class NewsDataset(Dataset):
                     title_list.append(title)
                     abstract_list.append(abstract)
                 return dict_to_tensors(list_to_dict(title_list), torch.int), dict_to_tensors(list_to_dict(abstract_list), torch.int) # Reduce memory usage
-            def get_grouped_news_bert(news_ids):
-                title_list = []
-                abstract_list = []
-                for news_id in news_ids:
-                    title, abstract = get_news(news_id)
-                    title_list.append(title)
-                    abstract_list.append(abstract)
-                return title_list, abstract_list
 
             result = []
             for _, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
@@ -85,12 +72,8 @@ class NewsDataset(Dataset):
                 clicked_news_ids += [None] * num_missing_news # padding clicked_news
                 candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
 
-                if False and args.model_name == 'NRMS-BERT':
-                    clicked_title, clicked_abstract = get_grouped_news_bert(clicked_news_ids)
-                    candidate_title, candidate_abstract = get_grouped_news_bert(candidate_news_ids)
-                else:
-                    clicked_title, clicked_abstract = get_grouped_news(clicked_news_ids)
-                    candidate_title, candidate_abstract = get_grouped_news(candidate_news_ids)
+                clicked_title, clicked_abstract = get_grouped_news(clicked_news_ids)
+                candidate_title, candidate_abstract = get_grouped_news(candidate_news_ids)
 
                 clicked_news = {
                     'title': clicked_title,
@@ -117,66 +100,6 @@ class NewsDataset(Dataset):
         return len(self.result)
     def __getitem__(self, index):
         return self.result[index]
-
-# @dataclass
-# class CustomDataCollator:
-#     def __call__(self, features: list[Example]) -> dict[str, Any]:
-#         """
-#         DataLoader will shuffle and sample features(batch), and input `features` into DataCollator,
-#         DataCollator is just a callable function, given a batch, return a processed batch.
-
-#         batch: {
-#             clicked_news: list[GroupedNews]
-#             candidate_news: list[GroupedNews]
-#             clicked: list[list[int]]
-#         }
-
-#         output: {
-#             clicked_news: {
-#                 title   : Encoding with (batch_size, num_clicked_news, num_title_tokens)
-#                 abstract: Encoding with (batch_size, num_clicked_news, num_abstract_tokens)
-#             }
-#             candidate_news: {
-#                 title   : Encoding with (batch_size, k+1, num_title_tokens)
-#                 abstract: Encoding with (batch_size, k+1, num_abstract_tokens)
-#             }
-#             clicked     : (batch_size, k+1)
-#         }
-#         """ # TODO
-#         pdb.set_trace()
-#         for example in features:
-#             example
-#         batch = {
-#             'clicked_news': {
-#                 'title': []
-#             },
-#             'candidate_news': {
-#                 'title': []
-#             },
-#             'clicked': torch.stack([example['clicked'] for example in features], dim=0)
-#         }
-#         # for key in temp.keys():
-#         #     batched[key] = []
-#         #     for sub_key in temp[key]['title'][0].keys():
-#         #         stacked_tensor = torch.stack([example[key]['title'][0][sub_key] for example in batch], dim=0)
-
-#         #         batched[key].append({sub_key: stacked_tensor})
-#         pdb.set_trace()
-#         batch = list_to_dict(features)
-
-#         def convert(d: dict):
-#             d = list_to_dict(d)
-#             d['title'] = list_to_dict(d['title'])
-#             d['abstract'] = list_to_dict(d['abstract'])
-#             return d
-        
-#         batch['clicked_news'] = convert(batch['clicked_news'])
-#         batch['candidate_news'] = convert(batch['candidate_news'])
-#         return {
-#             'clicked_news': dict_to_tensors(batch['clicked_news']),
-#             'candidate_news': dict_to_tensors(batch['candidate_news']),
-#             'clicked': torch.stack(batch['clicked'])
-#         }
 
 if __name__ == '__main__':
     pass

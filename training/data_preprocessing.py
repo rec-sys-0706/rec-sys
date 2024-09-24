@@ -154,7 +154,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     parse_news(src_dir, tokenizer)
     logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
 
-    if mode == 'train':
+    if mode == 'train' and args.model_name == 'NRMS-Glove':
         generate_word_embedding(args, tokenizer)
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')

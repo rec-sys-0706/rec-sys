@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data._utils.collate import default_collate
 from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
+from transformers.trainer_utils import get_last_checkpoint
+from safetensors.torch import load_file
 
 from model.NRMS import NRMS, NRMS_BERT
 from parameters import Arguments, parse_args
@@ -16,9 +18,10 @@ from evaluate import nDCG, ROC_AUC, recall, accuracy
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 
 
-
+import pdb
 def compute_metrics(eval_preds):
     predictions, label_ids = eval_preds
+    pdb.set_trace()
     recall, auc, ndcg5, ndcg10, acc = evaluate(predictions, label_ids)
     return {
         'recall': recall,
@@ -70,6 +73,30 @@ def get_log_dirs(args: Arguments):
 
     return log_dir, ckpt_dir
 
+def get_trainer_args(args: Arguments, ckpt_dir, log_dir) -> TrainingArguments:
+    return TrainingArguments(
+        ckpt_dir,
+        eval_strategy=args.eval_strategy,
+        eval_steps=args.eval_steps,
+        per_device_train_batch_size=args.train_batch_size,
+        per_device_eval_batch_size=args.eval_batch_size,
+        learning_rate=args.learning_rate,
+        save_strategy='epoch',
+        num_train_epochs=args.epochs,
+        label_names=['clicked'],
+        logging_dir=log_dir, # TensorBoard
+        load_best_model_at_end=True,
+        metric_for_best_model='loss',
+        seed=args.seed
+        # logging_steps=
+        #logging_strategy=
+        # label_names=[]
+        # optim=
+        # warmup_steps=500
+        # weight_decay=0.01
+        # dataloader_drop_last=
+        # push_to_hub=True,
+    )  
 
 def train(args: Arguments):
     fix_all_seeds(args.seed)
@@ -85,32 +112,11 @@ def train(args: Arguments):
     logging.info(f'Datasets loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
 
 
-    training_args = TrainingArguments(
-        ckpt_dir,
-        eval_strategy=args.eval_strategy,
-        eval_steps=args.eval_steps,
-        per_device_train_batch_size=args.train_batch_size,
-        per_device_eval_batch_size=args.eval_batch_size,
-        learning_rate=args.learning_rate,
-        save_strategy='epoch',
-        num_train_epochs=args.epochs,
-        label_names=['clicked'],
-        logging_dir=log_dir, # TensorBoard
-        load_best_model_at_end=True,
-        metric_for_best_model='loss',
-        seed=args.seed
-        # logging_steps=
-        #logging_strategy=
-        # label_names=[]
-        # optim=
-        # warmup_steps=500
-        # weight_decay=0.01
-        # dataloader_drop_last=
-        # push_to_hub=True,
-    ) 
+
     early_stopping_callback = EarlyStoppingCallback(
         early_stopping_patience=args.patience,
     )
+    training_args = get_trainer_args(args, ckpt_dir, log_dir)
     trainer = Trainer(
         model,
         training_args,
@@ -121,6 +127,7 @@ def train(args: Arguments):
         compute_metrics=compute_metrics,
         # callbacks=[early_stopping_callback]
     )
+    trainer.train()
 
 def valid(args: Arguments):
     fix_all_seeds(args.seed)
@@ -128,51 +135,33 @@ def valid(args: Arguments):
     # Tokenizer & Model
     tokenizer = CustomTokenizer(args)
     model = get_model(args, tokenizer)
+    # load model
+    last_checkpoint = get_last_checkpoint('checkpoints/2024-09-25T231941')
+    tensors = load_file(last_checkpoint + "/model.safetensors")
+    model_state_dict = model.state_dict()
+    for key in model_state_dict.keys():
+        if key in tensors:
+            model_state_dict[key] = tensors[key]
+    model.load_state_dict(model_state_dict)
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
     valid_dataset = NewsDataset(args, tokenizer, mode='valid')
     logging.info(f'Datasets loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
-
-    validation_args = TrainingArguments(
-        ckpt_dir,
-        eval_strategy=args.eval_strategy,
-        eval_steps=args.eval_steps,
-        per_device_train_batch_size=args.train_batch_size,
-        per_device_eval_batch_size=args.eval_batch_size,
-        learning_rate=args.learning_rate,
-        save_strategy='epoch',
-        num_train_epochs=args.epochs,
-        label_names=['clicked'],
-        logging_dir=log_dir, # TensorBoard
-        load_best_model_at_end=True,
-        metric_for_best_model='loss',
-        seed=args.seed
-        # logging_steps=
-        #logging_strategy=
-        # label_names=[]
-        # optim=
-        # warmup_steps=500
-        # weight_decay=0.01
-        # dataloader_drop_last=
-        # push_to_hub=True,
-    )
+    validation_args = get_trainer_args(args, ckpt_dir, log_dir)
     trainer = Trainer(
         model,
-        training_args,
-        train_dataset=train_dataset,
+        validation_args,
         eval_dataset=valid_dataset,
         data_collator=default_collate,
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
-        # callbacks=[early_stopping_callback]
     )
-    trainer.evaluate()
-
+    trainer.predict(valid_dataset)
 if __name__ == '__main__': 
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    train(args)
+    valid(args)
 
 # TODO valid
 # TODO test

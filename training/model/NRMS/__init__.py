@@ -77,7 +77,7 @@ class NRMS_BERT(nn.Module):
         for title in zip(*clicked_news_dict.values()):
             x = {
                'input_ids': title[0],
-               'token_type_ids': title[1],
+               # 'token_type_ids': title[1],
                'attention_mask': title[2]
             }
             bert_output = self.bert(**x)
@@ -92,7 +92,7 @@ class NRMS_BERT(nn.Module):
         for title in zip(*candidate_news_dict.values()):
             x = {
                'input_ids': title[0],
-               'token_type_ids': title[1],
+               # 'token_type_ids': title[1],
                'attention_mask': title[2]
             }
             bert_output = self.bert(**x)

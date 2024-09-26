@@ -10,7 +10,6 @@ class Arguments:
     train_dir: str
     val_dir: str
     test_dir: str
-    ckpt_dir: str
     glove_embedding_path: str
     # Model
     max_vocab_size: int
@@ -58,7 +57,6 @@ def parse_args() -> Arguments:
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
     parser.add_argument('--test-dir', type=str, default='data/test')
-    parser.add_argument('--ckpt-dir', type=str, default='data/checkpoint')
     parser.add_argument('--glove-embedding-path', type=str, default='data/glove.840B.300d/glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")

@@ -13,7 +13,7 @@ from safetensors.torch import load_file
 from model.NRMS import NRMS, NRMS_BERT
 from parameters import Arguments, parse_args
 from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds
-from dataset import NewsDataset
+from dataset import NewsDataset, CustomDataCollator
 from evaluate import nDCG, ROC_AUC, recall, accuracy
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 
@@ -100,7 +100,6 @@ def get_trainer_args(args: Arguments, ckpt_dir, log_dir) -> TrainingArguments:
 
 def train(args: Arguments):
     fix_all_seeds(args.seed)
-    log_dir, ckpt_dir = get_log_dirs(args)
     # Tokenizer & Model
     tokenizer = CustomTokenizer(args)
     model = get_model(args, tokenizer)
@@ -116,13 +115,18 @@ def train(args: Arguments):
     early_stopping_callback = EarlyStoppingCallback(
         early_stopping_patience=args.patience,
     )
+    log_dir, ckpt_dir = get_log_dirs(args)
     training_args = get_trainer_args(args, ckpt_dir, log_dir)
+    if args.model_name == 'NRMS-BERT':
+        collate_fn = CustomDataCollator(tokenizer)
+    else:
+        collate_fn = default_collate # TODO
     trainer = Trainer(
         model,
         training_args,
         train_dataset=train_dataset,
         eval_dataset=valid_dataset,
-        data_collator=default_collate,
+        data_collator=collate_fn,
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
         # callbacks=[early_stopping_callback]
@@ -161,7 +165,7 @@ def valid(args: Arguments):
 if __name__ == '__main__': 
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    valid(args)
+    train(args)
 
 # TODO valid
 # TODO test

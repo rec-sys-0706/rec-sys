@@ -98,12 +98,15 @@ while True:
         messages.append(choice.message)
 
     for message in messages:
-        if isinstance(message, dict):
-            role = message.get('role')
-            content = message.get('content')
+        if isinstance(message, dict):  
+            role = message['role']
+            content = message['content']
         else:
             role = message.role
             content = message.content
         
-        print(f"{role}: {content}")
+        if role in ['user', 'assistant'] and content is not None:
+            print(f"{role}: {content}")
+
+
 

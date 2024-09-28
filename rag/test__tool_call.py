@@ -51,37 +51,15 @@ tools = [
 ]
 
 messages = [
-    {'role': 'system', 'content': 'You are a helpful assistant.'},
-    {'role': 'user', 'content': '幫我畫一張圖.'}
+    {'role': 'system', 'content': 'You are a helpful assistant.'}
 ]
 
-# 第一次生成 assistant 回應
-completion = client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=messages,
-    tools=tools,
-    tool_choice='auto'
-)
+while True:
+    user_input = input("請輸入您的訊息（或輸入 'exit' 退出）：")
+    if user_input.lower() == 'exit':
+        break
 
-choice = completion.choices[0]
-messages.append(choice.message)
-
-if choice.finish_reason == 'tool_calls':
-    tool_call = choice.message.tool_calls[0]
-    function_name = tool_call.function.name
-    arguments = json.loads(tool_call.function.arguments)
-
-    for tool in tools:
-        if function_name == tool['function']['name']:
-            args = [arguments.get(param) for param in tool['function']['parameters']['properties'].keys()]
-            function_result = toolkit[function_name](*args)
-            tool_call_result_message = {
-                "role": "tool",
-                "content": function_result,
-                "tool_call_id": tool_call.id
-            }
-            
-            messages.append(tool_call_result_message)
+    messages.append({'role': 'user', 'content': user_input})
 
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -93,12 +71,39 @@ if choice.finish_reason == 'tool_calls':
     choice = completion.choices[0]
     messages.append(choice.message)
 
-for message in messages:
-    if isinstance(message, dict):
-        role = message.get('role')
-        content = message.get('content')
-    else:
-        role = message.role
-        content = message.content
-    
-    print(f"{role}: {content}")
+    if choice.finish_reason == 'tool_calls':
+        tool_call = choice.message.tool_calls[0]
+        function_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
+
+        for tool in tools:
+            if function_name == tool['function']['name']:
+                args = [arguments.get(param) for param in tool['function']['parameters']['properties'].keys()]
+                function_result = toolkit[function_name](*args)
+                tool_call_result_message = {
+                    "role": "tool",
+                    "content": function_result,
+                    "tool_call_id": tool_call.id
+                }
+                messages.append(tool_call_result_message)
+
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            tools=tools,
+            tool_choice='auto'
+        )
+
+        choice = completion.choices[0]
+        messages.append(choice.message)
+
+    for message in messages:
+        if isinstance(message, dict):
+            role = message.get('role')
+            content = message.get('content')
+        else:
+            role = message.role
+            content = message.content
+        
+        print(f"{role}: {content}")
+

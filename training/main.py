@@ -119,6 +119,7 @@ def get_trainer_args(args: Arguments, ckpt_dir) -> TrainingArguments:
     )  
 
 def main(args: Arguments):
+    fix_all_seeds(seed=args.seed)
     next_ckpt_dir = get_ckpt_dir(args)
     trainer_args = get_trainer_args(args, next_ckpt_dir)
     # Tokenizer & Model & DataCollator
@@ -261,7 +262,6 @@ def main(args: Arguments):
 if __name__ == '__main__': 
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
-    fix_all_seeds(seed=args.seed)
     data_preprocessing(args, 'train')
     data_preprocessing(args, 'valid')
     main(args)

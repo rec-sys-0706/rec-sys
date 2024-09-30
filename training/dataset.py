@@ -35,7 +35,7 @@ class NewsDataset(Dataset):
         behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
         
         result_path = src_dir / f'{mode}{suffix}.pt'
-        if result_path.exists() and (not args.reprocess):
+        if result_path.exists() and not args.reprocess:
             self.result = torch.load(result_path)
         else:
             logging.info(f"Cannot locate file {mode}.pt in '{src_dir}'.")
@@ -68,7 +68,7 @@ class NewsDataset(Dataset):
                 if idx == args.max_dataset_size:
                     break # limit dataset size
                 clicked_news_ids = literal_eval(row['clicked_news'])
-                random.shuffle(clicked_news_ids)
+                random.shuffle(clicked_news_ids) # random
                 clicked_news_ids = clicked_news_ids[:args.max_clicked_news] # truncate clicked_news
                 num_missing_news = args.max_clicked_news - len(clicked_news_ids)
 

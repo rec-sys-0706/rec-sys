@@ -9,7 +9,7 @@ import torch
 from typing import Literal
 
 from parameters import Arguments
-from utils import CustomTokenizer, time_since, get_src_dir, get_suffix
+from utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds
 
 def parse_behaviors(src_dir: Path) -> pd.DataFrame:
     """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.
@@ -112,6 +112,7 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> pd.DataFrame:
     return news
 
 def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
+    fix_all_seeds(args.seed)
     start_time = time.time()
     print('Initializing processing of pretrained embeddings...')
     # Vocabulary
@@ -140,7 +141,7 @@ def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
                           left_index=True,
                           right_index=True)
     missing_rows = temp[temp['_merge'] == 'left_only'].drop(columns='_merge')
-    missing_rows.iloc[:, 1:] = np.random.normal(size=(missing_rows.shape[0], args.embedding_dim))
+    missing_rows.iloc[:, 1:] = np.random.normal(size=(missing_rows.shape[0], args.embedding_dim)) # random
 
     merged = word2int.merge(glove_embedding,
                             how='inner',
@@ -164,7 +165,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     news_path = src_dir / f'news_parsed{suffix}.csv'
     behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
     # Behaviors
-    if not behaviors_path.exists() and args.reprocess:
+    if not behaviors_path.exists() or args.reprocess:
         if mode == 'test':
             start = time.time()
             parse_behaviors_for_test(src_dir) # Special handling test data.
@@ -179,18 +180,18 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     else:
         logging.info(f"{behaviors_path} already exists.")
     # News
-    if not news_path.exists() and args.reprocess:
+    if not news_path.exists() or args.reprocess:
         start = time.time()
         tokenizer = CustomTokenizer(args)
         news = parse_news(src_dir, tokenizer)
         news.to_csv(news_path)
         logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
-    else:
+    elif:
         logging.info(f"{news_path} already exists.")
     # Glove
     if mode == 'train' and args.model_name == 'NRMS-Glove':
         embedding_path = Path(args.train_dir) / 'pretrained_embedding.pt'
-        if not embedding_path.exists() and args.reprocess:
+        if not embedding_path.exists() or args.reprocess:
             embedding = generate_word_embedding(args, tokenizer)
             torch.save(torch.tensor(embedding, dtype=torch.float32), embedding_path)
 

@@ -111,11 +111,13 @@ class NRMS_BERT(nn.Module):
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
-        return {
+        output = {
             'loss': loss,
             'logits': click_probability,
-            'user': user,
-            'clicked': clicked
+            'user': user
         }
+        if self.args.mode == 'train':
+            output.pop('user')
+        return output
 if __name__ == '__main__':
     pass

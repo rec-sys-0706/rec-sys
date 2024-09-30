@@ -69,8 +69,8 @@ class NewsDataset(Dataset):
                     break # limit dataset size
                 clicked_news_ids = literal_eval(row['clicked_news'])
                 random.shuffle(clicked_news_ids)
-                clicked_news_ids = clicked_news_ids[:args.num_clicked_news] # truncate clicked_news
-                num_missing_news = args.num_clicked_news - len(clicked_news_ids)
+                clicked_news_ids = clicked_news_ids[:args.max_clicked_news] # truncate clicked_news
+                num_missing_news = args.max_clicked_news - len(clicked_news_ids)
 
                 clicked_candidate_ids = literal_eval(row['clicked_candidate'])
                 unclicked_candidate_ids = literal_eval(row['unclicked_candidate'])

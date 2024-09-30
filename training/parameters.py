@@ -18,7 +18,7 @@ class Arguments:
     negative_sampling_ratio: int
     num_tokens_title: int
     num_tokens_abstract: int
-    num_clicked_news: int
+    max_clicked_news: int
     embedding_dim: int
     num_heads: int
     dropout_rate: float
@@ -33,7 +33,7 @@ class Arguments:
     eval_batch_size: int
     drop_insufficient: bool
     metric_for_best_model: Literal['loss', 'auc', 'acc']
-
+    greater_is_better: bool
     # System
     mode: Literal['train', 'valid', 'test']
     seed: int
@@ -61,14 +61,14 @@ def parse_args() -> Arguments:
     parser.add_argument('--val-dir', type=str, default='data/valid')
     parser.add_argument('--test-dir', type=str, default='data/test')
     parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid/test or continue training, it will get last checkpoint.')
-    parser.add_argument('--glove-embedding-path', type=str, default='data\glove.6B\glove.6B.300d.txt')
+    parser.add_argument('--glove-embedding-path', type=str, default='data\glove.840B.300d\glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")
     parser.add_argument('--min-frequency', type=int, default=2, help="Term frequency threshold")
     parser.add_argument('--negative-sampling-ratio', type=int, default=1)
     parser.add_argument('--num-tokens-title', type=int, default=24, help="The number of tokens in title (aka. context_length)")
     parser.add_argument('--num-tokens-abstract', type=int, default=50, help="The number of tokens in abstract")
-    parser.add_argument('--num-clicked-news', type=int, default=64, help="The number of clicked news sampled for each user")
+    parser.add_argument('--max-clicked-news', type=int, default=64, help="The maximum number of clicked news sampled for each user")
     parser.add_argument('--embedding-dim', type=int, default=300, help="If using `NRMS-BERT`, then the embedding_dim will be 768")
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
@@ -83,6 +83,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--eval-batch-size', type=int, default=512)
     parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate")
     parser.add_argument('--metric-for-best-model', type=str, default='loss', help="Which metric should be monitored while early stopping")
+    parser.add_argument('--greater-is-better', type=bool, default=False, help="Wheater metric greater is better")
 
     parsed_args = parser.parse_args()
     args_dict = vars(parsed_args)

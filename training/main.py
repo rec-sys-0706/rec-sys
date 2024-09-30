@@ -105,7 +105,7 @@ def get_trainer_args(args: Arguments, ckpt_dir) -> TrainingArguments:
         load_best_model_at_end=True,
         metric_for_best_model=args.metric_for_best_model,
         seed=args.seed,
-        # greater_is_better='True',
+        greater_is_better=args.greater_is_better,
         remove_unused_columns=False # If True, DataCollator will loss some info.
         
         # logging_steps=

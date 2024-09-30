@@ -142,8 +142,11 @@ def main(args: Arguments):
         test_dataset = NewsDataset(args, tokenizer, mode='test')
     logging.info(f'Datasets loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
     # Trainer
-    early_stopping_callback = EarlyStoppingCallback(early_stopping_patience=args.patience) if args.early_stop else None
-
+    if args.early_stop:
+        early_stopping_callback = EarlyStoppingCallback(early_stopping_patience=args.patience) 
+        callbacks=[early_stopping_callback]
+    else:
+        callbacks=None
     trainer = Trainer(
         model,
         trainer_args,
@@ -152,7 +155,7 @@ def main(args: Arguments):
         data_collator=collate_fn,
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
-        callbacks=[early_stopping_callback]
+        callbacks=callbacks
     )
     # Load Model
     if (args.ckpt_dir is not None) and args.mode in ['valid', 'test']:

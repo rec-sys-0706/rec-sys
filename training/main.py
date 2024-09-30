@@ -102,12 +102,13 @@ def get_trainer_args(args: Arguments, ckpt_dir) -> TrainingArguments:
         num_train_epochs=args.epochs,
         label_names=['clicked'],
         logging_dir=ckpt_dir, # TensorBoard
+        report_to='tensorboard',
         load_best_model_at_end=True,
         metric_for_best_model=args.metric_for_best_model,
         seed=args.seed,
         greater_is_better=args.greater_is_better,
-        remove_unused_columns=False # If True, DataCollator will loss some info.
-        
+        remove_unused_columns=False, # If True, DataCollator will loss some info.
+        auto_find_batch_size=True
         # logging_steps=
         #logging_strategy=
         # optim=
@@ -141,9 +142,8 @@ def main(args: Arguments):
         test_dataset = NewsDataset(args, tokenizer, mode='test')
     logging.info(f'Datasets loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
     # Trainer
-    early_stopping_callback = EarlyStoppingCallback(
-        early_stopping_patience=args.patience,
-    )
+    early_stopping_callback = EarlyStoppingCallback(early_stopping_patience=args.patience) if args.early_stop else None
+
     trainer = Trainer(
         model,
         trainer_args,

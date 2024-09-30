@@ -28,6 +28,7 @@ class Arguments:
     eval_strategy: Literal['steps', 'epoch']
     eval_steps: int
     patience: int
+    early_stop: bool
     learning_rate: float
     train_batch_size: int
     eval_batch_size: int
@@ -77,13 +78,14 @@ def parse_args() -> Arguments:
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")
     parser.add_argument('--eval-steps', type=int, default=1000, help="The interval for evaluation between steps")
+    parser.add_argument('--early-stop', type=bool, default=False, help="Whether to use early stopping.")
     parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
     parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--eval-batch-size', type=int, default=512)
     parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate")
     parser.add_argument('--metric-for-best-model', type=str, default='loss', help="Which metric should be monitored while early stopping")
-    parser.add_argument('--greater-is-better', type=bool, default=False, help="Wheater metric greater is better")
+    parser.add_argument('--greater-is-better', type=bool, default=False, help="Whether metric greater is better")
 
     parsed_args = parser.parse_args()
     args_dict = vars(parsed_args)

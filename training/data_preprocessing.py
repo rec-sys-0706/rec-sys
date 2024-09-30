@@ -186,7 +186,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
         news = parse_news(src_dir, tokenizer)
         news.to_csv(news_path)
         logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
-    elif:
+    else:
         logging.info(f"{news_path} already exists.")
     # Glove
     if mode == 'train' and args.model_name == 'NRMS-Glove':

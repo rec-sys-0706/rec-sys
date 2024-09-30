@@ -1,11 +1,3 @@
-"""
-Returns:
-    Generate processed files including
-    1. behaviors_parsed.tsv
-    2. news_parsed.tsv
-    3. word2int.tsv
-    4. category2int.tsv
-""" # TODO
 import time
 from pathlib import Path
 import logging
@@ -16,20 +8,19 @@ from tqdm import tqdm
 import torch
 from typing import Literal
 
-from parameters import Arguments, parse_args
-from utils import CustomTokenizer, time_since, get_src_dir, fix_all_seeds
+from parameters import Arguments
+from utils import CustomTokenizer, time_since, get_src_dir, get_suffix
 
-def parse_behaviors(src_dir: Path):
-    """Parses behaviors.tsv file
+def parse_behaviors(src_dir: Path) -> pd.DataFrame:
+    """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.
     
     Output File Format:
         The resulting CSV file will contain the following columns:
-        - `user_id`             (str)
-        - `clickede_news`       (list[News])
-        - `clicked_candidate`   (list[News]): clicked candidate news
-        - `unclicked_candidate` (list[News]): unclicked candidate news
+        - user_id             (str)
+        - clickede_news       (list[str])
+        - clicked_candidate   (list[str]): clicked candidate news set
+        - unclicked_candidate (list[str]): unclicked candidate news set
     """
-
     behaviors = pd.read_csv(src_dir / 'behaviors.tsv',
                             sep='\t',
                             names=['impression_id', 'user_id', 'time', 'clicked_news', 'impressions'],
@@ -64,19 +55,45 @@ def parse_behaviors(src_dir: Path):
             else:
                 raise ValueError("An unexpected error has occurred at data processing phase.")
         behaviors.loc[idx, ['clicked_candidate', 'unclicked_candidate']] = str(true_list), str(false_list) # Ground true candidate_news
+    return behaviors
 
-    behaviors.to_csv(src_dir / 'behaviors_parsed.csv',
-                     index=False,
-                     columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
-
-# TODO use entity?
-def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
-    """Parse news.tsv to tokenized text.
+def parse_behaviors_for_test(src_dir: Path) -> pd.DataFrame:
+    """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.
+    
     Output File Format:
         The resulting CSV file will contain the following columns:
-        - category: int
-        - title   : list[int]
-        - abstract: list[int]
+        - user_id             (str)
+        - clickede_news       (list[str])
+        - candidate_news      (list[str])
+    """
+    raise ValueError("")
+    behaviors = pd.read_csv(src_dir / 'behaviors.tsv',
+                            sep='\t',
+                            names=['impression_id', 'user_id', 'time', 'clicked_news', 'candidate_news'],
+                            dtype='string',
+                            index_col='impression_id')
+    behaviors['clicked_news'] = behaviors['clicked_news'].fillna('') # Handle missing values
+    # behaviors['impressions'] = behaviors['impressions'].str.split() # Convert 'impressions' to list
+    # behaviors = behaviors.drop(columns='time')
+    # behaviors = behaviors.groupby('user_id').agg({
+    #     'clicked_news': ' '.join,
+    #     'impressions': lambda x: sum(x, []) # [['a', 'b'], ['c'], ['d', 'e']] -> ['a', 'b', 'c', 'd', 'e']
+    # }).reset_index()
+    # behaviors['clicked_news'] = behaviors['clicked_news'].apply(lambda h: list(set(h.split()))) # Remove duplicated values in 'clicked_news'
+    # behaviors['impressions'] = behaviors['impressions'].apply(lambda impression: list(set(impression)))
+    behaviors.to_csv(src_dir / 'behaviors_parsed.csv',
+                     index=False,
+                     columns=['user_id', 'clicked_news', 'candidate_news'])
+
+def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> pd.DataFrame:
+    """Parse `news.tsv`` file, generate `news_parsed.csv`.
+
+    Output File Format:
+        The resulting CSV file will contain the following columns:
+        - news_id  (str)
+        - category (int)
+        - title    (dict[str, int])
+        - abstract (dict[str, int])
     """
     news = pd.read_csv(src_dir / 'news.tsv',
                        sep='\t',
@@ -89,10 +106,10 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> tuple[dict, dict]:
     news = news.drop(columns=['subcategory', 'url', 'title_entities', 'abstract_entities'])
     news = news.sort_index()
     news['category'] = news['category'].apply(lambda c: tokenizer.encode_category(c))
-    # news['subcategory'] = news['subcategory'].apply(lambda c: category2int.get(c, 0)) # TODO category2int in tokenizer.
+    # news['subcategory'] = news['subcategory'].apply(lambda c: category2int.get(c, 0)) # TODO use subcategory?
     news['title'] = news['title'].apply(lambda text: tokenizer.encode_title(text))
-    news['abstract'] = news['abstract'].apply(lambda text: tokenizer.encode_abstract(text)) # TODO Don't need to tokenize here.
-    news.to_csv(src_dir / 'news_parsed.csv')
+    news['abstract'] = news['abstract'].apply(lambda text: tokenizer.encode_abstract(text))
+    return news
 
 def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
     start_time = time.time()
@@ -143,22 +160,29 @@ def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
     ))
 
 def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test']):
-    """Parse behaviors.tsv and news.tsv into behaviors_parsed.tsv and news_parsed.tsv""" # TODO
-    start = time.time()
     src_dir = get_src_dir(args, mode)
-    parse_behaviors(src_dir)
-    logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+    suffix = get_suffix(args)
+    if mode == 'test':
+        start = time.time()
+        parse_behaviors_for_test(src_dir) # Special handling test data.
+        logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+    elif mode in ['train', 'valid']:
+        start = time.time()
+        behaviors = parse_behaviors(src_dir)
+        behaviors.to_csv(src_dir / f'behaviors_parsed{suffix}.csv',
+                    index=False,
+                    columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
+        logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
 
     start = time.time()
     tokenizer = CustomTokenizer(args)
-    parse_news(src_dir, tokenizer)
+    news = parse_news(src_dir, tokenizer)
+    news.to_csv(src_dir / f'news_parsed{suffix}.csv')
+
     logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
 
     if mode == 'train' and args.model_name == 'NRMS-Glove':
         generate_word_embedding(args, tokenizer)
+
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
-    args = parse_args()
-    fix_all_seeds(args.seed)
-    data_preprocessing(args, 'train')
-    data_preprocessing(args, 'valid')
+    pass

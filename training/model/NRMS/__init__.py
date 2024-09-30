@@ -31,9 +31,10 @@ class NRMS(nn.Module):
         self.to(self.device) # Move all layers to device.
 
     def forward(self,
+                user: dict,
                 clicked_news: dict,
                 candidate_news: dict,
-                clicked):
+                clicked=None):
         """
         Tensors:
             tensors in title    : (batch_size, num_news, ctx_len)
@@ -51,11 +52,25 @@ class NRMS(nn.Module):
         embed = self.embedding(candidate_news['title']['input_ids'].to(self.device))
         candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device))
         # Dot product
-        click_probability = (candidate_news_vec @ final_representation).squeeze(dim=-1)
-        return {
-            'loss': F.cross_entropy(click_probability, clicked.to(self.device)),
-            'logits': click_probability
+        scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
+        click_probability = F.sigmoid(scores)
+        if clicked is not None:
+            loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
+        else:
+            loss = None
+        output = {
+            'loss': loss,
+            'logits': click_probability,
+            'user': user
         }
+        if self.args.mode == 'train':
+            output.pop('user')
+        return output
+        # click_probability = (candidate_news_vec @ final_representation).squeeze(dim=-1)
+        # return {
+        #     'loss': F.cross_entropy(click_probability, clicked.to(self.device)),
+        #     'logits': click_probability
+        # }
 
 class NRMS_BERT(nn.Module):
     def __init__(self, args: Arguments, pretrained_model_name):
@@ -68,41 +83,39 @@ class NRMS_BERT(nn.Module):
         self.user_encoder = Encoder(args.num_heads, 768)
         self.to(self.device) # Move all layers to device.
     def forward(self,
+                user: dict,
                 clicked_news: dict,
                 candidate_news: dict,
-                clicked):
+                clicked=None):
         # Clicked news
-        clicked_news_dict = {key: list(torch.unbind(tensor, dim=1)) for key, tensor in clicked_news['title'].items()}
-        temp = []
-        for title in zip(*clicked_news_dict.values()):
-            x = {
-               'input_ids': title[0],
-               'attention_mask': title[1]
-            }
-            bert_output = self.bert(**x)
-            temp.append(bert_output.last_hidden_state)
-        last_hidden_state = torch.stack(temp, dim=1)
+        batch_size, num_articles, seq_len = clicked_news['title']['input_ids'].size()
+        input_ids = clicked_news['title']['input_ids'].view(-1, seq_len)
+        attention_mask = clicked_news['title']['attention_mask'].view(-1, seq_len)
+        bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        last_hidden_state = bert_output.last_hidden_state.view(batch_size, num_articles, seq_len, -1)
         embed = F.dropout(last_hidden_state, p=self.args.dropout_rate, training=self.training)
         clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device))
         final_representation = self.user_encoder(clicked_news_vec).unsqueeze(dim=-1)
         # Candidate news
-        candidate_news_dict = {key: list(torch.unbind(tensor, dim=1)) for key, tensor in candidate_news['title'].items()}
-        temp = []
-        for title in zip(*candidate_news_dict.values()):
-            x = {
-               'input_ids': title[0],
-               'attention_mask': title[1]
-            }
-            bert_output = self.bert(**x)
-            temp.append(bert_output.last_hidden_state)
-        last_hidden_state = torch.stack(temp, dim=1)
+        batch_size, num_articles, seq_len = candidate_news['title']['input_ids'].size()
+        input_ids = candidate_news['title']['input_ids'].view(-1, seq_len)
+        attention_mask = candidate_news['title']['attention_mask'].view(-1, seq_len)
+        bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        last_hidden_state = bert_output.last_hidden_state.view(batch_size, num_articles, seq_len, -1)
         embed = F.dropout(last_hidden_state, p=self.args.dropout_rate, training=self.training)
         candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device))
         # Dot product
-        click_probability = (candidate_news_vec @ final_representation).squeeze(dim=-1)
+        scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
+        click_probability = F.sigmoid(scores)
+        if clicked is not None:
+            loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
+        else:
+            loss = None
         return {
-            'loss': F.cross_entropy(click_probability, clicked.to(self.device)),
-            'logits': click_probability
+            'loss': loss,
+            'logits': click_probability,
+            'user': user,
+            'clicked': clicked
         }
 if __name__ == '__main__':
     pass

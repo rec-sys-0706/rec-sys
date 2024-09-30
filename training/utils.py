@@ -38,7 +38,7 @@ class Example(BaseModel):
     clicked: list[int]
 
 class CustomTokenizer:
-    """This is deprecated, will be replaced by Huggingface.Tokenizer."""
+    """CustomTokenizer, wrapping HuggingFace Tokenizer inside"""
     def __init__(self, args: Arguments):
         self.SPECIAL_TOKENS = {
             'pad_token': '[PAD]',
@@ -199,7 +199,11 @@ def get_src_dir(args: Arguments, mode) -> Path:
     else:
         raise ValueError(f"[ERROR] Expected `mode` be str['train'|'valid'|'test'] but got `{mode}` instead.")
     return src_dir
-
+def get_suffix(args: Arguments) -> str:
+    if args.model_name == 'NRMS-BERT':
+        return '_bert'
+    else:
+        return ''
 def test_string() -> str:
     mixed_case = "No"
     accents = "HÉLLOcafé"
@@ -245,3 +249,24 @@ def flatten_dict(d, parent_key='', sep='_'):
         else:
             items.append((new_key, v))
     return dict(items)
+
+def traverse_object(obj):
+    """traverse complex deep structure.
+    Usage:
+        result = traverse_object([{'a':[{'b':{'c':{'d':[[[['e']]]]}}}]}])
+        print(json.dumps(result, ensure_ascii=False, indent=4))
+    """
+    if isinstance(obj, dict):
+        result = {}
+        for key, value in obj.items():
+            result[key] = traverse_object(value)
+        return result
+    elif isinstance(obj, list):
+        if obj: # if not empty
+            return [len(obj), traverse_object(obj[0])] # Expect all element of list are the same, just see the first element.
+        else:
+            return [0, None]  # return empty list
+    elif isinstance(obj, torch.Tensor):
+        return f"tensor{tuple(obj.size())}"
+    else:
+        return obj  # int, str...

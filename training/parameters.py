@@ -10,7 +10,8 @@ class Arguments:
     train_dir: str
     val_dir: str
     test_dir: str
-    glove_embedding_path: str
+    ckpt_dir: str | None
+    glove_embedding_path: Literal['data\glove.6B\glove.6B.300d.txt', 'data/glove.840B.300d/glove.840B.300d.txt']
     # Model
     max_vocab_size: int
     min_frequency: int
@@ -34,10 +35,11 @@ class Arguments:
     metric_for_best_model: Literal['loss', 'auc', 'acc']
 
     # System
+    mode: Literal['train', 'valid', 'test']
     seed: int
     cpu: bool
     model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
-    pretrained_model_name: Literal['bert-base-uncased']
+    pretrained_model_name: Literal['distilbert-base-uncased', 'bert-base-uncased']
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient=True
@@ -49,15 +51,17 @@ class Arguments:
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()
     # System
+    parser.add_argument('--mode', type=str, default='train')
     parser.add_argument('--seed', type=int, default=1337)
     parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
     parser.add_argument('--model-name', type=str, default='NRMS')
-    parser.add_argument('--pretrained-model-name', type=str, default='bert-base-uncased')
+    parser.add_argument('--pretrained-model-name', type=str, default='distilbert-base-uncased')
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
     parser.add_argument('--test-dir', type=str, default='data/test')
-    parser.add_argument('--glove-embedding-path', type=str, default='data/glove.840B.300d/glove.840B.300d.txt')
+    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid/test or continue training, it will get last checkpoint.')
+    parser.add_argument('--glove-embedding-path', type=str, default='data\glove.6B\glove.6B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")
     parser.add_argument('--min-frequency', type=int, default=2, help="Term frequency threshold")

@@ -35,7 +35,7 @@ class NewsDataset(Dataset):
         behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
         
         result_path = src_dir / f'{mode}{suffix}.pt'
-        if result_path.exists():
+        if result_path.exists() and (not args.reprocess):
             self.result = torch.load(result_path)
         else:
             logging.info(f"Cannot locate file {mode}.pt in '{src_dir}'.")

@@ -165,23 +165,29 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     news_path = src_dir / f'news_parsed{suffix}.csv'
     behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
     # Behaviors
-    if mode == 'test':
-        start = time.time()
-        parse_behaviors_for_test(src_dir) # Special handling test data.
-        logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
-    elif mode in ['train', 'valid']:
-        start = time.time()
-        behaviors = parse_behaviors(src_dir)
-        behaviors.to_csv(behaviors_path,
-                    index=False,
-                    columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
-        logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+    if not behaviors_path.exists() and args.reprocess:
+        if mode == 'test':
+            start = time.time()
+            parse_behaviors_for_test(src_dir) # Special handling test data.
+            logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+        elif mode in ['train', 'valid']:
+            start = time.time()
+            behaviors = parse_behaviors(src_dir)
+            behaviors.to_csv(behaviors_path,
+                        index=False,
+                        columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
+            logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+    else:
+        logging.info(f"{behaviors_path} already exists.")
     # News
-    start = time.time()
-    tokenizer = CustomTokenizer(args)
-    news = parse_news(src_dir, tokenizer)
-    news.to_csv(news_path)
-    logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+    if not news_path.exists() and args.reprocess:
+        start = time.time()
+        tokenizer = CustomTokenizer(args)
+        news = parse_news(src_dir, tokenizer)
+        news.to_csv(news_path)
+        logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+    else:
+        logging.info(f"{news_path} already exists.")
     # Glove
     if mode == 'train' and args.model_name == 'NRMS-Glove':
         generate_word_embedding(args, tokenizer)

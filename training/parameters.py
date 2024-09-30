@@ -41,6 +41,7 @@ class Arguments:
     cpu: bool
     model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
     pretrained_model_name: Literal['distilbert-base-uncased', 'bert-base-uncased']
+    reprocess: bool
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient=True
@@ -57,6 +58,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
     parser.add_argument('--model-name', type=str, default='NRMS')
     parser.add_argument('--pretrained-model-name', type=str, default='distilbert-base-uncased')
+    parser.add_argument('--reprocess', type=bool, default=False, help="Whether to redo data-preprocessing even if processed data exists.")
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
@@ -78,7 +80,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")
     parser.add_argument('--eval-steps', type=int, default=1000, help="The interval for evaluation between steps")
-    parser.add_argument('--early-stop', type=bool, default=False, help="Whether to use early stopping.")
+    parser.add_argument('--early-stop', type=bool, default=False, help="Whether to use early stopping")
     parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
     parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--train-batch-size', type=int, default=64)

@@ -259,9 +259,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     args = parse_args()
     fix_all_seeds(seed=args.seed)
-    # data_preprocessing(args, 'train')
-    # data_preprocessing(args, 'valid')
-    args.max_dataset_size = 1000
-    args.epochs = 1
-    args.mode = 'valid'
+    data_preprocessing(args, 'train')
+    data_preprocessing(args, 'valid')
     main(args)

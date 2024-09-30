@@ -162,6 +162,9 @@ def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
 def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test']):
     src_dir = get_src_dir(args, mode)
     suffix = get_suffix(args)
+    news_path = src_dir / f'news_parsed{suffix}.csv'
+    behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
+    # Behaviors
     if mode == 'test':
         start = time.time()
         parse_behaviors_for_test(src_dir) # Special handling test data.
@@ -169,18 +172,17 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     elif mode in ['train', 'valid']:
         start = time.time()
         behaviors = parse_behaviors(src_dir)
-        behaviors.to_csv(src_dir / f'behaviors_parsed{suffix}.csv',
+        behaviors.to_csv(behaviors_path,
                     index=False,
                     columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
         logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
-
+    # News
     start = time.time()
     tokenizer = CustomTokenizer(args)
     news = parse_news(src_dir, tokenizer)
-    news.to_csv(src_dir / f'news_parsed{suffix}.csv')
-
+    news.to_csv(news_path)
     logging.info(f"[{mode}] Parsing `news.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
-
+    # Glove
     if mode == 'train' and args.model_name == 'NRMS-Glove':
         generate_word_embedding(args, tokenizer)
 

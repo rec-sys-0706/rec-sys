@@ -148,8 +148,6 @@ def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
                             right_index=True)
     result = pd.concat([merged, missing_rows]).sort_values(by='int')
     result.set_index('int', inplace=True)
-
-    torch.save(torch.tensor(result.values, dtype=torch.float32), Path(args.train_dir) / 'pretrained_embedding.pt')
     print((
         f'Vocabulary Size  : {len(word2int)}\n'
         f'Missed Embeddings: {len(missing_rows)}\n'
@@ -158,6 +156,7 @@ def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
         f'Elapsed Time     : {time_since(start_time, "seconds"):.2f} seconds\n'
         f'Embedding file has been successfully.'
     ))
+    return result.values
 
 def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test']):
     src_dir = get_src_dir(args, mode)
@@ -190,7 +189,10 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
         logging.info(f"{news_path} already exists.")
     # Glove
     if mode == 'train' and args.model_name == 'NRMS-Glove':
-        generate_word_embedding(args, tokenizer)
+        embedding_path = Path(args.train_dir) / 'pretrained_embedding.pt'
+        if not embedding_path.exists() and args.reprocess:
+            embedding = generate_word_embedding(args, tokenizer)
+            torch.save(torch.tensor(embedding, dtype=torch.float32), embedding_path)
 
 if __name__ == '__main__':
     pass

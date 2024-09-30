@@ -8,5 +8,3 @@ python .\main.py --model-name NRMS-Glove --epochs 20
 python .\main.py --model-name NRMS --epochs 20
 python .\main.py --model-name NRMS-Glove --epochs 10
 python .\main.py --model-name NRMS --epochs 10
-
-cd .\training\

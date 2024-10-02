@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from torch import Tensor
 import torch.nn.functional as F
-import pdb
+from torch import Tensor
+
 class Head(nn.Module):
     """One head of self-attention"""
     def __init__(self, d_embed, d_query):
@@ -32,10 +32,9 @@ class Head(nn.Module):
             repeats = [1] * (attn_mask.dim() + 1)
             repeats[-2] = attn_mask.shape[-1]
             attn_mask = attn_mask.unsqueeze(-2).repeat(repeats=repeats) # (repeats=(1, 1, dim, 1))
-            logits = logits.masked_fill(attn_mask.logical_not(), float(-1e9))
+            logits = logits.masked_fill(attn_mask.logical_not(), float(-1e9)) # Mask 0 to -inf
         A = F.softmax(logits, dim=-1)
-        # A = A.masked_fill(attn_mask.logical_not(), 0) # TODO delete
-        return A @ v # ? weighted-sum
+        return A @ v # v is weighted-sum by attention scores.
 class MultiHeadAttention(nn.Module):
     """
     Description:

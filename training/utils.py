@@ -199,11 +199,26 @@ def get_src_dir(args: Arguments, mode) -> Path:
     else:
         raise ValueError(f"[ERROR] Expected `mode` be str['train'|'valid'|'test'] but got `{mode}` instead.")
     return src_dir
+
 def get_suffix(args: Arguments) -> str:
     if args.model_name == 'NRMS-BERT':
         return '_bert'
     else:
         return ''
+
+def parse_argv(argv: list[str]) -> dict:
+    argv_dict = {}
+    for i in range(1, len(argv), 2):
+        if argv[i].startswith('--'):
+            k = argv[i]
+            v = argv[i+1]
+        else:
+            k = argv[i]
+            v = True
+            i -= 1
+        argv_dict[k] = v
+    return argv_dict
+
 def test_string() -> str:
     mixed_case = "No"
     accents = "HÉLLOcafé"

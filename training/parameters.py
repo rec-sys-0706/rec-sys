@@ -44,11 +44,14 @@ class Arguments:
     reprocess: bool
     device: Any = None
     def __post_init__(self):
-        self.drop_insufficient=True
+        self.drop_insufficient = True
+        self.cpu = False # utils.parse_argv
         if self.cpu:
             self.device = torch.device('cpu')
         else:
             self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        if self.model_name == 'NRMS-BERT':
+            self.embedding_dim = 768
 
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()

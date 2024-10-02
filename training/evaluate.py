@@ -14,7 +14,7 @@ def DCG(y_pred, y_true, k=10):
     else:
         raise ValueError(f"Expect y_pred be 1-D or 2-D tensor.")
 
-    gains = 2**y_true -1
+    gains = 2**y_true - 1
     discounts = np.log2(np.arange(y_pred.shape[-1]) + 2)
 
     return np.sum(gains / discounts, axis=-1, keepdims=True)

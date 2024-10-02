@@ -3,6 +3,8 @@ import time
 from pathlib import Path
 import json
 import re
+import json
+from sys import argv
 
 import numpy as np
 import pandas as pd
@@ -17,7 +19,7 @@ from safetensors.torch import load_file
 from data_preprocessing import data_preprocessing
 from model.NRMS import NRMS, NRMS_BERT
 from parameters import Arguments, parse_args
-from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, traverse_object
+from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv
 from dataset import NewsDataset, CustomDataCollator
 from evaluate import nDCG, ROC_AUC, recall, accuracy
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
@@ -87,7 +89,9 @@ def get_ckpt_dir(args: Arguments):
     with open(f'{ckpt_dir}/args.json', 'w') as f:
         args_dict = {k: str(v) for k, v in vars(args).items()}
         json.dump(args_dict, f)
-
+    with open(f'{ckpt_dir}/argv.json', 'w') as f:
+        argv_dict = parse_argv(argv)
+        json.dump(argv_dict, f)
     return ckpt_dir
 
 def get_trainer_args(args: Arguments, ckpt_dir) -> TrainingArguments:

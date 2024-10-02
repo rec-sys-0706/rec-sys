@@ -1,12 +1,13 @@
 from flask import Blueprint, render_template, send_file, request
-from config import test_news
+from config import test_news, headers, ROOT
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
 from collections import Counter
 import datetime
 import re
-
+import requests
+import pandas as pd
 
 main_bp = Blueprint('main', 
                     __name__, 
@@ -21,7 +22,16 @@ def index():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
+        data = {
+            "account": username,
+            "password": password
+        }
+        responses = requests.get(f'{ROOT}:5000/api/user/verification', headers = headers, json = data)
+        message = responses.json()
+        if message['message'] == 'User not found':
+            status = 'F'
+        else:
+            return render_template('./recommend/about.html')
     return render_template('./main/login.html', status = status)
 
 @main_bp.route('/about')
@@ -47,6 +57,12 @@ def signup():
 
         if is_valid_email(email):
             status = 'True'
+            data = {
+                "account": username,
+                "password": password,
+                "email": email
+            }
+            requests.post(f'{ROOT}:5000/api/user/', headers = headers, json = data)
         else:
             status = 'False'
         

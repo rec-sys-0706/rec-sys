@@ -32,14 +32,15 @@ def get_users():
         conn.close()
 
 # OK
-# Get user by UUID
-@user_blueprint.route('/<uuid>', methods=['GET'])
-def get_user(uuid):
+# Get user by verification account and password
+@user_blueprint.route('/verification', methods=['GET'])
+def get_user():
     check_api_key(request)
+    user_data = request.json
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('SELECT UUID, Account, Password, Email, Phone, LineID FROM dbo.[User] WHERE UUID = ?', uuid)
+        cursor.execute('SELECT UUID, Account, Password, Email, Phone, LineID FROM dbo.[User] WHERE Account = ? and Password = ?', (user_data['account'], user_data['password']))
         row = cursor.fetchone()
         if row:
             user = {
@@ -48,13 +49,14 @@ def get_user(uuid):
                 'password': row.Password,
                 'email': row.Email,
                 'phone': row.Phone,
-                'line_id': row.LineID
+                'line_id': row.LineID,
+                'message': 'User found'
             }
             return jsonify(user)
         else:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({'message': 'User not found'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': str(e)}), 500
     finally:
         conn.close()
 

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Recommend</title>
+    <style>
+        header {
+            text-align: center;
+            padding: 40px;
+            background-image: url("{{ url_for('main.static', filename='images/header-background.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: white;
+        }
+        
+        nav {
+            padding: 10px 0;
+        }
+        
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            position: relative;
+        }
+        
+        nav ul li {
+            display: inline;
+            margin: 0 15px;
+        }
+        
+        nav ul li a {
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px;
+            position: relative;
+            padding-bottom: 15px; 
+        }
+        
+        .underline {
+            position: absolute;
+            height: 2px;
+            background-color: #8cc9ff;
+            width: 0;
+            bottom: -10px;
+            transition: left 0.3s ease, width 0.3s ease;
+        }
+        
+        .home-container {
+            display: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px;
+        }
+        
+        #login, #signup {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Align items to the top */
+            height: auto; /* Allow the container to adjust its height based on content */
+            padding-top: 20px; /* Add padding to push the content down from the top */
+            margin-top: 20px; /* Adjust margin-top as needed */
+        }
+        
+        #login .header, #signup .header {
+            margin-bottom: 10px; /* Space between the header and the form */
+        }
+        
+        #login form, #signup form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 300px;
+            border: 1px solid #ddd;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-color: #f9f9f9;
+        }
+        
+        #login form label, #signup form label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            width: 100%;
+        }
+        
+        #login form input, #signup form input {
+            margin-bottom: 15px;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: left; /* Align placeholder text to the left */
+            box-sizing: border-box; /* Ensure padding and border are included in the width */
+        }
+        
+        #login form input::placeholder, #signup form input::placeholder {
+            color: #999;
+            text-align: left; /* Ensure placeholder text is aligned to the left */
+        }
+        
+        #login form button, #signup form button {
+            padding: 10px 20px;
+            background-color: #8cc9ff; /* Button color */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            max-width: 150px;
+        }
+        
+        #login form button:hover, #signup form button:hover {
+            background-color: #6ab0e1; /* Darker shade for hover effect */
+        }        
+    </style>
+</head>
+<body>
+    <header>
+        <h1>News Recommend</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#about" onclick="toggleContent('about', this)">About Us</a></li>
+            <li><a href="#login" onclick="toggleContent('login', this)">Log In</a></li>
+            <li><a href="#signup" onclick="toggleContent('signup', this)">Sign Up</a></li>
+            <div class="underline"></div>
+        </ul>
+    </nav>
+
+    <div id="login" class="home-container">
+        <h2>Log In</h2>
+        <form>
+            <input type="text" id="username" name="username" placeholder="Account" required>
+            <input type="password" id="password" name="password" placeholder="Password" required>
+            <a href="/main/recommend">
+                <button type="button" onclick="redirectToHome()">Log In</button>
+            </a>
+        </form>
+    </div>
+    
+    <div id="signup" class="home-container">
+        <h2>Sign Up</h2>
+        <form>
+            <input type="email" id="email" name="email" placeholder="Email" required>
+            <input type="text" id="signup-username" name="username" placeholder="Account" required>
+            <input type="password" id="signup-password" name="password" placeholder="Password" required>
+            <a href="/main/recommend">
+                <button type="button" onclick="redirectToHome()">Sign Up</button>
+            </a>
+        </form>
+    </div>
+
+
+    <div id="recommend" class="home-container">
+        <!-- content clear -->
+    </div>
+    <div id="about" class="home-container">
+        <!-- content clear -->
+    </div>
+    <div id="contact" class="home-container">
+        <div class="profile-info">
+            <h2>Profile</h2>
+            <p>Name: John Doe</p>
+            <p>Email: john.doe@example.com</p>
+            <p>Joined: January 1, 2023</p>
+        </div>
+        <div class="history-list">
+            <h3>History</h3>
+            <ul id="history-list">
+                <!-- history list will display here -->
+            </ul>
+        </div>
+        <div id="chart-container">
+            <h3>Favorite News Tags</h3>
+            <canvas id="tagChart"></canvas>
+        </div>
+    </div>
+
+
+    <div id="recommend" class="home-container">
+        <!-- content clear -->
+    </div>
+    <div id="about" class="home-container">
+        <!-- content clear -->
+    </div>
+    <div id="contact" class="home-container">
+        <div class="profile-info">
+            <h2>Profile</h2>
+            <p>Name: John Doe</p>
+            <p>Email: john.doe@example.com</p>
+            <p>Joined: January 1, 2023</p>
+        </div>
+        <div class="history-list">
+            <h3>History</h3>
+            <ul id="history-list">
+                <!-- history list will display here -->
+            </ul>
+        </div>
+        <div id="chart-container">
+            <h3>Favorite News Tags</h3>
+            <canvas id="tagChart"></canvas>
+        </div>
+    </div>
+
+    <script src="../static/script.js" defer></script>
+    <script>
+        var currentActiveLink = document.querySelector('nav ul li a.active');
+
+        function toggleContent(id, element) {
+            var links = document.querySelectorAll('nav ul li a');
+            var sections = document.querySelectorAll('.home-container');
+            var underline = document.querySelector('.underline');
+
+            // Hide all sections
+            sections.forEach(section => section.style.display = 'none');
+
+            // Show the selected section
+            if (id) {
+                document.getElementById(id).style.display = 'flex';
+            }
+
+            // Update underline position and width
+            links.forEach(link => link.classList.remove('active'));
+            element.classList.add('active');
+            underline.style.width = element.offsetWidth + 'px';
+            underline.style.left = element.offsetLeft + 'px';
+        }
+
+        // Initialize underline position and content display
+        window.onload = function() {
+            var defaultSection = 'login';
+            var activeLink = document.querySelector(`nav ul li a[href="#${defaultSection}"]`);
+            var underline = document.querySelector('.underline');
+
+            if (activeLink) {
+                toggleContent(defaultSection, activeLink);
+                underline.style.width = activeLink.offsetWidth + 'px';
+                underline.style.left = activeLink.offsetLeft + 'px';
+            }
+        }
+
+        // Add event listeners to update underline position on hover
+        document.querySelectorAll('nav ul li a').forEach(link => {
+            link.addEventListener('mouseover', function() {
+                var underline = document.querySelector('.underline');
+                underline.style.width = this.offsetWidth + 'px';
+                underline.style.left = this.offsetLeft + 'px';
+            });
+            link.addEventListener('mouseout', function() {
+                if (currentActiveLink) {
+                    var underline = document.querySelector('.underline');
+                    underline.style.width = currentActiveLink.offsetWidth + 'px';
+                    underline.style.left = currentActiveLink.offsetLeft + 'px';
+                }
+            });
+        });
+
+        // Redirect to home on login/signup
+        function redirectToHome() {
+            window.location.href = "/main/recommend";  // Adjusted path for Flask routing
+        }            
+    </script>
+</body>
+</html>

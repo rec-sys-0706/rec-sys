@@ -28,3 +28,4 @@ tiktoken
 pyodbc
 flask_sqlalchemy
 dotenv
+feedparser

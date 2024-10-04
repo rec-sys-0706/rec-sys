@@ -1,0 +1,105 @@
+有沒有 games 的類別 (有可能在lifestyle lifestylebuzz、lifestyle lifestyletechnology)
+
+(news causes、news causes-military-appreciation、news causes-poverty、news newscrime、lifestyle causes-green-living)
+-> 社會議題 
+
+(news causes-disaster-relief、news causes-environment)
+-> 環境災難
+
+(news elections-2020-us、news newselection2020)
+-> 選舉
+
+(news factcheck、news newsfactcheck、news narendramodi_opinion、news newsopinion、news newstvmedia[生涯回顧])
+-> 評論
+
+(news indepth、news newspolitics、news newsworldpolitics)
+-> 政治
+
+(news newsus、news newsworld、news newsnational)
+-> 各國地區的新聞
+
+(news newsbusiness)
+-> 商業
+
+(news newsscience、news newsscienceandtechnology、news newstechnology)
+-> 科學與科技
+
+[autos]
+-> 汽車
+
+[entertainment]
+-> 娛樂
+
+[finance、news personalfinance、news newsrealestate] 
+-> 金融、投資
+
+[foodanddrink] 
+-> 食品
+
+[health] 
+-> 健康
+
+[weather、news empowering-the-planet、news newsweather]
+-> 氣候
+
+[middleeast] 
+-> 中東
+
+[sports] 
+-> 運動
+
+[travel]
+-> 旅行 
+
+[tv] 
+-> 電視媒體
+
+[video、news newsvideo、news newsvideos] 
+-> 視頻
+
+(lifestyle lifestylefamily、lifestyle lifestylefamilyandrelationships、lifestyle lifestyleparenting、lifestyle lifestylelovesex、
+ lifestyle lifestylemarriage、lifestyle pregnancyparenting、lifestyle advice)
+-> 家庭、情感相關
+
+(lifestyle lifestylepets、lifestyle lifestylepetsanimals、lifestyle causes-animals、lifestyle lifestyleanimals)
+-> 寵物或動物
+
+(lifestyle lifestylefashion、lifestyle lifestylebeauty、lifestyle awardstyle、lifestyle lifestylecelebstyle)
+-> 時尚
+
+(lifestyle lifestyleshopping、lifestyle shop-all、lifestyle shop-apparel、lifestyle shop-books-movies-tv、
+ lifestyle shop-computers-electronics、lifestyle shop-holidays、lifestyle shop-home-goods、lifestyle lifestyleshoppinghomegarden)
+-> 購物
+
+(lifestyle lifestylecleaningandorganizing、lifestyle lifestyledecor、lifestyle lifestylehomeandgarden)
+-> 居家
+
+(lifestyle holidays、lifestyle lifestylestyle、*lifestyle lifestyletravel[敘述一位名人的慶生]、lifestyle travel、lifestyle lifestyle-wedding、
+ lifestyle lifestyleweddings)
+-> 節慶
+
+(lifestyle lifestylecareer)
+-> 職場
+
+(lifestyle lifestylehoroscope、lifestyle lifestylehoroscopefish)
+-> 占星
+
+*範圍太大(重新分)
+news newsgoodnews
+news newsoffbeat
+news newsother
+news newsphotos
+news yearinoffbeatgoodnews
+lifestyle causes
+lifestyle lifestyle
+lifestyle lifestyle-news-feature 
+lifestyle lifestylerelationships
+lifestyle relationships
+lifestyle lifestylesmartliving
+lifestyle lifestylebuzz
+lifestyle lifestylediy
+lifestyle lifestylemindandsoul
+lifestyle lifestyleroyals
+lifestyle lifestylevideo
+lifestyle lifestylewhatshot
+lifestyle voices

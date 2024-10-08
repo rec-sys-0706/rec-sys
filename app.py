@@ -1,9 +1,7 @@
-from flask import Flask
-app = Flask(__name__)
+import logging
 
-@app.route('/')
-def index():
-    return 'Hello', 200
+from server import app
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='8080')
+    logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
+    app.run(debug=False, host='0.0.0.0', port=5000)

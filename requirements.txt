@@ -27,4 +27,4 @@ scikit-learn
 tiktoken
 pyodbc
 flask_sqlalchemy
-dotenv
+python-dotenv

@@ -6,20 +6,20 @@
         <div class="first-col">
             <div>
                 <h1>User Info</h1>
-                <label for="username">{{ user_info['Account'] }}</label>
-                <input type="text" id="username" name="username" required>
+                <label for="username">Account</label>
+                <input type="text" id="username" name="username" value="{{ user_info['Account'] }}" required>
                 <br><br>
-                <label for="password">{{ user_info['password'] }}</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" value="{{ user_info['password'] }}" required>
                 <br><br>
-                <label for="email">{{ user_info['email'] }}</label>
-                <input type="email" id="email" name="email" required>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value = "{{ user_info['email'] }}"required>
                 <br><br>
-                <label for="phone">{{ user_info['phone'] }}</label>
-                <input type="tel" id="phone" name="phone" required>
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" value = "{{ user_info['phone'] }}" required>
             </div>
             <div class = buttons>
-                <button type="button" onclick="submitForm()">修改資料</button>
+                <button class = "btn" type="button" onclick="submitForm()">修改資料</button>
                 <!-- <a href="/main/revise" class="btn">修改資料</a> -->
                 <a href="javascript: void(0)" class="btn">Line</a>
             </div>

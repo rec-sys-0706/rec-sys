@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, send_file, request
-from config import test_news, headers, ROOT
+from config import news, headers, ROOT
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -14,6 +14,11 @@ main_bp = Blueprint('main',
                     template_folder='templates',
                     static_folder='static', 
                     url_prefix='/main')
+
+def all():
+    test_news = news()
+    all_news = test_news.sort_values('title')
+    return all_news
 
 # index 資料夾
 @main_bp.route('/', methods = ['GET','POST'])
@@ -74,25 +79,26 @@ def signup():
 def recommend():
     return render_template('./recommend/about.html')
 
-news_dates = test_news.sort_values('date').drop_duplicates(subset=['date'])
-all_news = test_news.sort_values('title')
-
 @main_bp.route('/today_news')
 def today_news():
+    all_news = all()
     today = datetime.date.today()
     today_time = today.strftime('%b %d, %Y')
-    return render_template('./recommend/today_news.html', news_date = news_dates, 
-                           today_time = today_time, all_news = all_news)
+    news_date = all_news.loc[all_news['date'] == today_time]
+    return render_template('./recommend/today_news.html', news_date = news_date)
 
 @main_bp.route('/all_dates')
 def all_dates():
+    test_news = news()
+    news_dates = test_news.sort_values('date').drop_duplicates(subset=['date'])
     return render_template('./recommend/all_dates.html', news_date = news_dates)
 
 @main_bp.route('/all_news')
 def allnews():
+    all_news = all()
     date = request.args.get('date')
-    news_date = test_news.loc[test_news['date'] == date]
-    return render_template('./recommend/all_news.html', news_date = news_date, all_news = all_news)
+    news_date = all_news.loc[all_news['date'] == date]
+    return render_template('./recommend/all_news.html', news_date = news_date)
 
 @main_bp.route('/profile')
 def profile():

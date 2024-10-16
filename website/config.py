@@ -25,36 +25,9 @@ headers = {
 def format_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
 
-response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
-    
-test_news = pd.DataFrame(response.json())
-test_news['date'] = test_news['date'].apply(format_date)
 
-
-# 測試
-data = {
-    "account": "alice123",
-    "password": "alice"
-}
-
-'''
-responses = requests.get(f'{ROOT}:5000/api/user/verification', headers = headers, json=data)
-
-responses = requests.delete(f'{ROOT}:5000/api/reader_record/7', headers = headers)
-
-try:
-    data = responses.json()
-    print(data['message'])
-    if isinstance(data, dict):  # Single user (a dictionary)
-        # Convert the single user data into a DataFrame
-        user = pd.DataFrame([data])  # Wrap the dictionary in a list
-        print(user)
-    elif isinstance(data, list):  # Multiple users (a list)
-        users = pd.DataFrame(data)
-        print(users)
-    else:
-        print("Unexpected data format:", data)
-except ValueError as e:
-    print("Error while parsing JSON:", e)
-    
-'''
+def news():
+    response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
+    test_news = pd.DataFrame(response.json())
+    test_news['date'] = test_news['date'].apply(format_date)
+    return test_news

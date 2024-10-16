@@ -2,7 +2,7 @@
 
 {% block content %}
     <div id="today_news" class="home">
-        {% for index, news in all_news[all_news['date'] == today_time].iterrows() %}
+        {% for index, news in news_date.iterrows() %}
             <div  class="news-block">
                 <h3><a href="{{ url_for('main.news_article', db_name='news1', news_id=1) }}" target="_blank">{{ news['title'] }}</a></h3>
                 <p>Category: {{ news['category'] }}</p>

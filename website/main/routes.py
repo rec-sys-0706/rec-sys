@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, session, redirect
-from .utils import register, login, click_data, get_user, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked, recommend_data_source, unrecommend_data_source, history_data_source, click_data_source, user_news
+from flask import Blueprint, render_template, send_file, request
+from config import news, headers, ROOT
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -13,6 +13,11 @@ main_bp = Blueprint('main',
                     template_folder='templates',
                     static_folder='static', 
                     url_prefix='/main')
+
+def all():
+    test_news = news()
+    all_news = test_news.sort_values('title')
+    return all_news
 
 # index 資料夾
 @main_bp.route('/login', methods = ['GET','POST'])
@@ -74,72 +79,26 @@ def recommend():
         print('error')
     return render_template('./main/about.html')
 
-@main_bp.route('/', methods = ['GET','POST'])
-def index():
-    session['page'] = ''
-    if 'token' in session and session['token'] != '':
-        status = 'Login'
-        if request.method == 'POST':
-            try:                    
-                data = request.get_json()
-                link = data.get('link')
-                if session['source'] == 'all':
-                    click_data(session['token'], link)
-                else:
-                    click_data_source(session['token'], link, session['source'])
-            except:
-                data = request.get_json()
-                source = data.get('source')
-                session['source'] = source
-        if session['source'] == 'all':
-            recommend_new = get_recommend(session['token'])
-            unrecommend_news = get_unrecommend(session['token'])
-        else:
-            recommend_new = recommend_data_source(session['token'], session['source'])
-            unrecommend_news = unrecommend_data_source(session['token'], session['source']) 
-        return render_template('./main/today_news.html', status = status, recommend_new = recommend_new, unrecommend_news = unrecommend_news)
-    else:
-        recommend_new = ''
-        session['token'] = ''
-        try:
-            data = request.get_json()
-            source = data.get('source')
-            session['source'] = source
-        except:
-            pass
-        if 'source' in session:
-            unrecommend_news = user_news(session['source']) 
-        else:
-            session['source'] = 'all'
-            unrecommend_news = user_news("all")
-        status = 'Not Login'
-        return render_template('./main/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news, status = status)
+@main_bp.route('/today_news')
+def today_news():
+    all_news = all()
+    today = datetime.date.today()
+    today_time = today.strftime('%b %d, %Y')
+    news_date = all_news.loc[all_news['date'] == today_time]
+    return render_template('./recommend/today_news.html', news_date = news_date)
 
-@main_bp.route('/logout')
-def logout():
-    session['token'] = ''
-    session['account'] = ''
-    return redirect(f'/main')
+@main_bp.route('/all_dates')
+def all_dates():
+    test_news = news()
+    news_dates = test_news.sort_values('date').drop_duplicates(subset=['date'])
+    return render_template('./recommend/all_dates.html', news_date = news_dates)
 
-# TODO
-# @main_bp.route('/all_dates')
-# def all_dates():
-#     if 'token' in session:
-#         all_news = item_data()
-#         news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
-#         return render_template('./recommend/all_dates.html', news_date = news_dates)        
-#     else:
-#         return redirect(f'{BASE_URL}:8080/main')
-
-# @main_bp.route('/all_news')
-# def allnews():
-#     if 'token' in session:
-#         all_news = item_data()
-#         date = request.args.get('gattered_datetime')
-#         date_news = all_news.loc[all_news['gattered_datetime'] == date]
-#         return render_template('./recommend/all_news.html', all_news = date_news)        
-#     else:
-#         return redirect(f'{BASE_URL}:8080/main')
+@main_bp.route('/all_news')
+def allnews():
+    all_news = all()
+    date = request.args.get('date')
+    news_date = all_news.loc[all_news['date'] == date]
+    return render_template('./recommend/all_news.html', news_date = news_date)
 
 
 @main_bp.route('/profile', methods = ['GET','POST'])

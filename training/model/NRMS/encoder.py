@@ -1,6 +1,4 @@
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from model.general import AdditiveAttention, MultiHeadAttention
 
 class Encoder(nn.Module):
@@ -13,11 +11,11 @@ class Encoder(nn.Module):
         self.d_embed = d_embed
     def forward(self, embedding, attn_mask=None):
         """
-        Args:
-            embedding  : (batch_size, n_news, context_length, d_embed)
-            attn_mask  : (batch_size, n_news, context_length)
-        Return:
-            news_vector: (batch_size, n_news, d_embed)
+        Tensors:
+            embedding      : (batch_size, n_news, context_length, d_embed)
+            attn_mask      : (batch_size, n_news, context_length)
+            representations: (batch_size, n_news, context_length, d_embed)
+            news_vector    : (batch_size, n_news, d_embed)
         """
         representations = self.multi_head(embedding, attn_mask)
         

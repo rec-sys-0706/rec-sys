@@ -5,13 +5,13 @@
         <div class="news-container">
             {% set news_count = all_news.shape[0] %}
             {% for row in range((news_count + 1) // 2) %} <!-- 計算總行數 -->
-                <div class="news-row" style="display: flex; justify-content: space-between; margin-bottom: 1px;">
+                <div class="news-row" style="display: flex; justify-content: space-between; margin-bottom: 20px;">
                     {% for col in range(2) %}
                         {% set index = row * 2 + col %}
                         {% if index < news_count %} <!-- 確保索引不越界 -->
-                            <div class="news-block" style="width: 48%; border: 1px solid #ccc; padding: 10px;">
+                            <div class="news-block" style="width: 48%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
                                 {% if row % 2 == 0 %} <!-- 偶數行：文字靠右，圖片靠左 -->
-                                    <div class="news-image" style="float: left; width: 25%;">
+                                    <div class="news-image" style="float: left; width: 25%; padding-right: 10px;">
                                         <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
                                     </div>
                                     <div class="news-content" style="float: right; width: 70%; text-align: right;">
@@ -25,7 +25,7 @@
                                         <p>Data Source: {{ all_news.iloc[index]['data_source'] }}</p>
                                     </div>
                                 {% else %} <!-- 奇數行：文字靠左，圖片靠右 -->
-                                    <div class="news-content" style="float: left; width: 70%; text-align: left;">
+                                    <div class="news-content" style="float: left; width: 70%; text-align: left; padding-right: 10px;">
                                         <h3>
                                             <a href="{{ url_for('main.news_article', db_name=all_news.iloc[index]['gattered_datetime'].lower(), news_id=index) }}" target="_blank">
                                                 {{ all_news.iloc[index]['title'] }}
@@ -36,7 +36,7 @@
                                         <p>Data Source: {{ all_news.iloc[index]['data_source'] }}</p>
                                     </div>
                                     <div class="news-image" style="float: right; width: 25%;">
-                                        <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
+                                        <img src="{{ url_for('static', filename='images/news_paper.jpg') }}" alt="news image" style="width: 100%;">
                                     </div>
                                 {% endif %}
                             </div>

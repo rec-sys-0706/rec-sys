@@ -1,14 +1,14 @@
 from config import DB
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import UUID, String, inspect
+from sqlalchemy import VARCHAR, Uuid, String, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 class User(DB.Model):
-    # __tablename__ = 'app_user'
+    __tablename__ = 'app_user'
 
-    uuid = mapped_column(UUID(as_uuid=True), primary_key=True)
+    uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     account = mapped_column(String(64), nullable=False)
-    password = mapped_column(String(128), nullable=False)
+    password = mapped_column(VARCHAR(256), nullable=False)
     email = mapped_column(String(128), nullable=False)
     line_id = mapped_column(String(64))
 

@@ -1,10 +1,10 @@
 from config import DB, CustomDateTime
 from sqlalchemy.orm import mapped_column
-from sqlalchemy import UUID, String, Text, Enum, DateTime, inspect
+from sqlalchemy import Uuid, String, Text, Enum, DateTime, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 class Item(DB.Model):
-    uuid = mapped_column(UUID(as_uuid=True), primary_key=True)
+    uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     title = mapped_column(String(500), nullable=False)
     abstract = mapped_column(Text, nullable=False)
     link = mapped_column(String(255))

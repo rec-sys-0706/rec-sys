@@ -40,6 +40,7 @@ def generate_blueprint(model: Model,
     @blueprint.route('/<string:uuid>', methods=['GET'])
     @jwt_required()
     def read_data_by_uuid(uuid):
+        logging.info(uuid)
         row = model.query.get_or_404(uuid)
         return jsonify({
             'data': row.serialize()
@@ -63,6 +64,7 @@ def generate_blueprint(model: Model,
             logging.error(f'[INSERT ERROR] - {error}')
             DB.session.rollback()
             abort(500)
+
 
     @blueprint.route('/<string:uuid>', methods=['PUT'])
     @blueprint.input(input_schema(partial=True), location='json')

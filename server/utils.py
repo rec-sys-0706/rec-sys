@@ -5,6 +5,8 @@ import hmac
 def dict_has_exact_keys(dictionary: dict, required_keys: list):
     dict_keys = set(dictionary.keys())
     req_keys = set(required_keys)
+    logging.info(dict_keys)
+    logging.info(req_keys)
 
     if dict_keys != req_keys:
         extra_keys = dict_keys - req_keys

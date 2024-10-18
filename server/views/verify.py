@@ -1,7 +1,9 @@
+import logging
+import uuid
 from apiflask import APIBlueprint
 from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import JWTManager,create_access_token
 from server.models.user import User
 from config import DB
 
@@ -25,9 +27,11 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"msg": "Email already registered"}), 400
 
+    id = str(uuid.uuid4())
     # 創建新用戶
     password_hash = generate_password_hash(password)
-    new_user = User(account=account, password=password_hash, email=email, line_id=line_id)
+    logging.info(len(password_hash))
+    new_user = User(uuid=id, account=account, password=password_hash, email=email, line_id=line_id)
     DB.session.add(new_user)
     DB.session.commit()
 
@@ -45,7 +49,7 @@ def login():
     user = User.query.filter_by(account=account).first()
 
     # 驗證用戶名和密碼
-    if not user or not check_password_hash(user.password_hash, password):
+    if not user or not check_password_hash(user.password, password):
         return jsonify({"msg": "Invalid credentials"}), 401
 
     # 登錄成功，生成 JWT

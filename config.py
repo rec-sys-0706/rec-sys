@@ -1,9 +1,29 @@
 import os
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
+from marshmallow import fields, ValidationError
 
+# Define a custom DateTime field
+class CustomDateTime(fields.DateTime):
+    def __init__(self, format='%Y-%m-%dT%H:%M:%S', required=True, error_messages=None, **kwargs):
+        # Define default error messages if not provided
+        if error_messages is None:
+            error_messages = {
+                "required": "This field is required.",
+                "invalid": "Invalid date format."
+            }
+        super().__init__(format=format, required=required, error_messages=error_messages, **kwargs)
 
-DB = SQLAlchemy()
+    def _deserialize(self, value, attr, data, **kwargs):
+        try:
+            return super()._deserialize(value, attr, data, **kwargs)
+        except ValidationError:
+            raise ValidationError(self.error_messages["invalid"])
 
+class Base(DeclarativeBase):
+    pass
+
+DB = SQLAlchemy(model_class=Base)
 class Config:
     DRIVER = 'ODBC Driver 17 for SQL Server'
     SERVER = os.environ.get('SQL_SERVER')

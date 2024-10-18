@@ -27,4 +27,8 @@ scikit-learn
 tiktoken
 pyodbc
 flask_sqlalchemy
+marshmallow-sqlalchemy
+flask_marshmallow
 python-dotenv
+apiflask
+flask-jwt-extended

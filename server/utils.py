@@ -2,20 +2,6 @@ import logging
 import hashlib
 import hmac
 
-def check_api_key(req) -> bool:
-    secret = '123' # os.environ.get('SQL_SECRET')
-    signature = req.headers.get('X-Fju-Signature-256')
-    payload = req.data
-
-    if signature is None:
-        logging.error("No signature is provided.")
-        return False
-
-    hash_object = hmac.new(secret.encode('utf-8'), msg=payload, digestmod=hashlib.sha256)
-    expected_signature = "sha256=" + hash_object.hexdigest()
-
-    return hmac.compare_digest(expected_signature, signature)
-
 def dict_has_exact_keys(dictionary: dict, required_keys: list):
     dict_keys = set(dictionary.keys())
     req_keys = set(required_keys)

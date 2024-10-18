@@ -10,7 +10,7 @@ class User(DB.Model):
     account = mapped_column(String(64), nullable=False)
     password = mapped_column(String(128), nullable=False)
     email = mapped_column(String(128), nullable=False)
-    lineid = mapped_column(String(64))
+    line_id = mapped_column(String(64))
 
     def serialize(self) -> dict:
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

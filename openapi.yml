@@ -5,6 +5,7 @@ tags:
 - name: Item
 - name: App_User
 - name: Behavoir
+- name: Auth
 paths:
   /api/item:
     get:
@@ -19,12 +20,7 @@ paths:
       - Item
       summary: Read Data
     post:
-      parameters:
-      - in: header
-        name: signature
-        schema:
-          type: string
-        required: true
+      parameters: []
       responses:
         '200':
           content:
@@ -58,12 +54,7 @@ paths:
       - App_User
       summary: Read Data
     post:
-      parameters:
-      - in: header
-        name: signature
-        schema:
-          type: string
-        required: true
+      parameters: []
       responses:
         '200':
           content:
@@ -97,12 +88,7 @@ paths:
       - Behavoir
       summary: Read Data
     post:
-      parameters:
-      - in: header
-        name: signature
-        schema:
-          type: string
-        required: true
+      parameters: []
       responses:
         '200':
           content:
@@ -123,6 +109,30 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BehaviorIn'
+  /api/auth/login:
+    post:
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful response
+      tags:
+      - Auth
+      summary: Login
+  /api/auth/register:
+    post:
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: {}
+          description: Successful response
+      tags:
+      - Auth
+      summary: Register
   /api/item/{uuid}:
     get:
       parameters:

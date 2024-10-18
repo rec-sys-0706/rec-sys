@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, send_file, request
-from config import news, headers, ROOT
+from config import ROOT, user_data, all
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -13,11 +13,6 @@ main_bp = Blueprint('main',
                     template_folder='templates',
                     static_folder='static', 
                     url_prefix='/main')
-
-def all():
-    test_news = news()
-    all_news = test_news.sort_values('title')
-    return all_news
 
 # index 資料夾
 @main_bp.route('/login', methods = ['GET','POST'])
@@ -51,6 +46,7 @@ def is_valid_email(email):
 @main_bp.route('/signup', methods = ['GET','POST'])
 def signup():
     status = 'T'
+    '''
     if request.method == 'POST':
         email = request.form['email']
         account = request.form['account']
@@ -82,23 +78,23 @@ def recommend():
 @main_bp.route('/today_news')
 def today_news():
     all_news = all()
-    today = datetime.date.today()
+    today = date.today()
     today_time = today.strftime('%b %d, %Y')
-    news_date = all_news.loc[all_news['date'] == today_time]
-    return render_template('./recommend/today_news.html', news_date = news_date)
+    news_date = all_news.loc[all_news['gattered_datetime'] == today_time]
+    return render_template('./recommend/today_news.html', all_news = news_date)
 
 @main_bp.route('/all_dates')
 def all_dates():
-    test_news = news()
-    news_dates = test_news.sort_values('date').drop_duplicates(subset=['date'])
+    all_news = all()
+    news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
     return render_template('./recommend/all_dates.html', news_date = news_dates)
 
 @main_bp.route('/all_news')
 def allnews():
     all_news = all()
-    date = request.args.get('date')
-    news_date = all_news.loc[all_news['date'] == date]
-    return render_template('./recommend/all_news.html', news_date = news_date)
+    date = request.args.get('gattered_datetime')
+    date_news = all_news.loc[all_news['gattered_datetime'] == date]
+    return render_template('./recommend/all_news1.html', all_news = date_news)
 
 
 @main_bp.route('/profile', methods = ['GET','POST'])

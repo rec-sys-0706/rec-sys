@@ -9,7 +9,7 @@ from server.models.user import User, UserSchema
 from server.models.behavior import Behavior, BehaviorSchema
 from server.views import generate_blueprint
 from server.bot import linebot_bp
-from server.views.verify import auth
+from server.views.auth import auth
 from flask_jwt_extended import JWTManager
 import os
 

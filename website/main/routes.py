@@ -8,6 +8,7 @@ from datetime import date
 import re
 import requests
 import pandas as pd
+import pyodbc
 
 main_bp = Blueprint('main', 
                     __name__, 
@@ -170,37 +171,37 @@ articles = [
     },
 ]
 
-user_info = {
-        'Account': 'John',
-        'password': 'xxxxxxxxx',
-        'email': 'johndoe@example.com',
-        'phone': '123-456-7890'   
-}
+# user_info = {
+#         'username': 'John',
+#         'password': 'xxxxxxxxx',
+#         'email': 'johndoe@example.com',
+#         'phone': '123-456-7890'   
+# }
 
-@main_bp.route('/donut_chart.png')
-def donut_chart():
-    categories = [article['category'] for article in articles]
-    category_counts = Counter(categories)
+# @main_bp.route('/donut_chart.png')
+# def donut_chart():
+#     categories = [article['category'] for article in articles]
+#     category_counts = Counter(categories)
 
-    labels = category_counts.keys()
-    sizes = category_counts.values()
+#     labels = category_counts.keys()
+#     sizes = category_counts.values()
 
-    # Create a pie chart with a hole in the center (donut chart)
-    fig, ax = plt.subplots()
-    ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, wedgeprops={'width': 0.4})
+#     # Create a pie chart with a hole in the center (donut chart)
+#     fig, ax = plt.subplots()
+#     ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, wedgeprops={'width': 0.4})
 
-    # Draw a circle in the center to make it a donut chart
-    center_circle = plt.Circle((0, 0), 0.70, fc='white')
-    fig.gca().add_artist(center_circle)
+#     # Draw a circle in the center to make it a donut chart
+#     center_circle = plt.Circle((0, 0), 0.70, fc='white')
+#     fig.gca().add_artist(center_circle)
 
-    # Ensure the chart is a circle
-    ax.axis('equal')
+#     # Ensure the chart is a circle
+#     ax.axis('equal')
 
-    # Save the chart to a BytesIO object
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    img.seek(0)
+#     # Save the chart to a BytesIO object
+#     img = io.BytesIO()
+#     plt.savefig(img, format='png')
+#     img.seek(0)
 
-    return send_file(img, mimetype='image/png')
+#     return send_file(img, mimetype='image/png')
 
 '''

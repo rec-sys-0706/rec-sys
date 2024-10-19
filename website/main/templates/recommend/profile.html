@@ -4,29 +4,23 @@
     <div id="profile" class="home-container">
         <!-- profile -->
         <div class="first-col">
-            <table class="user-info">
-                <caption>User Info</caption>
-                <tbody>
-                    <tr>
-                        <th>Account</th>
-                        <td>{{ user_info['Account'] }}</td>
-                    </tr>
-                    <tr>
-                        <th>Password</th>
-                        <td>{{ user_info['password'] }}</td>
-                    </tr>
-                    <tr>
-                        <th>Email</th>
-                        <td>{{ user_info['email'] }}</td>
-                    </tr>
-                    <tr>
-                        <th>Phone</th>
-                        <td>{{ user_info['phone'] }}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div class = "user-info">
+                <h1>User Info</h1>
+                <label for="username">Account:</label>
+                <input type="text" id="username" name="username" value = "{{ user_info['username'] }}" required>
+                <br><br>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" value="{{ user_info['password'] }}" required>
+                <br><br>
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email"  value="{{ user_info['email'] }}" required>
+                <br><br>
+                <label for="phone">Phone:</label>
+                <input type="tel" id="phone" name="phone"  value="{{ user_info['phone'] }}" required>
+            </div>
             <div class = buttons>
-                <a href="/main/revise" class="btn">修改資料</a>
+                <button class = "btn" type="button" onclick="submitForm()">修改資料</button>
+                <!-- <a href="/main/revise" class="btn">修改資料</a> -->
                 <a href="javascript: void(0)" class="btn">Line</a>
             </div>
             <figure class="donut_chart">
@@ -43,5 +37,39 @@
             </div>
             {% endfor %}
         </div>
+
+        <script>
+            function submitForm() {
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const email = document.getElementById('email').value;
+                const phone = document.getElementById('phone').value;
+    
+                
+                const formData = {
+                    username: username,
+                    password: password,
+                    email: email,
+                    phone: phone
+                };
+    
+                
+                fetch('/form', {
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json', 
+                    },
+                    body: JSON.stringify(formData) 
+                })
+                .then(response => response.json()) 
+                .then(data => {
+                    console.log('Success:', data); 
+                })
+                .catch(error => {
+                    console.error('Error:', error); 
+                });
+            }
+        </script>
     </div>
 {% endblock %}

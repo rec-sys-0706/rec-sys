@@ -16,7 +16,7 @@
                                     </div>
                                     <div class="news-content" style="float: right; width: 70%; text-align: right;">
                                         <h3>
-                                            <a href="{{ url_for('main.news_article', db_name=all_news.iloc[index]['gattered_datetime'].lower(), news_id=index) }}" target="_blank">
+                                            <a href="{{ all_news.iloc[index]['link'] }}" target="_blank">
                                                 {{ all_news.iloc[index]['title'] }}
                                             </a>
                                         </h3>
@@ -27,7 +27,7 @@
                                 {% else %} <!-- 奇數行：文字靠左，圖片靠右 -->
                                     <div class="news-content" style="float: left; width: 70%; text-align: left;">
                                         <h3>
-                                            <a href="{{ url_for('main.news_article', db_name=all_news.iloc[index]['gattered_datetime'].lower(), news_id=index) }}" target="_blank">
+                                            <a href="{{ all_news.iloc[index]['link'] }}" target="_blank">
                                                 {{ all_news.iloc[index]['title'] }}
                                             </a>
                                         </h3>

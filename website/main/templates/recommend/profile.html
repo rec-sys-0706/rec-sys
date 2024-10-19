@@ -9,19 +9,21 @@
                 <tbody>
                     <tr>
                         <th>Account</th>
-                        <td>{{ user_info['Account'] }}</td>
-                    </tr>
-                    <tr>
-                        <th>Password</th>
-                        <td>{{ user_info['password'] }}</td>
+                        {% for index, data in user_data.iterrows() %}
+                            <td>{{ data['account'] }}</td>
+                        {% endfor %}
                     </tr>
                     <tr>
                         <th>Email</th>
-                        <td>{{ user_info['email'] }}</td>
+                        {% for index, data in user_data.iterrows() %}
+                            <td>{{ data['email'] }}</td>
+                        {% endfor %}
                     </tr>
                     <tr>
-                        <th>Phone</th>
-                        <td>{{ user_info['phone'] }}</td>
+                        <th>Line ID</th>
+                        {% for index, data in user_data.iterrows() %}
+                            <td>{{ data['line_id'] }}</td>
+                        {% endfor %}
                     </tr>
                 </tbody>
             </table>

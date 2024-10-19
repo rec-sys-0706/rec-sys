@@ -5,10 +5,10 @@
         <div>
             <h2 class="place">Revise</h2>
             <form   method = 'post' action = "{{ url_for('main.revise') }}">
-                <input type="text" id="revise-username" name="username" placeholder="Account" required>
+                <input type="text" id="revise-username" name="account" placeholder="Account" required>
                 <input type="password" id="srevise-password" name="password" placeholder="Password" required>
                 <input id="revise-email" name="email" placeholder="Email" required>
-                <input id="revise-phone" name="phone" placeholder="Phone" required>
+                <input id="revise-phone" name="line_id" placeholder="Line ID" required>
                 <a>
                     <button type="submit">Revise</button>
                 </a>

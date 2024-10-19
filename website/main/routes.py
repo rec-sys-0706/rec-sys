@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, send_file, request
-from config import ROOT, user_data, all
+from flask import Blueprint, render_template, send_file, request, session, redirect, url_for
+from config import register, item_data, login, access_decode, BASE_URL
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -47,7 +47,6 @@ def is_valid_email(email):
 @main_bp.route('/signup', methods = ['GET','POST'])
 def signup():
     status = 'T'
-    '''
     if request.method == 'POST':
         email = request.form['email']
         account = request.form['account']
@@ -78,25 +77,34 @@ def recommend():
 
 @main_bp.route('/today_news')
 def today_news():
-    all_news = all()
-    today = date.today()
-    today_time = today.strftime('%b %d, %Y')
-    news_date = all_news.loc[all_news['gattered_datetime'] == today_time]
-    return render_template('./recommend/today_news.html', all_news = news_date)
+    if 'token' in session:
+        all_news = item_data(session['token'])
+        today = date.today()
+        today_time = today.strftime('%b %d, %Y')
+        #news_date = all_news.loc[all_news['gattered_datetime'] == today_time]  正確的
+        news_date = all_news.loc[all_news['gattered_datetime'] == 'May 31, 2024']
+        return render_template('./recommend/today_news.html', all_news = news_date)
+    else:
+        return redirect(f'{BASE_URL}:8080/main')
 
 @main_bp.route('/all_dates')
 def all_dates():
-    all_news = all()
-    news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
-    return render_template('./recommend/all_dates.html', news_date = news_dates)
+    if 'token' in session:
+        all_news = item_data(session['token'])
+        news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
+        return render_template('./recommend/all_dates.html', news_date = news_dates)        
+    else:
+        return redirect(f'{BASE_URL}:8080/main')
 
 @main_bp.route('/all_news')
 def allnews():
-    all_news = all()
-    date = request.args.get('gattered_datetime')
-    date_news = all_news.loc[all_news['gattered_datetime'] == date]
-    return render_template('./recommend/all_news1.html', all_news = date_news)
-
+    if 'token' in session:
+        all_news = item_data(session['token'])
+        date = request.args.get('gattered_datetime')
+        date_news = all_news.loc[all_news['gattered_datetime'] == date]
+        return render_template('./recommend/all_news.html', all_news = date_news)        
+    else:
+        return redirect(f'{BASE_URL}:8080/main')
 
 @main_bp.route('/profile', methods = ['GET','POST'])
 def profile():

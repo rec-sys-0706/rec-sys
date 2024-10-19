@@ -7,6 +7,7 @@ from collections import Counter
 from datetime import date
 import re
 import pandas as pd
+import pyodbc
 
 main_bp = Blueprint('main', 
                     __name__, 

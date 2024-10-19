@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+</head>
+<body>
+    <h1>User Management</h1>
+
+    <h2>Add New User</h2>
+    <form action="{{ url_for('add_user') }}" method="POST">
+        <label for="account">Account:</label>
+        <input type="text" id="account" name="account" required><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br>
+
+        <label for="lineid">LineID:</label>
+        <input type="text" id="lineid" name="lineid"><br>
+
+        <button type="submit">Add User</button>
+    </form>
+
+    <h2>All Users</h2>
+    <table border="1">
+        <tr>
+            <th>UUID</th>
+            <th>Account</th>
+            <th>Email</th>
+            <th>LineID</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.uuid }}</td>
+            <td>{{ user.account }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.lineid }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

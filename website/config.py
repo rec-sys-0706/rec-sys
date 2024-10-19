@@ -5,56 +5,107 @@ import hashlib
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import uuid
+import json
 
 load_dotenv()
 ROOT = os.environ.get('ROOT')
+
+
 def get_signature(payload=''):
     # Get SQL_SECRET
     #secret_key = '123'
     secret_key = os.environ.get('SQL_SECRET')
     # Compute the HMAC-SHA256 signature
-    signature = hmac.new(secret_key.encode('utf-8'), payload.encode('utf-8'), hashlib.sha256).hexdigest()
-    return signature    
+    hash_object = hmac.new(secret_key.encode('utf-8'), msg = payload.encode('utf-8'), digestmod=hashlib.sha256)
+    signature = "sha256=" + hash_object.hexdigest()
+    return signature
 # payload = '{"example": "data"}' # 如果是 GET 則不用payload
 # Prepare the headers, including the x-hub-signature-256
-headers = {
-    'Content-Type': 'application/json',
-    'x-fju-signature-256': f'sha256={get_signature()}'
-}
 
 def format_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
 
-response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
-    
-test_news = pd.DataFrame(response.json())
-test_news['date'] = test_news['date'].apply(format_date)
+from werkzeug.security import generate_password_hash
 
+#登入和註冊
+def user_data(account, password, email):
+    status=""
+    if email != "":
+        data = {
+            "uuid": str(uuid.uuid4()),
+            "account": "kevin134", 
+            "password": generate_password_hash('kevin'), 
+            "email": "kevin@example.com",
+            "line_id": ""
+        }
+    else:
+        data = {
+            "account": account,
+            "password": password
+        }
+        status = '/login'
 
-# 測試
-data = {
-    "account": "alice123",
-    "password": "alice"
+    json_data = json.dumps(data)
+
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Fju-Signature-256': get_signature(json_data)
+    }
+
+    response = requests.post(f'{ROOT}:5000/api/user{status}', headers = headers, data = json_data)
+    return response.text
+
+#獲取新聞
+def item_data():
+    headers = {
+        'Content-Type': 'application/json',
+        'X-Fju-Signature-256': get_signature()
+    }
+    response = requests.get(f'{ROOT}:5000/api/item', headers = headers)
+    items = response.json()
+    item = pd.DataFrame(items['data'])
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    return item
+
+#按照新聞title字母排列
+def all():
+    items = item_data()
+    item = items.sort_values('title')
+    return item
+
+'''
+user = {
+    "account": "kevin134",
+    "password": "kevin"
 }
 
-'''
-responses = requests.get(f'{ROOT}:5000/api/user/verification', headers = headers, json=data)
+user_data = json.dumps(user)
 
-responses = requests.delete(f'{ROOT}:5000/api/reader_record/7', headers = headers)
+header = {
+    'Content-Type': 'application/json',
+    'X-Fju-Signature-256': get_signature(user_data)
+}
+#response = requests.post(f'{ROOT}:5000/api/user', headers = header, data=json_data)
+response = requests.post(f'{ROOT}:5000/api/user/login', headers = header, data = user_data)
 
-try:
-    data = responses.json()
-    print(data['message'])
-    if isinstance(data, dict):  # Single user (a dictionary)
-        # Convert the single user data into a DataFrame
-        user = pd.DataFrame([data])  # Wrap the dictionary in a list
-        print(user)
-    elif isinstance(data, list):  # Multiple users (a list)
-        users = pd.DataFrame(data)
-        print(users)
-    else:
-        print("Unexpected data format:", data)
-except ValueError as e:
-    print("Error while parsing JSON:", e)
-    
+if response.status_code == 201:
+    print("資料新增成功")
+    print("伺服器回應：", response.json())
+else:
+    print(f"發生錯誤，狀態碼: {response.status_code}")
+    print("錯誤訊息：", response.text)
+
 '''
+
+'''
+test_news = response.json()
+
+test_new = pd.DataFrame(test_news['data'])
+test_new['gattered_datetime'] = test_new['gattered_datetime'].apply(format_date)
+#print(test_new['gattered_datetime'])
+print(test_new['title'])
+'''
+
+
+

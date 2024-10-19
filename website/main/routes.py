@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, send_file, request
-from config import test_news, headers, ROOT
+from config import ROOT, user_data, all
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
 from collections import Counter
-import datetime
+from datetime import date
 import re
 import requests
 import pandas as pd
@@ -19,9 +19,18 @@ main_bp = Blueprint('main',
 @main_bp.route('/', methods = ['GET','POST'])
 def index():
     status = 'T'
+    
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        return render_template('./recommend/about.html')
+        '''  
+        text = user_data(username, password, "")
+        data = json.loads(text)
+        print(data.get('token'))
+    
+        return render_template('./recommend/about.html')
+       
         data = {
             "account": username,
             "password": password
@@ -32,11 +41,8 @@ def index():
             status = 'F'
         else:
             return render_template('./recommend/about.html')
+    '''
     return render_template('./main/login.html', status = status)
-
-@main_bp.route('/about')
-def about():
-    return render_template('./main/about.html')
 
 def is_valid_email(email):
     #電子郵件格式
@@ -50,6 +56,7 @@ def is_valid_email(email):
 @main_bp.route('/signup', methods = ['GET','POST'])
 def signup():
     status = 'T'
+    '''
     if request.method == 'POST':
         email = request.form['email']
         username = request.form['username']
@@ -65,35 +72,37 @@ def signup():
             requests.post(f'{ROOT}:5000/api/user/', headers = headers, json = data)
         else:
             status = 'False'
-        
+    '''    
     return render_template('./main/signup.html', status = status)
-
 
 # recommend 資料夾
 @main_bp.route('/recommend')
 def recommend():
     return render_template('./recommend/about.html')
 
-news_dates = test_news.sort_values('date').drop_duplicates(subset=['date'])
-all_news = test_news.sort_values('title')
-
 @main_bp.route('/today_news')
 def today_news():
-    today = datetime.date.today()
+    all_news = all()
+    today = date.today()
     today_time = today.strftime('%b %d, %Y')
-    return render_template('./recommend/today_news.html', news_date = news_dates, 
-                           today_time = today_time, all_news = all_news)
+    news_date = all_news.loc[all_news['gattered_datetime'] == today_time]
+    return render_template('./recommend/today_news.html', all_news = news_date)
 
 @main_bp.route('/all_dates')
 def all_dates():
+    all_news = all()
+    news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
     return render_template('./recommend/all_dates.html', news_date = news_dates)
 
 @main_bp.route('/all_news')
 def allnews():
-    date = request.args.get('date')
-    news_date = test_news.loc[test_news['date'] == date]
-    return render_template('./recommend/all_news.html', news_date = news_date, all_news = all_news)
+    all_news = all()
+    date = request.args.get('gattered_datetime')
+    date_news = all_news.loc[all_news['gattered_datetime'] == date]
+    return render_template('./recommend/all_news1.html', all_news = date_news)
 
+
+'''
 @main_bp.route('/profile')
 def profile():
     return render_template('./recommend/profile.html', user_info = user_info)
@@ -112,14 +121,16 @@ def revise():
         else:
             status = 'False'
     return render_template('./recommend/revise.html', status = status)
+'''
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
 def news_article(db_name, news_id):
     # Render static pages in this function, ignoring database queries
     title = f"News Title {news_id}"  # example
     content = "This is a static news article content."  # static content
-    return render_template('news.html', title=title, content=content)
+    return render_template('./news.html', title=title, content=content)
 
+'''
 # Sample news data
 articles = [
     {
@@ -191,3 +202,5 @@ def donut_chart():
     img.seek(0)
 
     return send_file(img, mimetype='image/png')
+
+'''

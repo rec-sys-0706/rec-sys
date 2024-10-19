@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, send_file, request
-from config import ROOT, user_data, all
+from flask import Blueprint, render_template, send_file, request, session, redirect, url_for
+from config import register, item_data, login, access_decode, BASE_URL
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -8,7 +8,7 @@ from datetime import date
 import re
 import requests
 import pandas as pd
-import pyodbc
+import json
 
 main_bp = Blueprint('main', 
                     __name__, 
@@ -20,29 +20,16 @@ main_bp = Blueprint('main',
 @main_bp.route('/', methods = ['GET','POST'])
 def index():
     status = 'T'
-    
     if request.method == 'POST':
-        username = request.form['username']
+        account = request.form['account']
         password = request.form['password']
-        return render_template('./recommend/about.html')
-        '''  
-        text = user_data(username, password, "")
-        data = json.loads(text)
-        print(data.get('token'))
-    
-        return render_template('./recommend/about.html')
-       
-        data = {
-            "account": username,
-            "password": password
-        }
-        responses = requests.get(f'{ROOT}:5000/api/user/verification', headers = headers, json = data)
-        message = responses.json()
-        if message['message'] == 'User not found':
+        msg = login(account, password)
+        if msg == None:
             status = 'F'
         else:
+            session['token'] = msg
+            print(access_decode(session['token']))
             return render_template('./recommend/about.html')
-    '''
     return render_template('./main/login.html', status = status)
 
 def is_valid_email(email):
@@ -57,23 +44,16 @@ def is_valid_email(email):
 @main_bp.route('/signup', methods = ['GET','POST'])
 def signup():
     status = 'T'
-    '''
     if request.method == 'POST':
         email = request.form['email']
-        username = request.form['username']
+        account = request.form['account']
         password = request.form['password']
 
         if is_valid_email(email):
             status = 'True'
-            data = {
-                "account": username,
-                "password": password,
-                "email": email
-            }
-            requests.post(f'{ROOT}:5000/api/user/', headers = headers, json = data)
+            register(email, account, password)
         else:
-            status = 'False'
-    '''    
+            status = 'False' 
     return render_template('./main/signup.html', status = status)
 
 # recommend 資料夾
@@ -83,30 +63,46 @@ def recommend():
 
 @main_bp.route('/today_news')
 def today_news():
-    all_news = all()
-    today = date.today()
-    today_time = today.strftime('%b %d, %Y')
-    news_date = all_news.loc[all_news['gattered_datetime'] == today_time]
-    return render_template('./recommend/today_news.html', all_news = news_date)
+    if 'token' in session:
+        all_news = item_data(session['token'])
+        today = date.today()
+        today_time = today.strftime('%b %d, %Y')
+        #news_date = all_news.loc[all_news['gattered_datetime'] == today_time]  正確的
+        news_date = all_news.loc[all_news['gattered_datetime'] == 'May 31, 2024']
+        return render_template('./recommend/today_news.html', all_news = news_date)
+    else:
+        return redirect(f'{BASE_URL}:8080/main')
 
 @main_bp.route('/all_dates')
 def all_dates():
-    all_news = all()
-    news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
-    return render_template('./recommend/all_dates.html', news_date = news_dates)
+    if 'token' in session:
+        all_news = item_data(session['token'])
+        news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
+        return render_template('./recommend/all_dates.html', news_date = news_dates)        
+    else:
+        return redirect(f'{BASE_URL}:8080/main')
 
 @main_bp.route('/all_news')
 def allnews():
-    all_news = all()
-    date = request.args.get('gattered_datetime')
-    date_news = all_news.loc[all_news['gattered_datetime'] == date]
-    return render_template('./recommend/all_news1.html', all_news = date_news)
+    if 'token' in session:
+        all_news = item_data(session['token'])
+        date = request.args.get('gattered_datetime')
+        date_news = all_news.loc[all_news['gattered_datetime'] == date]
+        return render_template('./recommend/all_news.html', all_news = date_news)        
+    else:
+        return redirect(f'{BASE_URL}:8080/main')
 
-
-'''
 @main_bp.route('/profile')
 def profile():
-    return render_template('./recommend/profile.html', user_info = user_info)
+    if 'token' in session:
+        texts = access_decode(session['token'])
+        decoded_text = texts.decode('utf-8')
+        json_data = json.loads(decoded_text)
+        data = json_data['data']
+        user_data = pd.DataFrame([data])
+        return render_template('./recommend/profile.html', user_info = user_info, user_data = user_data)
+    else:
+        return redirect(f'{BASE_URL}:8080/main')
 
 @main_bp.route('/revise', methods = ['GET','POST'])
 def revise():
@@ -122,7 +118,7 @@ def revise():
         else:
             status = 'False'
     return render_template('./recommend/revise.html', status = status)
-'''
+
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
 def news_article(db_name, news_id):
@@ -131,7 +127,7 @@ def news_article(db_name, news_id):
     content = "This is a static news article content."  # static content
     return render_template('./news.html', title=title, content=content)
 
-'''
+
 # Sample news data
 articles = [
     {
@@ -202,6 +198,4 @@ articles = [
 #     plt.savefig(img, format='png')
 #     img.seek(0)
 
-#     return send_file(img, mimetype='image/png')
-
-'''
+    return send_file(img, mimetype='image/png')

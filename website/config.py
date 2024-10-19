@@ -5,11 +5,13 @@ import hashlib
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-import uuid
 import json
+import jwt
 
 load_dotenv()
 ROOT = os.environ.get('ROOT')
+BASE_URL = os.environ.get('BASE_URL')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
 
 
 def get_signature(payload=''):
@@ -26,52 +28,80 @@ def get_signature(payload=''):
 def format_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
 
-from werkzeug.security import generate_password_hash
-
-#登入和註冊
-def user_data(account, password, email):
-    status=""
-    if email != "":
-        data = {
-            "uuid": str(uuid.uuid4()),
-            "account": "kevin134", 
-            "password": generate_password_hash('kevin'), 
-            "email": "kevin@example.com",
-            "line_id": ""
-        }
-    else:
-        data = {
-            "account": account,
-            "password": password
-        }
-        status = '/login'
-
-    json_data = json.dumps(data)
-
-    headers = {
-        'Content-Type': 'application/json',
-        'X-Fju-Signature-256': get_signature(json_data)
+#註冊
+def register(email, account, password):
+    data = {
+        "account" : f"{account}",
+        "password" : f"{password}",
+        "email" : f"{email}",
+        "line_id" : ""
     }
+    response = requests.post(f'{ROOT}:5000/api/auth/register', json = data)
+    return response.content
 
-    response = requests.post(f'{ROOT}:5000/api/user{status}', headers = headers, data = json_data)
-    return response.text
+#登入
+def login(account, password):
+    data = {
+        "account" : f"{account}",
+        "password" : f"{password}"
+    }
+    response = requests.post(f'{ROOT}:5000/api/auth/login', json = data)
+    response_json = json.loads(response.content)
+    access_token = response_json.get('access_token')  
+    return access_token
+
+def access_decode(access_token):   
+    text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
+    id = text.get('sub')
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'X-Fju-Signature-256': get_signature()
+    }
+    response = requests.get(f'{ROOT}:5000/api/user/{id}', headers=headers)
+    return response.content
+
+'''
+texts = access_decode(text)
+decoded_text = texts.decode('utf-8')
+json_data = json.loads(decoded_text)
+
+data = json_data['data']
+
+df = pd.DataFrame([data])
+
+print(df)
+'''
+'''
+text = login('alice123', 'alice')
+if text == None:
+    print(1)
+else:
+    print(2)
+
+response_json = json.loads(texts)
+access_token = response_json.get('access_token')
+print("Access Token:", access_token) #要得
+
+text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
+print(text)
+account = text.get('sub')
+print(account)
+'''
 
 #獲取新聞
-def item_data():
+def item_data(access_token):
     headers = {
-        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {access_token}',
         'X-Fju-Signature-256': get_signature()
     }
     response = requests.get(f'{ROOT}:5000/api/item', headers = headers)
     items = response.json()
-    item = pd.DataFrame(items['data'])
-    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
-    return item
-
-#按照新聞title字母排列
-def all():
-    items = item_data()
-    item = items.sort_values('title')
+    try:
+        items = pd.DataFrame(items['data'])
+        item = items.sort_values('title')
+        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    except:
+        item = 'error'
     return item
 
 '''

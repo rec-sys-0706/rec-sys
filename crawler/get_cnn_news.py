@@ -16,12 +16,17 @@ from selenium.common.exceptions import (
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-def scrape_cnn_articles():
+def scrape_cnn_articles(output_file='output7.csv'):
     driver = webdriver.Chrome()
     driver.get('https://edition.cnn.com/search?q=Artificial+Intelligence&from=0&size=10&page=1&sort=newest&types=article&section=')
 
     items = []
     seen = set()
+    
+    with open(output_file, mode='w', newline='', encoding='utf-8') as file:
+        fieldnames = ['uuid', 'title', 'abstract', 'link', 'data_source', 'gattered_datetime']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
 
     while True:
         try:
@@ -47,27 +52,35 @@ def scrape_cnn_articles():
                 link = class_element.find_element(By.CLASS_NAME, 'container__link').get_attribute('href')
 
                 record = (title, abstract, link, gattered_datetime)
-
-                if record not in seen:
-                    seen.add(record)
-                    item_data = {
-                        'title': title,
-                        'abstract': abstract,
-                        'link': link,
-                        'data_source': 'cnn_news',
-                        'gattered_datetime': gattered_datetime
-                    }
-                    items.append(item_data)
-                    
-                    api_url = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
-                    if api_url:  # 檢查環境變數是否存在
-                        item_post = requests.post(api_url, json=item_data, timeout=10) 
-                        if item_post.status_code != 201:
-                            print(f"API 發送失敗: {item_post.text}")
-                        if item_post.status_code == 201:
-                            print(f"API 發送成功: {item_post.text}")
-                    
-
+                
+                if title and abstract and link and gattered_datetime:
+                    if record not in seen:
+                        seen.add(record)
+                        item_data = {
+                            'uuid': str(uuid.uuid4()),
+                            'title': title,
+                            'abstract': abstract,
+                            'link': link,
+                            'data_source': 'cnn_news',
+                            'gattered_datetime': gattered_datetime
+                        }
+                        items.append(item_data)
+                        
+                        # api_url = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
+                        # if api_url:  # 檢查環境變數是否存在
+                        #     item_post = requests.post(api_url, json=item_data, timeout=10) 
+                        #     if item_post.status_code != 201:
+                        #         print(f"API 發送失敗: {item_post.text}")
+                        #     if item_post.status_code == 201:
+                        #         print(f"API 發送成功: {item_post.text}")
+                        
+                        with open(output_file, mode='a', newline='', encoding='utf-8') as file:
+                                writer = csv.DictWriter(file, fieldnames=fieldnames)
+                                writer.writerow(item_data)
+                                
+                else:
+                        print(f"缺少資料: title={title}, abstract={abstract}, link={link}, gattered_datetime={gattered_datetime}")
+                
             except (NoSuchElementException, StaleElementReferenceException) as e:
                 print(f"遇到錯誤，跳過該項：{e}")
                 continue

@@ -12,7 +12,6 @@ from server.views import generate_blueprint
 from server.bot import linebot_bp
 from server.views.auth import auth
 from flask_jwt_extended import JWTManager
-import os
 
 from server.views.user_views import user_blueprint
 
@@ -25,8 +24,7 @@ def create_app():
     # 初始化數據資料庫
     DB.init_app(app)
 
-    jwt = JWTManager()
-    jwt.init_app(app)
+    jwt = JWTManager(app)
 
     # item_schema = ItemSchema()
     # user_schema = UserSchema()

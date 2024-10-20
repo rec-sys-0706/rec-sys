@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, send_file, request, session, redirect, url_for
-from config import register, item_data, login, access_decode, BASE_URL
+from config import register, item_data, login, access_decode, BASE_URL, click_data, user_data
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -75,9 +75,13 @@ def recommend():
         print('error')
     return render_template('./main/about.html')
 
-@main_bp.route('/today_news')
+@main_bp.route('/today_news', methods = ['GET','POST'])
 def today_news():
     if 'token' in session:
+        if request.method == 'POST':
+            data = request.get_json()
+            link = data.get('link')
+            click_data(session['token'], link)
         all_news = item_data(session['token'])
         today = date.today()
         today_time = today.strftime('%b %d, %Y')

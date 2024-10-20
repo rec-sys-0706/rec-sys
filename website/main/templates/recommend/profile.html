@@ -10,7 +10,9 @@
                     <tr>
                         <th>Account</th>
                         {% for index, data in user_data.iterrows() %}
-                            <td>{{ data['account'] }}</td>
+                            <td>
+                                <input style="border: none;" type="text" name="account" value="{{ data['account'] }}"  disabled/>
+                            </td>
                         {% endfor %}
                     </tr>
                     <tr>
@@ -28,8 +30,8 @@
                 </tbody>
             </table>
             <div class = buttons>
-                <a href="/main/revise" class="btn">修改資料</a>
                 <a href="javascript: void(0)" class="btn">Line</a>
+                <a href="/main/revise" class="btn">修改資料</a>  
             </div>
             <figure class="donut_chart">
                 <figcaption>Article Category Distribution</figcaption>

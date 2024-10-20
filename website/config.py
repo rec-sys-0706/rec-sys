@@ -60,34 +60,6 @@ def access_decode(access_token):
     response = requests.get(f'{ROOT}:5000/api/user/{id}', headers=headers)
     return response.content
 
-'''
-texts = access_decode(text)
-decoded_text = texts.decode('utf-8')
-json_data = json.loads(decoded_text)
-
-data = json_data['data']
-
-df = pd.DataFrame([data])
-
-print(df)
-'''
-'''
-text = login('alice123', 'alice')
-if text == None:
-    print(1)
-else:
-    print(2)
-
-response_json = json.loads(texts)
-access_token = response_json.get('access_token')
-print("Access Token:", access_token) #要得
-
-text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
-print(text)
-account = text.get('sub')
-print(account)
-'''
-
 #獲取新聞
 def item_data(access_token):
     headers = {
@@ -104,38 +76,37 @@ def item_data(access_token):
         item = 'error'
     return item
 
+text = login('alice123', 'alice') # token
+
+def user_data(access_token):
+    texts = access_decode(access_token)
+    decoded_text = texts.decode('utf-8')
+    json_data = json.loads(decoded_text)
+    data = json_data['data']
+    user_data = pd.DataFrame([data])
+    return user_data
 '''
-user = {
-    "account": "kevin134",
-    "password": "kevin"
-}
+print(text)
 
-user_data = json.dumps(user)
-
-header = {
-    'Content-Type': 'application/json',
-    'X-Fju-Signature-256': get_signature(user_data)
-}
-#response = requests.post(f'{ROOT}:5000/api/user', headers = header, data=json_data)
-response = requests.post(f'{ROOT}:5000/api/user/login', headers = header, data = user_data)
-
-if response.status_code == 201:
-    print("資料新增成功")
-    print("伺服器回應：", response.json())
-else:
-    print(f"發生錯誤，狀態碼: {response.status_code}")
-    print("錯誤訊息：", response.text)
-
+item = item_data(text)
+item_content = item.loc[item['link'] == 'https://www.oneusefulthing.org/p/the-lazy-tyranny-of-the-wait-calculation?utm_source=ai.briefnewsletter.com&utm_medium=referral&utm_campaign=chatgpt-plus-vs-copilot-pro']
+item_id = item_content['uuid']
+print(item_id)
 '''
 
-'''
-test_news = response.json()
+def get_formatted_datetime():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-test_new = pd.DataFrame(test_news['data'])
-test_new['gattered_datetime'] = test_new['gattered_datetime'].apply(format_date)
-#print(test_new['gattered_datetime'])
-print(test_new['title'])
-'''
-
-
-
+def click_data(access_token, link):
+    time = get_formatted_datetime()
+    item = item_data(access_token)
+    item_content = item.loc[item['link'] == link]
+    item_id = item_content['uuid'].iloc[0]
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    data = {
+        "user_id" : id,
+        "item_id": item_id,
+        "clicked_time": time
+    }
+    post = requests.post(f'{ROOT}:5000/api/user_history', json=data)

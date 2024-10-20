@@ -264,3 +264,18 @@ figcaption {
     flex-wrap: wrap;
     justify-content: space-around;
 }
+
+.clickable-link {
+    color: blue;  /* 初始顏色 */
+    text-decoration: underline;  /* 添加下劃線 */
+    cursor: pointer;  /* 鼠標懸停時顯示手型指針 */
+}
+
+.clickable-link:visited {
+    color: #5B0FB2;  /* 點擊後變成紫色 */
+}
+
+input:disabled {
+    background-color: #ffffff;  /* 自定義禁用狀態下的背景顏色 */
+    color: #333;  /* 自定義禁用狀態下的文字顏色 */
+}

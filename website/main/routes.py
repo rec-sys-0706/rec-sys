@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, send_file, request, session, redirect, url_for
-from config import register, item_data, login, access_decode, BASE_URL
+from config import register, item_data, login, access_decode, BASE_URL, click_data, user_data
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -28,7 +28,6 @@ def index():
             status = 'F'
         else:
             session['token'] = msg
-            print(access_decode(session['token']))
             return render_template('./recommend/about.html')
     return render_template('./main/login.html', status = status)
 
@@ -61,9 +60,13 @@ def signup():
 def recommend():
     return render_template('./recommend/about.html')
 
-@main_bp.route('/today_news')
+@main_bp.route('/today_news', methods = ['GET','POST'])
 def today_news():
     if 'token' in session:
+        if request.method == 'POST':
+            data = request.get_json()
+            link = data.get('link')
+            click_data(session['token'], link)
         all_news = item_data(session['token'])
         today = date.today()
         today_time = today.strftime('%b %d, %Y')
@@ -95,12 +98,8 @@ def allnews():
 @main_bp.route('/profile')
 def profile():
     if 'token' in session:
-        texts = access_decode(session['token'])
-        decoded_text = texts.decode('utf-8')
-        json_data = json.loads(decoded_text)
-        data = json_data['data']
-        user_data = pd.DataFrame([data])
-        return render_template('./recommend/profile.html', user_info = user_info, user_data = user_data)
+        user = user_data(session['token'])
+        return render_template('./recommend/profile.html', user_info = user_info, user_data = user)
     else:
         return redirect(f'{BASE_URL}:8080/main')
 

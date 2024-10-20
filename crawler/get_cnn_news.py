@@ -1,93 +1,90 @@
-#文章
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-import time
 import csv
+import time
+import uuid
+import random
+import requests
+import pandas as pd
+import json
+import os
+from datetime import datetime
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import (
+    NoSuchElementException, TimeoutException, 
+    StaleElementReferenceException, ElementClickInterceptedException
+)
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-def setup_webdriver():
-    service = Service()
-    driver = webdriver.Chrome(service=service)
-    driver.implicitly_wait(10)
-    return driver
+def scrape_cnn_articles():
+    driver = webdriver.Chrome()
+    driver.get('https://edition.cnn.com/search?q=Artificial+Intelligence&from=0&size=10&page=1&sort=newest&types=article&section=')
 
-def perform_search(driver, url, keyword):
-    driver.get(url)
-    time.sleep(2)
-    driver.find_element(By.ID, 'headerSearchIcon').click()
-    driver.find_element(By.CLASS_NAME, 'search-bar__input').send_keys(keyword)
-    driver.find_element(By.CLASS_NAME, 'search-bar__submit').click()
-    time.sleep(2)
-    driver.find_element(By.XPATH, '//*[@id="search"]/div[1]/div[2]/div/div/ul/li[2]/label').click()
-    time.sleep(10)
+    items = []
+    seen = set()
 
-def extract_articles(driver, csv_writer, page_count=1):
-    for _ in range(page_count):
-        content_div = driver.find_element(By.CLASS_NAME, 'container__field-links')
-        divs_in_content = content_div.find_elements(By.XPATH, './div')
-        div_count = len(divs_in_content)
-        
-        for x in range(1, div_count + 1):
-            extract_and_save_article(driver, x, csv_writer)
-        navigate_to_next_page(driver)
+    while True:
+        try:
+            class_elements = WebDriverWait(driver, 10).until(
+                EC.presence_of_all_elements_located((By.CLASS_NAME, 'container__item'))
+            )
+        except TimeoutException:
+            print("無法載入頁面內容，結束程式。")
+            break
 
-def extract_and_save_article(driver, index, csv_writer):
-    titles = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[1]/span').text
-    publication_dates = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[2]').text
-    abstracts = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[3]').text
-    elements = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]')
-    urls = elements.get_attribute('href')
+        for class_element in class_elements:
+            try:
+                text_container = class_element.find_element(By.CLASS_NAME, 'container__text')
+                date_str = text_container.find_element(By.CLASS_NAME, 'container__date').text
+                date_obj = datetime.strptime(date_str, "%b %d, %Y")
+                gattered_datetime = date_obj.strftime("%Y-%m-%d 00:00:00")
+                
+                title = text_container.find_element(By.CLASS_NAME, 'container__headline-text').text
 
-    driver.get(urls)
-    categories, subcategories = extract_categories(driver)
-    content = extract_content(driver)
+                abstract_element = class_element.find_element(By.CLASS_NAME, 'container__description')
+                abstract = abstract_element.text
 
-    csv_writer.writerow([titles, publication_dates, abstracts, categories, subcategories, urls, content])
+                link = class_element.find_element(By.CLASS_NAME, 'container__link').get_attribute('href')
 
-    driver.back()
-    time.sleep(1)
+                record = (title, abstract, link, gattered_datetime)
 
-def extract_categories(driver):
-    try:
-        categories = driver.find_element(By.CLASS_NAME, 'breadcrumb__parent-link').text
-        subcategories = driver.find_element(By.CLASS_NAME, 'breadcrumb__child-link').text
-    except:
-        categories = " "
-        subcategories = " "
-    return categories, subcategories
+                if record not in seen:
+                    seen.add(record)
+                    item_data = {
+                        'title': title,
+                        'abstract': abstract,
+                        'link': link,
+                        'data_source': 'cnn_news',
+                        'gattered_datetime': gattered_datetime
+                    }
+                    items.append(item_data)
+                    
+                    api_url = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
+                    if api_url:  # 檢查環境變數是否存在
+                        item_post = requests.post(api_url, json=item_data, timeout=10) 
+                        if item_post.status_code != 201:
+                            print(f"API 發送失敗: {item_post.text}")
+                        if item_post.status_code == 201:
+                            print(f"API 發送成功: {item_post.text}")
+                    
 
-def extract_content(driver):
-    try:
-        article_content = driver.find_element(By.CLASS_NAME, 'article__content')
-        time.sleep(2)
-        paragraphs = article_content.find_elements(By.TAG_NAME, 'p')
-        time.sleep(2)
-        content = "\n".join([p.text for p in paragraphs])
-    except:
-        content = " "
-    return content
+            except (NoSuchElementException, StaleElementReferenceException) as e:
+                print(f"遇到錯誤，跳過該項：{e}")
+                continue
 
-def navigate_to_next_page(driver):
-    try:
-        driver.find_element(By.XPATH, '//*[@id="search"]/div[2]/div/div[4]/div/div[3]').click()
-        time.sleep(10)
-    except:
-        print("No more pages.")
+        try:
+            next_page_button = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="search"]/div[2]/div/div[4]/div/div[3]'))
+            )
+            next_page_button.click()
+            time.sleep(random.uniform(2, 5))  # 隨機延遲控制速度
+        except (NoSuchElementException, TimeoutException):
+            print("沒有找到下一頁，停止爬取。")
+            break
+        except ElementClickInterceptedException:
+            print("無法點擊下一頁按鈕，可能是其他元素覆蓋了它。")
+            break
 
-def main():
-    driver = setup_webdriver()
-
-    url = 'https://edition.cnn.com/'
-    keyword = 'Artificial Intelligence'
-    
-    with open('articles.csv', mode='w', newline='', encoding='utf-8') as file:
-        csv_writer = csv.writer(file)
-        csv_writer.writerow(['Title', 'Publication Date', 'Abstract', 'Category', 'Subcategory', 'URL', 'Content'])
-    
-        perform_search(driver, url, keyword)
-        extract_articles(driver, csv_writer, page_count=4)  # 控制頁數
-        
     driver.quit()
 
-if __name__ == '__main__':
-    main()
+scrape_cnn_articles()

@@ -4,7 +4,7 @@ from sqlalchemy import Uuid, DateTime, ForeignKey, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 class Behavior(DB.Model):
-    # __tablename__ = 'behavior'
+    __tablename__ = 'behavior'
 
     uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     user_id = mapped_column(Uuid(as_uuid=True), ForeignKey('app_user.uuid'), nullable=False)

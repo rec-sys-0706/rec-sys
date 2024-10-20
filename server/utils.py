@@ -18,6 +18,17 @@ def dict_has_exact_keys(dictionary: dict, required_keys: list):
         return False
     return True
 
-def validate_dict_keys(dictionary: dict, valid_keys: list):
-    """Check if the dictionary has no keys other than those in valid_keys"""
-    return all(key in valid_keys for key in dictionary.keys())
+# def validate_dict_keys(dictionary: dict, valid_keys: list):
+#     """Check if the dictionary has no keys other than those in valid_keys"""
+#     return all(key in valid_keys for key in dictionary.keys())
+
+def validate_dict_keys(data: dict, headers: list):
+    dict_keys = set(data.keys())
+    valid_keys = set(headers)
+
+    # 檢查請求中的字段是否都在模型字段之內
+    if not dict_keys.issubset(valid_keys):
+        extra_keys = dict_keys - valid_keys
+        logging.error(f"Invalid keys in the request: {extra_keys}")
+        return False
+    return True

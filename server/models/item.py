@@ -4,6 +4,8 @@ from sqlalchemy import Uuid, String, Text, Enum, DateTime, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 class Item(DB.Model):
+    __table__ = 'item'
+
     uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     title = mapped_column(String(500), nullable=False)
     abstract = mapped_column(Text, nullable=False)

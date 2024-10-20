@@ -67,7 +67,7 @@ def today_news():
             data = request.get_json()
             link = data.get('link')
             click_data(session['token'], link)
-        all_news = item_data(session['token'])
+        all_news = item_data()
         today = date.today()
         today_time = today.strftime('%b %d, %Y')
         #news_date = all_news.loc[all_news['gattered_datetime'] == today_time]  正確的
@@ -79,7 +79,7 @@ def today_news():
 @main_bp.route('/all_dates')
 def all_dates():
     if 'token' in session:
-        all_news = item_data(session['token'])
+        all_news = item_data()
         news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
         return render_template('./recommend/all_dates.html', news_date = news_dates)        
     else:
@@ -88,7 +88,7 @@ def all_dates():
 @main_bp.route('/all_news')
 def allnews():
     if 'token' in session:
-        all_news = item_data(session['token'])
+        all_news = item_data()
         date = request.args.get('gattered_datetime')
         date_news = all_news.loc[all_news['gattered_datetime'] == date]
         return render_template('./recommend/all_news.html', all_news = date_news)        

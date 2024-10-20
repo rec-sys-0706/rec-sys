@@ -36,7 +36,7 @@ def register(email, account, password):
         "email" : f"{email}",
         "line_id" : ""
     }
-    response = requests.post(f'{ROOT}:5000/api/auth/register', json = data)
+    response = requests.post(f'{ROOT}:5000/api/user/register', json = data)
     return response.content
 
 #登入
@@ -45,28 +45,35 @@ def login(account, password):
         "account" : f"{account}",
         "password" : f"{password}"
     }
-    response = requests.post(f'{ROOT}:5000/api/auth/login', json = data)
+    response = requests.post(f'{ROOT}:5000/api/user/login', json = data)
     response_json = json.loads(response.content)
     access_token = response_json.get('access_token')  
     return access_token
 
+text = login('alice123', 'alice') # token
+
+#解碼
 def access_decode(access_token):   
     text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
     id = text.get('sub')
     headers = {
         'Authorization': f'Bearer {access_token}',
-        'X-Fju-Signature-256': get_signature()
     }
     response = requests.get(f'{ROOT}:5000/api/user/{id}', headers=headers)
     return response.content
 
+#獲得user
+def user_data(access_token):
+    texts = access_decode(access_token)
+    decoded_text = texts.decode('utf-8')
+    json_data = json.loads(decoded_text)
+    data = json_data['data']
+    user_data = pd.DataFrame([data])
+    return user_data
+
 #獲取新聞
-def item_data(access_token):
-    headers = {
-        'Authorization': f'Bearer {access_token}',
-        'X-Fju-Signature-256': get_signature()
-    }
-    response = requests.get(f'{ROOT}:5000/api/item', headers = headers)
+def item_data():
+    response = requests.get(f'{ROOT}:5000/api/item')
     items = response.json()
     try:
         items = pd.DataFrame(items['data'])
@@ -76,28 +83,13 @@ def item_data(access_token):
         item = 'error'
     return item
 
-text = login('alice123', 'alice') # token
 
-def user_data(access_token):
-    texts = access_decode(access_token)
-    decoded_text = texts.decode('utf-8')
-    json_data = json.loads(decoded_text)
-    data = json_data['data']
-    user_data = pd.DataFrame([data])
-    return user_data
-'''
-print(text)
-
-item = item_data(text)
-item_content = item.loc[item['link'] == 'https://www.oneusefulthing.org/p/the-lazy-tyranny-of-the-wait-calculation?utm_source=ai.briefnewsletter.com&utm_medium=referral&utm_campaign=chatgpt-plus-vs-copilot-pro']
-item_id = item_content['uuid']
-print(item_id)
-'''
 
 def get_formatted_datetime():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 def click_data(access_token, link):
+    '''
     time = get_formatted_datetime()
     item = item_data(access_token)
     item_content = item.loc[item['link'] == link]
@@ -110,3 +102,4 @@ def click_data(access_token, link):
         "clicked_time": time
     }
     post = requests.post(f'{ROOT}:5000/api/user_history', json=data)
+    '''

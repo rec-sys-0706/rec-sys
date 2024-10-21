@@ -26,14 +26,24 @@
             </div>
         </div>
     </div>
-
-
-    
+  
     {% if status == 'False' %}
         <script>
             Swal.fire({
                 title:"註冊失敗",
                 text:"email 不符合格式",
+                icon:"error",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/signup"
+            });
+        </script>
+    {% elif status == 'F' %}
+        <script>
+            Swal.fire({
+                title:"註冊失敗",
+                text:"帳號名稱已存在",
                 icon:"error",
                 confirmButtonText:"返回",
                 allowOutsideClick:false

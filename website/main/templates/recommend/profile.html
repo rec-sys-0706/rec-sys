@@ -1,9 +1,21 @@
 {% extends "./recommend/recommend.html" %}
 
 {% block content %}
+    <style>
+        input {
+            border: 2px solid #ccc;
+            padding: 10px;
+            outline: none;
+        }
+        input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+    </style>
     <div id="profile" class="home-container">
         <!-- profile -->
         <div class="first-col">
+            {% block contents %}
             <table class="user-info">
                 <caption>User Info</caption>
                 <tbody>
@@ -11,20 +23,24 @@
                         <th>Account</th>
                         {% for index, data in user_data.iterrows() %}
                             <td>
-                                <input style="border: none;" type="text" name="account" value="{{ data['account'] }}"  disabled/>
+                                <input style="border: none;font-size: 16px;color: black;" type="text" name="account" value="{{ data['account'] }}"  disabled/>
                             </td>
                         {% endfor %}
                     </tr>
                     <tr>
                         <th>Email</th>
                         {% for index, data in user_data.iterrows() %}
-                            <td>{{ data['email'] }}</td>
+                            <td>
+                                <input style="border: none;font-size: 16px;color: black;" name="email" value="{{ data['email'] }}"  disabled/>
+                            </td>
                         {% endfor %}
                     </tr>
                     <tr>
                         <th>Line ID</th>
                         {% for index, data in user_data.iterrows() %}
-                            <td>{{ data['line_id'] }}</td>
+                            <td>
+                                <input style="border: none;font-size: 16px;color: black;" name="line_id" value="{{ data['line_id'] }}"  disabled/>
+                            </td>
                         {% endfor %}
                     </tr>
                 </tbody>
@@ -33,6 +49,7 @@
                 <a href="javascript: void(0)" class="btn">Line</a>
                 <a href="/main/revise" class="btn">修改資料</a>  
             </div>
+            {% endblock %}
             <figure class="donut_chart">
                 <figcaption>Article Category Distribution</figcaption>
                 <img src="{{ url_for('main.donut_chart') }}" alt="Donut Chart">

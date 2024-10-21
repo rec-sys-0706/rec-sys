@@ -1,14 +1,12 @@
-from flask import Blueprint, render_template, send_file, request, session, redirect, url_for
-from config import register, item_data, login, access_decode, BASE_URL, click_data, user_data
+from flask import Blueprint, render_template, send_file, request, session, redirect
+from config import register, item_data, login, BASE_URL, click_data, user_data, update_user_data, msg
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
 from collections import Counter
 from datetime import date
 import re
-import requests
 import pandas as pd
-import json
 
 main_bp = Blueprint('main', 
                     __name__, 
@@ -50,7 +48,10 @@ def signup():
 
         if is_valid_email(email):
             status = 'True'
-            register(email, account, password)
+            text = register(email, account, password)
+            message = msg(text)
+            if(message == 'exists'):
+                status = 'F'
         else:
             status = 'False' 
     return render_template('./main/signup.html', status = status)
@@ -99,24 +100,27 @@ def allnews():
 def profile():
     if 'token' in session:
         user = user_data(session['token'])
-        return render_template('./recommend/profile.html', user_info = user_info, user_data = user)
+        return render_template('./recommend/profile.html', user_data = user)
     else:
         return redirect(f'{BASE_URL}:8080/main')
 
 @main_bp.route('/revise', methods = ['GET','POST'])
 def revise():
+    if 'token' in session:
+        user = user_data(session['token'])
     status = 'T'
     if request.method == 'POST':
-        username = request.form['username']
+        account = request.form['account']
         password = request.form['password']
         email = request.form['email']
-        phone = request.form['phone']
+        line_id = request.form['line_id']
         
         if is_valid_email(email):
             status = 'True'
+            update_user_data(session['token'], account, password, email, line_id)
         else:
             status = 'False'
-    return render_template('./recommend/revise.html', status = status)
+    return render_template('./recommend/revise.html', status = status, user_data = user)
 
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
@@ -165,13 +169,6 @@ articles = [
         'date': '2024-08-07'
     },
 ]
-
-user_info = {
-        'Account': 'John',
-        'password': 'xxxxxxxxx',
-        'email': 'johndoe@example.com',
-        'phone': '123-456-7890'   
-}
 
 @main_bp.route('/donut_chart.png')
 def donut_chart():

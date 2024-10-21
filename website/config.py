@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import json
 import jwt
+from werkzeug.security import generate_password_hash
 
 load_dotenv()
 ROOT = os.environ.get('ROOT')
@@ -50,8 +51,6 @@ def login(account, password):
     access_token = response_json.get('access_token')  
     return access_token
 
-text = login('alice123', 'alice') # token
-
 #解碼
 def access_decode(access_token):   
     text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
@@ -61,6 +60,30 @@ def access_decode(access_token):
     }
     response = requests.get(f'{ROOT}:5000/api/user/{id}', headers=headers)
     return response.content
+
+#修改user
+def update_user_data(access_token, account, password, email, line_id):
+    text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
+    id = text.get('sub')
+    headers = {
+        "Authorization" : f'Bearer {access_token}'
+    }
+    password = generate_password_hash(password)
+    user_data = {
+        "account" : f"{account}",
+        "password" : f"{password}",
+        "email" : f"{email}",
+        "line_id" : f"{line_id}"
+    }
+    update_user_data = requests.put(f"{ROOT}:5000/api/user/{id}", headers=headers, json=user_data)
+
+def msg(text):
+    string_data = text.decode('utf-8')
+    data_dict = json.loads(string_data)
+    message = data_dict.get('msg')
+    if message == "Username already exists":
+        message = 'exists'
+    return message
 
 #獲得user
 def user_data(access_token):

@@ -15,12 +15,13 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from recommendation import generate_random_scores
 
 def scrape_bbc_articles(output_file='output6.csv'):
     driver = webdriver.Chrome()
     driver.get('https://www.bbc.com/search?q=Artificial%20Intelligence&edgeauth=eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJrZXkiOiAiZmFzdGx5LXVyaS10b2tlbi0xIiwiZXhwIjogMTcyOTQzMDIyMiwibmJmIjogMTcyOTQyOTg2MiwicmVxdWVzdHVyaSI6ICIlMkZzZWFyY2glM0ZxJTNEQXJ0aWZpY2lhbCUyNTIwSW50ZWxsaWdlbmNlIn0.mUpWVN3N9gvpw2DpJz8UhFLrxTbWLb17ZWLp81mNGi4')
 
-    items = []
+    items_data = []
     seen = set()
     
     with open(output_file, mode='w', newline='', encoding='utf-8') as file:
@@ -63,7 +64,7 @@ def scrape_bbc_articles(output_file='output6.csv'):
                 if title and abstract and link and gattered_datetime:
                     if record not in seen:
                         seen.add(record)
-                        item_data = {
+                        items = {
                             'uuid': str(uuid.uuid4()),
                             'title': title,
                             'abstract': abstract,
@@ -71,19 +72,20 @@ def scrape_bbc_articles(output_file='output6.csv'):
                             'data_source': 'bbc_news',
                             'gattered_datetime': gattered_datetime
                         }
-                        items.append(item_data)
+                        items_data.append(items)
                         
-                        # api_url = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
-                        # if api_url:  # 檢查環境變數是否存在
-                        #     item_post = requests.post(api_url, json=item_data, timeout=10) 
-                        #     if item_post.status_code != 201:
-                        #         print(f"API 發送失敗: {item_post.text}")
-                        #     if item_post.status_code == 201:
-                        #         print(f"API 發送成功: {item_post.text}")
+                        api_url = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
+                        if api_url:  
+                            item_post = requests.post(api_url, json=items, timeout=10) 
+                            if item_post.status_code == 201:
+                                generate_random_scores(items,users)
+                            if item_post.status_code != 201:
+                                print(f"API 發送失敗: {item_post.text}")
+                            
                         
                         with open(output_file, mode='a', newline='', encoding='utf-8') as file:
                             writer = csv.DictWriter(file, fieldnames=fieldnames)
-                            writer.writerow(item_data)
+                            writer.writerow(items)
                         
                 else:
                         print(f"缺少資料: title={title}, abstract={abstract}, link={link}, gattered_datetime={gattered_datetime}")

@@ -9,13 +9,13 @@ def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
         user_uuid = user['uuid']
         for item in items:
             item_uuid = item['uuid']
-            score = random.randint(0, 1)  
+            recommend_score = random.randint(0, 1)  
             recommendations.append({
-                'recommendation_uuid': str(uuid.uuid4()),
+                'uuid': str(uuid.uuid4()),
                 'user_uuid': user_uuid,
                 'item_uuid': item_uuid,
-                'score': score,
-                'recommendation_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                'recommend_score': recommend_score,
+                'recommend_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             })
     
     return recommendations

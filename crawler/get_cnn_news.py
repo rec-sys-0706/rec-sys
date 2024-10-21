@@ -147,17 +147,18 @@ def scrape_cnn_articles():
                             'category': category,
                             'abstract': abstract,
                             'link': link,
-                            'data_source': data_source,
-                            'gattered_datetime': gattered_datetime,
-                            'crawler_datetime': crawler_datetime,
-                            'any_category': any_category
+                            'data_source': 'cnn_news',
+                            'gattered_datetime': gattered_datetime
                         }
+                        items.append(item_data)
                         
-                        writer_new.writerow(row_data)
-                        writer_original.writerow(row_data)
-                        
-                        new_file.flush()
-                        original_file.flush()
+                        # api_url = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
+                        # if api_url:  # 檢查環境變數是否存在
+                        #     item_post = requests.post(api_url, json=item_data, timeout=10) 
+                        #     if item_post.status_code != 201:
+                        #         print(f"API 發送失敗: {item_post.text}")
+                        #     if item_post.status_code == 201:
+                        #         print(f"API 發送成功: {item_post.text}")
                         
                         existing_titles_links.add((title, link))
                         

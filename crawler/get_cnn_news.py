@@ -62,7 +62,7 @@ def scrape_cnn_articles(output_file='output7.csv'):
                             'title': title,
                             'abstract': abstract,
                             'link': link,
-                            'data_source': 'bbc_news',
+                            'data_source': 'cnn_news',
                             'gattered_datetime': gattered_datetime
                         }
                         items_data.append(items)

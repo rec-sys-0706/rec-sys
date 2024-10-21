@@ -13,6 +13,8 @@ from selenium.common.exceptions import (
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib.parse import urlparse
+from recommendation import generate_random_scores
+import os, requests
 
 def scrape_huggingface_papers():
     output_folder = 'daily_papers_output'

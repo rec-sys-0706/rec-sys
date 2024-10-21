@@ -100,4 +100,3 @@ def scrape_cnn_articles(output_file='output7.csv'):
 
     driver.quit()
 
-scrape_cnn_articles()

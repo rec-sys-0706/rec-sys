@@ -103,5 +103,3 @@ def scrape_bbc_articles(output_file='output6.csv'):
             break
 
     driver.quit()
-
-scrape_bbc_articles()

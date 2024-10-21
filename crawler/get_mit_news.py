@@ -103,5 +103,3 @@ def scrape_mit_news_articles(output_file='output8.csv'):
             break
 
     driver.quit()
-
-scrape_mit_news_articles()

@@ -125,5 +125,3 @@ def scrape_huggingface_papers(output_file='output5.csv'):
 
     driver.quit()
 
-if __name__ == '__main__':
-    scrape_huggingface_papers()

@@ -18,6 +18,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from recommendation import generate_random_scores
 
 def scrape_cnn_articles(output_file='output7.csv'):
+    response = requests.get(f"{os.environ.get('ROOT')}/api/user")
+    data = response.json()
+    users = data["data"]
+    
     driver = webdriver.Chrome()
     driver.get('https://edition.cnn.com/search?q=Artificial+Intelligence&from=0&size=10&page=1&sort=newest&types=article&section=')
 
@@ -40,6 +44,7 @@ def scrape_cnn_articles(output_file='output7.csv'):
 
         for class_element in class_elements:
             try:
+                time.sleep(1)
                 text_container = class_element.find_element(By.CLASS_NAME, 'container__text')
                 date_str = text_container.find_element(By.CLASS_NAME, 'container__date').text
                 date_obj = datetime.strptime(date_str, "%b %d, %Y")
@@ -57,7 +62,7 @@ def scrape_cnn_articles(output_file='output7.csv'):
                 if title and abstract and link and gattered_datetime:
                     if record not in seen:
                         seen.add(record)
-                        items = {
+                        items_list = {
                             'uuid': str(uuid.uuid4()),
                             'title': title,
                             'abstract': abstract,
@@ -65,20 +70,29 @@ def scrape_cnn_articles(output_file='output7.csv'):
                             'data_source': 'cnn_news',
                             'gattered_datetime': gattered_datetime
                         }
-                        items_data.append(items)
+                        items_data.append(items_list)
+                        items = [items_list]
                         
-                        api_url = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
+                        api_url = f"{os.environ.get('ROOT')}/api/item/crawler"
                         if api_url:  # 檢查環境變數是否存在
-                            item_post = requests.post(api_url, json=items, timeout=10) 
+                            item_post = requests.post(api_url, json=items_list, timeout=20) 
+                            
                             if item_post.status_code == 201:
-                                generate_random_scores(items,users)
+                                recommendations = generate_random_scores(items,users)
+                                time.sleep(3)
+                                api_recommendations = f"{os.environ.get('ROOT')}/api/recommend/model"
+                                for recommendation in recommendations:
+                                    recommendations_post = requests.post(api_recommendations, json=recommendation, timeout=30) 
+                                    if recommendations_post.status_code == 201:
+                                        print(f"API 發送成功: {recommendations_post.text}")
+            
                             if item_post.status_code != 201:
                                 print(f"API 發送失敗: {item_post.text}")
                             
                         
                         with open(output_file, mode='a', newline='', encoding='utf-8') as file:
                                 writer = csv.DictWriter(file, fieldnames=fieldnames)
-                                writer.writerow(items)
+                                writer.writerow(items_list)
                                 
                 else:
                         print(f"缺少資料: title={title}, abstract={abstract}, link={link}, gattered_datetime={gattered_datetime}")
@@ -86,7 +100,8 @@ def scrape_cnn_articles(output_file='output7.csv'):
             except (NoSuchElementException, StaleElementReferenceException) as e:
                 print(f"遇到錯誤，跳過該項：{e}")
                 continue
-
+            
+            
         try:
             next_page_button = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, '//*[@id="search"]/div[2]/div/div[4]/div/div[3]'))
@@ -99,6 +114,7 @@ def scrape_cnn_articles(output_file='output7.csv'):
         except ElementClickInterceptedException:
             print("無法點擊下一頁按鈕，可能是其他元素覆蓋了它。")
             break
-
+        
     driver.quit()
 
+scrape_cnn_articles()

@@ -3,7 +3,7 @@ from get_cnn_news import scrape_cnn_articles
 from get_daily_papers import scrape_huggingface_papers
 from get_mit_news import scrape_mit_news_articles
 
-scrape_bbc_articles()
 scrape_cnn_articles()
+scrape_bbc_articles()
 scrape_huggingface_papers()
 scrape_mit_news_articles()

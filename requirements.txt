@@ -13,6 +13,7 @@ whisper
 jieba
 line-bot-sdk
 
+
 # torch (See https://pytorch.org/ and choose version that match your GPU.)
 # CUDA 11.8 -> pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
 # CUDA 12.1 -> pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
@@ -29,3 +30,4 @@ pyodbc
 flask_sqlalchemy
 dotenv
 feedparser
+dateparser

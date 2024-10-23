@@ -1,45 +1,48 @@
+from datetime import datetime
 import logging
 import uuid
 
-from flask import Blueprint, request, jsonify, abort
+from apiflask import APIBlueprint
+from flask import request, jsonify, abort
 from flask_jwt_extended import create_access_token, jwt_required
 from werkzeug.security import generate_password_hash, check_password_hash
-from server.utils import validate_dict_keys
+from server.utils import generate_random_scores, validate_dict_keys
 
 from server.models.user import User, UserSchema
-from server.schemas import UserSchema
+from server.models.item import Item
+from server.models.recommendation_log import Recommendationlog
 from config import DB
 
-user_blueprint = Blueprint('user', __name__)
+user_blueprint = APIBlueprint('app_user', __name__)
 
-# 初始化 Marshmallow schema
 user_schema = UserSchema()
-users_schema = UserSchema(many=True)  # 用來序列化多個用戶
 
-# 取得所有用戶
+# get_all_users
 @user_blueprint.route('', methods=['GET'])
-@jwt_required
 def get_users():
-    users = User.query.all()  # 從數據庫中查詢所有用戶
-    if not users:
-        return jsonify({"message": "No users found"}), 404
-    result = users_schema.dump(users)  # 序列化數據
-    return jsonify(result), 200
+    users = User.query.all()
+    return jsonify({
+        'data': [
+            {
+                'uuid': user.uuid,
+                'account': user.account,
+                'email': user.email,
+            } for user in users
+        ]
+    }), 200
 
-# 根據 UUID 查詢特定用戶
+# get_certain_user_uuid
 @user_blueprint.route('/<uuid:user_id>', methods=['GET'])
 @jwt_required()
 def get_user(user_id):
-    user = User.query.get(user_id)
-    if user is None:
-        return jsonify({"message": "User not found"}), 404
-    result = user_schema.dump(user)
-    return jsonify(result), 200
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'data': user.serialize()
+    }), 200
 
-# 註冊，創建新用戶    
+# register    
 @user_blueprint.route('/register', methods=['POST'])
-@jwt_required
-def register():
+def user_register():
     data = request.json
     account = data.get('account')
     password = data.get('password')
@@ -49,7 +52,7 @@ def register():
     if not account or not password or not email:
         return jsonify({"msg": "Missing username, email, or password"}), 400
 
-    # 檢查是否已存在用戶
+    # check exist or not
     if User.query.filter_by(account=account).first():
         return jsonify({"msg": "Username already exists"}), 400
     if User.query.filter_by(email=email).first():
@@ -57,16 +60,50 @@ def register():
 
     # give user an uuid
     id = str(uuid.uuid4())
-    # 創建新用戶
+    
     password_hash = generate_password_hash(password)
     logging.info(len(password_hash))
     new_user = User(uuid=id, account=account, password=password_hash, email=email, line_id=line_id)
     DB.session.add(new_user)
     DB.session.commit()
+    # return jsonify({"msg": "Success Register"}), 200
 
-# 登入、驗證
+    items = Item.query.all()
+    item_list = [{'uuid': str(item.uuid), 'title': item.title, 'abstract': item.abstract, 'link': item.link, 'data_source':item.data_source} for item in items] 
+
+    user_data = {
+        'uuid': id,
+        'account': account,
+        'email': email,
+        'line_id': line_id
+    }
+
+    recommendations = generate_random_scores(item_list, [user_data])
+
+    try:
+        for recommendation in recommendations:
+            new_recommendation = Recommendationlog(
+                uuid=recommendation['uuid'],
+                user_id=recommendation['user_id'],
+                item_id=recommendation['item_id'],
+                recommend_score=recommendation['recommend_score'],
+                recommend_time=datetime.strptime(recommendation['recommend_time'], '%Y-%m-%d %H:%M:%S')
+            )
+            DB.session.add(new_recommendation)
+
+        # 提交所有更改user_uuid
+        DB.session.commit()
+        logging.info("Recommendation logs created successfully.")
+    except Exception as e:
+        logging.error(f"Error saving recommendation logs: {e}")
+        DB.session.rollback()
+        return jsonify({"msg": "Error saving recommendation logs"}), 500
+
+    return jsonify({"msg": "Success Register and Recommendations Generated"}), 200
+    
+
+# login, verify
 @user_blueprint.route('/login', methods=['POST'])
-@jwt_required
 def login():
     data = request.json
     account = data.get('account')
@@ -77,39 +114,38 @@ def login():
 
     user = User.query.filter_by(account=account).first()
 
-    # 驗證用戶名和密碼
+    # ckeck account and password
     if not user or not check_password_hash(user.password, password):
         return jsonify({"msg": "Invalid credentials"}), 401
 
-    # 登錄成功，生成 JWT
-    access_token = create_access_token(identity=account)
-    return jsonify({"access_token": access_token}), 200
+    # JWT token
+    access_token = create_access_token(identity=user.uuid)
+    return jsonify({"access_token": access_token, "uuid":user.uuid}), 200
 
-# 更新用戶資料
+# update_user_data
 @user_blueprint.route('/<uuid:user_id>', methods=['PUT'])
 @jwt_required()
 def update_user(user_id):
     user = User.query.get_or_404(user_id)
     data = user_schema.load(request.json, partial=True)
     headers = [column.name for column in User.__table__.columns]
-    # 驗證請求數據的鍵是否有效
+
     if not validate_dict_keys(data, headers):
         abort(400, description="Invalid keys in the request.")
 
     try:
-        # 將請求中的數據更新到用戶模型中
+
         for key, value in data.items():
             setattr(user, key, value)
 
-        # 提交更改到數據庫
         DB.session.commit()
-        return jsonify({'message': 'Success'}), 204  # 成功修改，返回狀態碼 204
+        return jsonify({'message': 'Success'}), 204  # Success 204
     except Exception as error:
         logging.error(f'UPDATE ERROR: {error}')
         DB.session.rollback()
         abort(500, description="An error occurred during the update.")
 
-# 刪除用戶
+# delete_user
 @user_blueprint.route('/<uuid:user_id>', methods=['DELETE'])
 @jwt_required()
 def delete_user(user_id):
@@ -120,7 +156,7 @@ def delete_user(user_id):
     try:
         DB.session.delete(user)
         DB.session.commit()
-        return jsonify({"message": "User deleted successfully"}), 204  # 204 No Content
+        return jsonify({"message": "User and related data deleted successfully"}), 204  # 204 no content
     except Exception as e:
         DB.session.rollback()
         return jsonify({"message": f"Error deleting user: {str(e)}"}), 500

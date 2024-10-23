@@ -1,10 +1,12 @@
 from config import DB, CustomDateTime
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 from sqlalchemy import Uuid, String, Text, Enum, DateTime, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
+from .behavior import Behavior
+from .recommendation_log import Recommendationlog
 
 class Item(DB.Model):
-    __table__ = 'item'
+    __tablename__ = 'item'
 
     uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     title = mapped_column(String(500), nullable=False)
@@ -14,8 +16,13 @@ class Item(DB.Model):
                                      'hf_paper',
                                      'cnn_news',
                                      'brief_ai_news',
-                                     'tech_news'), nullable=False)
+                                     'tech_news',
+                                     'bbc_news',
+                                     'mit_news'), nullable=False)
     gattered_datetime = mapped_column(DateTime)
+
+    behavior = relationship('Behavior', backref='item', uselist=True, lazy='dynamic')
+    recommendationlog = relationship('Recommendationlog', backref='item', uselist=True, lazy='dynamic')
 
     def serialize(self) -> dict:
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

@@ -1,5 +1,5 @@
 from config import DB, CustomDateTime
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import mapped_column, relationship
 from sqlalchemy import Uuid, DateTime, ForeignKey, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 

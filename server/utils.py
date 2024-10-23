@@ -1,6 +1,9 @@
+from datetime import datetime
 import logging
 import hashlib
 import hmac
+import random
+import uuid
 
 def dict_has_exact_keys(dictionary: dict, required_keys: list):
     dict_keys = set(dictionary.keys())
@@ -32,3 +35,21 @@ def validate_dict_keys(data: dict, headers: list):
         logging.error(f"Invalid keys in the request: {extra_keys}")
         return False
     return True
+
+def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
+    recommendations = []
+    
+    for user in users:
+        user_uuid = user['uuid']
+        for item in items:
+            item_uuid = item['uuid']
+            # recommend_score = random.randint(0, 1)  
+            recommendations.append({
+                'uuid': str(uuid.uuid4()),
+                'user_id': user_uuid,
+                'item_id': item_uuid,
+                'recommend_score': 0,
+                'gattered_datetime': item['gattered_datetime']
+            })
+    
+    return recommendations

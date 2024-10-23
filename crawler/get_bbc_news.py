@@ -6,6 +6,7 @@ import requests
 import pandas as pd
 import json
 import os
+import dateparser
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -57,11 +58,20 @@ def scrape_bbc_articles(output_file='output6.csv'):
 
                 try:
                     date_str = div_element.find_element(By.CLASS_NAME, 'sc-6fba5bd4-1').text
-                    date_obj = datetime.strptime(date_str, "%d %b %Y")
-                    gattered_datetime = date_obj.strftime("%Y-%m-%d %H:%M:%S")
-                    #print(gattered_datetime)
-                except ValueError:
-                    print(f"日期格式錯誤，跳過：{date_str}")
+                    
+                    try:
+                        date_obj = datetime.strptime(date_str, "%d %b %Y")
+                    except ValueError:    
+                        date_obj = dateparser.parse(date_str)
+                        
+                    if date_obj:
+                        gattered_datetime = date_obj.strftime("%Y-%m-%d %H:%M:%S")
+                        print(gattered_datetime)
+                    else:
+                        print(f"日期格式錯誤，跳過：{date_str}")
+                
+                except Exception as e:
+                    print(f"處理日期時出現錯誤：{e}")    
                     continue  # 跳過該筆資料
                 
                 record = (title, abstract, link, gattered_datetime)

@@ -16,7 +16,7 @@
         <!-- profile -->
         <div class="first-col">
             {% block contents %}
-            <table class="user-info">
+            <table class="user-info" style="width:720px;">
                 <caption>User Info</caption>
                 <tbody>
                     <tr>
@@ -50,19 +50,56 @@
                 <a href="/main/revise" class="btn">修改資料</a>  
             </div>
             {% endblock %}
-            <figure class="donut_chart">
-                <figcaption>Article Category Distribution</figcaption>
-                <img src="{{ url_for('main.donut_chart') }}" alt="Donut Chart">
-            </figure>
         </div>
-        <div class="history-list">
-            <h1>History list</h1>
-            {% for article in articles %}
-            <div class="article">
-                <h2>{{ article.title }}</h2>
-                <p><strong>Date:</strong> {{ article.date }}</p>
+        <div style="margin-top:40px;width:100%;">
+            <div style="display:flex;justify-content: center;">
+                <h1>History list</h1>
             </div>
-            {% endfor %}
+            <div class="news-container">
+                {% if history|length == 0 %}
+                <div style="margin-bottom:40px;display:flex;justify-content: center;">
+                    <p>Not history clicked</p>
+                </div>
+                {% else %}
+                    {% set news_count = history.shape[0] %}
+                    {% for row in range((news_count + 1) // 2) %} <!-- 計算總行數 -->
+                        <div class="news-row" style="display: flex; justify-content: space-between; margin-bottom: 1px;">
+                            {% for col in range(2) %}
+                                {% set index = row * 2 + col %}
+                                {% if index < news_count %} <!-- 確保索引不越界 -->
+                                    <div class="news-block" style="width: 48%; border: 1px solid #ccc; padding: 10px;">
+                                        {% if row % 2 == 0 %} <!-- 偶數行：文字靠右，圖片靠左 -->
+                                            <div class="news-image" style="float: left; width: 25%;">
+                                                <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
+                                            </div>
+                                            <div class="news-content" style="float: right; width: 70%; text-align: right;">
+                                                <h3>
+                                                    <a href="{{ history.iloc[index]['item_link'] }}" target="_blank">
+                                                        {{ history.iloc[index]['item_title'] }}
+                                                    </a>
+                                                </h3>
+                                                <p>Date: {{ history.iloc[index]['item_date'] }}</p>
+                                            </div>
+                                        {% else %} <!-- 奇數行：文字靠左，圖片靠右 -->
+                                            <div class="news-content" style="float: left; width: 70%; text-align: left;">
+                                                <h3>
+                                                    <a href="{{ history.iloc[index]['item_link'] }}" target="_blank">
+                                                        {{ history.iloc[index]['item_title'] }}
+                                                    </a>
+                                                </h3>
+                                                <p>Date: {{ history.iloc[index]['item_date'] }}</p>
+                                            </div>
+                                            <div class="news-image" style="float: right; width: 25%;">
+                                                <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
         </div>
     </div>
 {% endblock %}

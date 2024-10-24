@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, send_file, request, session, redirect
-from config import register, item_data, login, BASE_URL, click_data, user_data, update_user_data, msg
+from flask import Blueprint, render_template, request, session, redirect
+from config import register, item_data, login, BASE_URL, click_data, user_data, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -68,12 +68,9 @@ def today_news():
             data = request.get_json()
             link = data.get('link')
             click_data(session['token'], link)
-        all_news = item_data()
-        today = date.today()
-        today_time = today.strftime('%b %d, %Y')
-        #news_date = all_news.loc[all_news['gattered_datetime'] == today_time]  正確的
-        news_date = all_news.loc[all_news['gattered_datetime'] == 'May 31, 2024']
-        return render_template('./recommend/today_news.html', all_news = news_date)
+        recommend_new = get_recommend(session['token'])
+        unrecommend_news = get_unrecommend(session['token'])
+        return render_template('./recommend/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news)
     else:
         return redirect(f'{BASE_URL}:8080/main')
 
@@ -100,7 +97,8 @@ def allnews():
 def profile():
     if 'token' in session:
         user = user_data(session['token'])
-        return render_template('./recommend/profile.html', user_data = user)
+        history = get_user_cliked(session['token'])
+        return render_template('./recommend/profile.html', user_data = user, history = history)
     else:
         return redirect(f'{BASE_URL}:8080/main')
 
@@ -108,6 +106,7 @@ def profile():
 def revise():
     if 'token' in session:
         user = user_data(session['token'])
+        history = get_user_cliked(session['token'])
     status = 'T'
     if request.method == 'POST':
         account = request.form['account']
@@ -120,7 +119,7 @@ def revise():
             update_user_data(session['token'], account, password, email, line_id)
         else:
             status = 'False'
-    return render_template('./recommend/revise.html', status = status, user_data = user)
+    return render_template('./recommend/revise.html', status = status, user_data = user, history = history)
 
 
 @main_bp.route('/news/<string:db_name>/<int:news_id>')
@@ -129,69 +128,3 @@ def news_article(db_name, news_id):
     title = f"News Title {news_id}"  # example
     content = "This is a static news article content."  # static content
     return render_template('./news.html', title=title, content=content)
-
-
-# Sample news data
-articles = [
-    {
-        'category': 'Breaking News',
-        'title': 'Breaking News: Market Hits All-Time High',
-        'content': 'The stock market has reached an all-time high today, with major indices showing significant gains.',
-        'author': 'John Doe',
-        'date': '2024-08-09'
-    },
-    {
-        'category': 'Tech Innovations',
-        'title': 'Tech Innovations: AI Revolutionizing Industries',
-        'content': 'Artificial Intelligence is transforming the way businesses operate, from automation to customer service.',
-        'author': 'Jane Smith',
-        'date': '2024-08-08'
-    },
-    {
-        'category': 'Breaking News',
-        'title': 'Breaking News: Market Hits All-Time High',
-        'content': 'The stock market has reached an all-time high today, with major indices showing significant gains.',
-        'author': 'John Doe',
-        'date': '2024-08-09'
-    },
-    {
-        'category': 'Tech Innovations',
-        'title': 'Tech Innovations: AI Revolutionizing Industries',
-        'content': 'Artificial Intelligence is transforming the way businesses operate, from automation to customer service.',
-        'author': 'Jane Smith',
-        'date': '2024-08-08'
-    },
-    {
-        'category': 'Health Update',
-        'title': 'Health Update: New Breakthrough in Cancer Research',
-        'content': 'Scientists have announced a major breakthrough in cancer treatment, promising better outcomes for patients.',
-        'author': 'Alice Brown',
-        'date': '2024-08-07'
-    },
-]
-
-@main_bp.route('/donut_chart.png')
-def donut_chart():
-    categories = [article['category'] for article in articles]
-    category_counts = Counter(categories)
-
-    labels = category_counts.keys()
-    sizes = category_counts.values()
-
-    # Create a pie chart with a hole in the center (donut chart)
-    fig, ax = plt.subplots()
-    ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, wedgeprops={'width': 0.4})
-
-    # Draw a circle in the center to make it a donut chart
-    center_circle = plt.Circle((0, 0), 0.70, fc='white')
-    fig.gca().add_artist(center_circle)
-
-    # Ensure the chart is a circle
-    ax.axis('equal')
-
-    # Save the chart to a BytesIO object
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    img.seek(0)
-
-    return send_file(img, mimetype='image/png')

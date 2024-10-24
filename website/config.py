@@ -37,7 +37,7 @@ def register(email, account, password):
         "email" : f"{email}",
         "line_id" : ""
     }
-    response = requests.post(f'{ROOT}:5000/api/user/register', json = data)
+    response = requests.post(f'{ROOT}/api/user/register', json = data)
     return response.content
 
 #登入
@@ -46,9 +46,9 @@ def login(account, password):
         "account" : f"{account}",
         "password" : f"{password}"
     }
-    response = requests.post(f'{ROOT}:5000/api/user/login', json = data)
+    response = requests.post(f'{ROOT}/api/user/login', json = data)
     response_json = json.loads(response.content)
-    access_token = response_json.get('access_token')  
+    access_token = response_json.get('access_token')
     return access_token
 
 #解碼
@@ -58,7 +58,7 @@ def access_decode(access_token):
     headers = {
         'Authorization': f'Bearer {access_token}',
     }
-    response = requests.get(f'{ROOT}:5000/api/user/{id}', headers=headers)
+    response = requests.get(f'{ROOT}/api/user/{id}', headers=headers)
     return response.content
 
 #修改user
@@ -75,7 +75,7 @@ def update_user_data(access_token, account, password, email, line_id):
         "email" : f"{email}",
         "line_id" : f"{line_id}"
     }
-    update_user_data = requests.put(f"{ROOT}:5000/api/user/{id}", headers=headers, json=user_data)
+    requests.put(f"{ROOT}/api/user/{id}", headers=headers, json=user_data)
 
 def msg(text):
     string_data = text.decode('utf-8')
@@ -94,29 +94,76 @@ def user_data(access_token):
     user_data = pd.DataFrame([data])
     return user_data
 
-#獲取新聞
-def item_data():
-    response = requests.get(f'{ROOT}:5000/api/item')
-    items = response.json()
-    try:
-        items = pd.DataFrame(items['data'])
-        item = items.sort_values('title')
-        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
-    except:
-        item = 'error'
+def get_recommend(access_token):
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    response = requests.get(f"{ROOT}/api/user_history/recommend/{id}")
+    data = response.json()
+    items = []
+    for entry in data:
+        item_data = entry['item']
+        item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
+        items.append(item_data)
+    item = pd.DataFrame(items)
+    item = item.sort_values('title')
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
     return item
 
+def get_unrecommend(access_token):
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    response = requests.get(f"{ROOT}/api/user_history/unrecommend/{id}")
+    data = response.json()
+    items = []
+    for entry in data:
+        item_data = entry['item']
+        item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
+        items.append(item_data)
+    item = pd.DataFrame(items)
+    item = item.sort_values('title')
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    return item
 
+def get_user_cliked(access_token):
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    headers = {
+        "Authorization" : f'Bearer {access_token}'
+    }
+    response = requests.get(f"{ROOT}/api/user_history/{id}", headers=headers)
+    data = response.json()
+    try:
+        item = pd.json_normalize(data['history'])
+        item = item.sort_values('item_title')
+        item['clicked_time'] = item['clicked_time'].apply(format_date)
+        item['item_date'] = item['item_date'].apply(format_date)
+    except:
+        item = ''
+    return item
+
+#獲取新聞
+def item_data():
+    response = requests.get(f'{ROOT}/api/item')
+    items = response.json()
+    items = pd.DataFrame(items['data'])
+    item = items.sort_values('title')
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    return item
 
 def get_formatted_datetime():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 def click_data(access_token, link):
-    '''
     time = get_formatted_datetime()
-    item = item_data(access_token)
-    item_content = item.loc[item['link'] == link]
+    recommend_item = get_recommend(access_token)
+    unrecommend_item = get_unrecommend(access_token)
+    try:
+        item_content = recommend_item.loc[recommend_item['link'] == link]
+    except:
+        item_content = unrecommend_item.loc[unrecommend_item['link'] == link]
     item_id = item_content['uuid'].iloc[0]
+    print(item_id)
+    uuid = item_content['recommendation_log_uuid'].iloc[0]
     user = user_data(access_token)
     id = user['uuid'].iloc[0]
     data = {
@@ -124,5 +171,10 @@ def click_data(access_token, link):
         "item_id": item_id,
         "clicked_time": time
     }
-    post = requests.post(f'{ROOT}:5000/api/user_history', json=data)
-    '''
+    status = {
+        "clicked": True
+    }
+    response = requests.put(f'{ROOT}:5000/api/recommend/{uuid}', json=status)
+    requests.post(f'{ROOT}:5000/api/behavior', json = data)
+    print(response.content)
+

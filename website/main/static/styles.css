@@ -217,7 +217,8 @@ th{
 .btn:focus {
     justify-content: center;
     margin: 10px;
-    min-width: 200px;
+    min-width: 104px;
+    min-height:37px;
     border: none;
     border-radius: 2px;
     background-position: center;
@@ -263,4 +264,49 @@ figcaption {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;
+}
+
+.clickable-link {
+    color: blue;  /* 初始顏色 */
+    text-decoration: underline;  /* 添加下劃線 */
+    cursor: pointer;  /* 鼠標懸停時顯示手型指針 */
+}
+
+.clickable-link:visited {
+    color: #5B0FB2;  /* 點擊後變成紫色 */
+}
+
+input:disabled {
+    background-color: #ffffff;  /* 自定義禁用狀態下的背景顏色 */
+    color: #333;  /* 自定義禁用狀態下的文字顏色 */
+}
+
+.btn1,
+.btn1:focus {
+    margin: 10px;
+    min-width: 104px;
+    min-height:37.33px;
+    border: none;
+    border-radius: 2px;
+    background-position: center;
+    background-color: #8FBC8F;
+    color: #FFFFFF;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 0.8s;
+    box-shadow: 0 0 4px #999;
+}
+
+.btn1:hover {
+    color: #FFFFFF;
+    background: #47a7f5 radial-gradient(circle, transparent 1%, #47a7f5 1%) center/15000%;
+}
+
+.btn1:active {
+    background-color: #6eb9f7;
+    background-size: 100%;
+    transition: background 0s;
 }

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Home</title>
+    <style>
+
+        
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Recommend System</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="/main/today_news" class="tab">Today News</a></li>
+            <li><a href="/main/all_dates" class="tab">All News</a></li>
+            <li><a href="/main/aboutus" class="tab">About Us</a></li>
+            <li><a href="/main/profile" class="tab">Profile</a></li>
+        </ul>
+    </nav>
+    {% block content %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,80 @@
+import os
+import requests
+import pandas as pd
+import hmac
+import hashlib
+from datetime import datetime
+from dotenv import load_dotenv
+from flask_sqlalchemy import SQLAlchemy
+
+# initial SQLAlchemy
+DB = SQLAlchemy()
+
+# loading .env
+load_dotenv()
+
+# API env
+ROOT = os.environ.get('ROOT')
+SQL_SECRET = os.environ.get('SQL_SECRET')
+
+# 資料庫相關配置
+class Config:
+    DRIVER = 'ODBC Driver 17 for SQL Server'
+    SERVER = os.environ.get('SQL_SERVER')
+    DATABASE = os.environ.get('SQL_DATABASE')
+    USERNAME = os.environ.get('SQL_USERNAME')
+    PASSWORD = os.environ.get('SQL_PASSWORD')
+    SQLALCHEMY_DATABASE_URI = (
+        f'mssql+pyodbc://{USERNAME}:{PASSWORD}@{SERVER}:{1433}/{DATABASE}?'
+        f'driver={DRIVER}'
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+# HMAC-SHA256 簽名生成
+def get_signature(payload=''):
+    """生成 HMAC-SHA256 簽名"""
+    secret_key = SQL_SECRET
+    signature = hmac.new(secret_key.encode('utf-8'), payload.encode('utf-8'), hashlib.sha256).hexdigest()
+    return signature    
+
+# 日期格式化
+def format_date(date_str):
+    """格式化日期"""
+    return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
+
+# 從 API 抓取推薦新聞
+def fetch_recommended_news():
+    """從 API 抓取推薦新聞"""
+    headers = {
+        'Content-Type': 'application/json',
+        'x-fju-signature-256': f'sha256={get_signature()}'
+    }
+
+    response = requests.get(f'{ROOT}:5000/api/news/', headers=headers)
+
+    if response.status_code == 200:
+        test_news = pd.DataFrame(response.json())
+        test_news['date'] = test_news['date'].apply(format_date)
+
+        # 過濾推薦新聞，假設有一個 'is_recommended' 欄位
+        recommended_news = test_news[test_news['is_recommended'] == 1]
+        return recommended_news.to_dict(orient='records')  # 返回推薦新聞的字典列表
+    else:
+        return f"發生錯誤: {response.status_code}"
+
+# 更新新聞的點擊狀態
+def update_news_click_status(news_id):
+    """更新新聞的點擊狀態"""
+    headers = {
+        'Content-Type': 'application/json',
+        'x-fju-signature-256': f'sha256={get_signature()}'
+    }
+    
+    # 假設的更新點擊狀態 API 路徑
+    response = requests.post(f'{ROOT}:5000/api/news/click/{news_id}', headers=headers)
+
+    if response.status_code == 200:
+        return "點擊狀態已更新。"
+    else:
+        return f"更新點擊狀態失敗: {response.status_code}"
+

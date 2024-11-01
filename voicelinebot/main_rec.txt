@@ -1,0 +1,229 @@
+import os
+import whisper
+import tempfile
+import jieba.analyse
+from flask import Flask, request, abort
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import (
+    MessageEvent,
+    TextSendMessage,
+    AudioMessage,
+    TemplateSendMessage,
+    CarouselTemplate,
+    CarouselColumn,
+    PostbackAction,
+    URIAction,
+    PostbackEvent,
+)
+import sqlalchemy as db
+from sqlalchemy.orm import sessionmaker
+from config import Config  # 導入 Config 類
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Flask 應用初始化
+app = Flask(__name__)
+
+# 連接 LINE API
+line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
+handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
+
+# 連接資料庫
+DATABASE_URI = Config.SQLALCHEMY_DATABASE_URI  # 使用 Config 類中的資料庫連接 URI
+engine = db.create_engine(DATABASE_URI)
+connection = engine.connect()
+metadata = db.MetaData()
+Session = sessionmaker(bind=engine)  # 使用修正後的 ORM 匯入方式
+session = Session()
+
+# 加載 Whisper 語音轉錄模型
+model = whisper.load_model("small")
+
+# 定義資料表
+news_table = db.Table('news', metadata, autoload_with=engine)  # 只使用 autoload_with
+user_actions_table = db.Table('user_actions', metadata, autoload_with=engine)
+
+@app.route("/callback", methods=["POST"])
+def callback():
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+    app.logger.info(f"Request body: {body}")
+    app.logger.info(f"Signature: {signature}")
+
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        app.logger.error("Invalid signature. Check your channel access token/channel secret.")
+        abort(400)
+
+    return 'OK'
+
+# 處理音頻訊息
+@handler.add(MessageEvent, message=AudioMessage)
+def audio_message(event):
+    content = line_bot_api.get_message_content(event.message.id)
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tf:
+        for chunk in content.iter_content():
+            tf.write(chunk)
+        tf.seek(0)
+        result = model.transcribe(tf.name, initial_prompt="這部電影如同一場夢幻的旅程,我給它的評分是10分。")
+        
+        # 使用 jieba 分析關鍵字
+        jieba.load_userdict('keywords.txt')
+        keyword = jieba.analyse.extract_tags(result["text"], topK=5, withWeight=False)
+
+        if '新聞' in keyword:
+            # 從資料庫中提取最新的 10 條新聞
+            latest_news = session.query(news_table).order_by(news_table.c.published_at.desc()).limit(10).all()
+
+            # 準備簡單的文本回覆而非 CarouselTemplate
+            news_messages = [
+                f"{news.title}\n{news.description}\n[閱讀更多]({news.url})"
+                for news in latest_news
+            ]
+
+            # 組合回覆的文本
+            reply_text = "\n\n".join(news_messages) if news_messages else "沒有找到相關新聞。"
+
+            # 推送簡單的文本內容給用戶
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+
+        else:
+            # 推送語音轉錄的文本內容給用戶
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result["text"]))
+
+# 處理 Postback 事件
+@handler.add(MessageEvent, message=AudioMessage)
+def audio_message(event):
+    content = line_bot_api.get_message_content(event.message.id)
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tf:
+        for chunk in content.iter_content():
+            tf.write(chunk)
+        tf.seek(0)
+        result = model.transcribe(tf.name, initial_prompt="這部電影如同一場夢幻的旅程,我給它的評分是10分。")
+        
+        # 使用 jieba 分析關鍵字
+        jieba.load_userdict('keywords.txt')
+        keyword = jieba.analyse.extract_tags(result["text"], topK=5, withWeight=False)
+
+        if '新聞' in keyword:
+            # 從資料庫中提取最新的 10 條新聞
+            latest_news = session.query(news_table).order_by(news_table.c.published_at.desc()).limit(10).all()
+
+            # 創建 CarouselTemplate 的 columns
+            columns = []
+            for news in latest_news:
+                columns.append(CarouselColumn(
+                    title=news.title[:40],
+                    text=news.description[:60] if news.description else "點擊查看詳情",
+                    actions=[
+                        URIAction(
+                            label="閱讀更多",
+                            uri=news.url
+                        ),
+                        PostbackAction(
+                            label="我已閱讀",
+                            data=f"read_news_{news.id}"  # 確保這裡的 news.id 是正確的
+                        )
+                    ]
+                ))
+
+            # 創建 CarouselTemplate
+            carousel_template = CarouselTemplate(columns=columns)
+            template_message = TemplateSendMessage(
+                alt_text='最新新聞',
+                template=carousel_template
+            )
+
+            # 推送 CarouselTemplate 給用戶
+            line_bot_api.reply_message(event.reply_token, template_message)
+
+        else:
+            # 推送語音轉錄的文本內容給用戶
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result["text"]))
+
+# 處理 Postback 事件
+@handler.add(MessageEvent, message=AudioMessage)
+def audio_message(event):
+    content = line_bot_api.get_message_content(event.message.id)
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tf:
+        for chunk in content.iter_content():
+            tf.write(chunk)
+        tf.seek(0)
+        result = model.transcribe(tf.name, initial_prompt="這部電影如同一場夢幻的旅程,我給它的評分是10分。")
+        
+        # 使用 jieba 分析關鍵字
+        jieba.load_userdict('keywords.txt')
+        keyword = jieba.analyse.extract_tags(result["text"], topK=5, withWeight=False)
+
+        if '新聞' in keyword:
+            # 從資料庫中提取最新的 10 條新聞
+            latest_news = session.query(news_table).order_by(news_table.c.published_at.desc()).limit(10).all()
+
+            # 創建 CarouselTemplate 的 columns
+            columns = []
+            for news in latest_news:
+                columns.append(CarouselColumn(
+                    title=news.title[:40],
+                    text=news.description[:60] if news.description else "點擊查看詳情",
+                    actions=[
+                        URIAction(  # 直接訪問新聞鏈接
+                            label="閱讀更多",
+                            uri=news.url  # 指向新聞的URL
+                        ),
+                        PostbackAction(  # 記錄用戶已閱讀的行為
+                            label="我已閱讀",
+                            data=f"read_news_{news.id}"  # 確保這裡的 news.id 是正確的
+                        )
+                    ]
+                ))
+
+            # 使用 CarouselTemplate 發送消息
+            template_message = TemplateSendMessage(
+                alt_text='最新新聞',
+                template=CarouselTemplate(columns=columns)
+            )
+            line_bot_api.reply_message(event.reply_token, template_message)
+
+        else:
+            # 推送語音轉錄的文本內容給用戶
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result["text"]))
+
+# 處理 Postback 事件
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    app.logger.info(f"Postback event received: {event.postback.data}")
+
+    data = event.postback.data
+
+    if data.startswith("read_news_"):
+        news_id = data.split("_")[-1]
+
+        # 獲取新聞的標題
+        news_title = session.query(news_table.c.title).filter(news_table.c.id == news_id).scalar()
+
+        # 記錄用戶點擊新聞的行為
+        insert_action = user_actions_table.insert().values(
+            user_id=event.source.user_id,
+            news_id=news_id,
+            action_type="click",
+            action_time=datetime.now()
+        )
+
+        try:
+            connection.execute(insert_action)
+            app.logger.info(f"User action recorded: {event.source.user_id} clicked news ID: {news_id}")
+        except Exception as e:
+            app.logger.error(f"Error recording user action: {e}")
+
+        # 回覆用戶已點擊消息
+        reply_message = f"已點擊《{news_title}》。"
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_message))
+
+if __name__ == "__main__":
+    from waitress import serve
+    print("Starting server on http://0.0.0.0:8000")
+    serve(app, host='0.0.0.0', port=8000)

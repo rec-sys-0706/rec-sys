@@ -1,0 +1,116 @@
+import os
+import whisper
+import tempfile
+import jieba.analyse
+from flask import Flask, request, abort
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextSendMessage, AudioMessage, TemplateSendMessage, CarouselTemplate, CarouselColumn, PostbackAction, URIAction, PostbackEvent
+import sqlalchemy as db
+from config import Config  # 導入 Config 類
+from datetime import datetime
+
+# Flask 應用初始化
+app = Flask(__name__)
+
+# 連接 LINE API
+line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
+handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
+
+# 連接資料庫
+DATABASE_URI = Config.SQLALCHEMY_DATABASE_URI # 使用 Config 類中的資料庫連接 URI
+engine = db.create_engine(DATABASE_URI)
+connection = engine.connect()
+metadata = db.MetaData()
+Session = db.orm.sessionmaker(bind=engine)
+session = Session()
+
+# 加載 Whisper 語音轉錄模型
+model = whisper.load_model("small")
+
+# 定義資料表
+news_table = db.Table('news', metadata, autoload=True, autoload_with=engine)
+user_actions_table = db.Table('user_actions', metadata, autoload=True, autoload_with=engine)
+
+@app.route("/callback", methods=["POST"])
+def callback():
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+    app.logger.info(f"Request body: {body}")
+    app.logger.info(f"Signature: {signature}")
+
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        app.logger.error("Invalid signature. Check your channel access token/channel secret.")
+        abort(400)
+
+    return 'OK'
+
+# 處理音頻訊息
+@handler.add(MessageEvent, message=AudioMessage)
+def audio_message(event):
+    content = line_bot_api.get_message_content(event.message.id)
+    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tf:
+        for chunk in content.iter_content():
+            tf.write(chunk)
+        tf.seek(0)
+        result = model.transcribe(tf.name, initial_prompt="這部電影如同一場夢幻的旅程,我給它的評分是10分。")
+        jieba.load_userdict('keywords.txt')
+        keyword = jieba.analyse.extract_tags(result["text"], topK=5, withWeight=False)
+
+        if '新聞' in keyword:
+            # 從資料庫中提取最新的 10 條新聞
+            latest_news = session.query(news_table).order_by(news_table.c.published_at.desc()).limit(10).all()
+
+            columns = []
+            for news in latest_news:
+                columns.append(CarouselColumn(
+                    thumbnail_image_url=news.image_url,
+                    title=news.title[:40],  # 標題最多 40 字
+                    text=news.description[:60] if news.description else "點擊查看詳情",
+                    actions=[
+                        URIAction(
+                            label="閱讀更多",
+                            uri=news.url
+                        ),
+                        PostbackAction(
+                            label="我已閱讀",
+                            data=f"read_news_{news.id}"
+                        )
+                    ]
+                ))
+
+            # 生成並推送 CarouselTemplate
+            carousel_template = CarouselTemplate(columns=columns)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TemplateSendMessage(alt_text="新聞推薦", template=carousel_template)
+            )
+
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=result["text"]))
+
+# 處理 Postback 事件
+@handler.add(PostbackEvent)
+def handle_postback(event):
+    data = event.postback.data
+
+    if data.startswith("read_news_"):
+        news_id = data.split("_")[-1]
+
+        # 記錄用戶點擊新聞
+        insert_action = user_actions_table.insert().values(
+            user_id=event.source.user_id,
+            news_id=news_id,
+            action_type="click",
+            action_time=datetime.now()
+        )
+        connection.execute(insert_action)
+
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="感謝您的閱讀！"))
+
+if __name__ == "__main__":
+    from waitress import serve
+    print("Starting server on http://0.0.0.0:8000")
+    serve(app, host='0.0.0.0', port=8000)

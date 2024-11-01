@@ -28,3 +28,5 @@ tiktoken
 pyodbc
 flask_sqlalchemy
 python-dotenv
+apiflask
+flask-jwt-extended

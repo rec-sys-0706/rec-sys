@@ -5,56 +5,176 @@ import hashlib
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import json
+import jwt
+from werkzeug.security import generate_password_hash
 
 load_dotenv()
 ROOT = os.environ.get('ROOT')
+BASE_URL = os.environ.get('BASE_URL')
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+
+
 def get_signature(payload=''):
     # Get SQL_SECRET
     #secret_key = '123'
     secret_key = os.environ.get('SQL_SECRET')
     # Compute the HMAC-SHA256 signature
-    signature = hmac.new(secret_key.encode('utf-8'), payload.encode('utf-8'), hashlib.sha256).hexdigest()
-    return signature    
+    hash_object = hmac.new(secret_key.encode('utf-8'), msg = payload.encode('utf-8'), digestmod=hashlib.sha256)
+    signature = "sha256=" + hash_object.hexdigest()
+    return signature
 # payload = '{"example": "data"}' # 如果是 GET 則不用payload
 # Prepare the headers, including the x-hub-signature-256
-headers = {
-    'Content-Type': 'application/json',
-    'x-fju-signature-256': f'sha256={get_signature()}'
-}
 
 def format_date(date_str):
     return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
 
-response = requests.get(f'{ROOT}:5000/api/news/', headers = headers)
-    
-test_news = pd.DataFrame(response.json())
-test_news['date'] = test_news['date'].apply(format_date)
+#註冊
+def register(email, account, password):
+    data = {
+        "account" : f"{account}",
+        "password" : f"{password}",
+        "email" : f"{email}",
+        "line_id" : ""
+    }
+    response = requests.post(f'{ROOT}/api/user/register', json = data)
+    return response.content
 
+#登入
+def login(account, password):
+    data = {
+        "account" : f"{account}",
+        "password" : f"{password}"
+    }
+    response = requests.post(f'{ROOT}/api/user/login', json = data)
+    response_json = json.loads(response.content)
+    access_token = response_json.get('access_token')
+    return access_token
 
-# 測試
-data = {
-    "account": "alice123",
-    "password": "alice"
-}
+#解碼
+def access_decode(access_token):   
+    text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
+    id = text.get('sub')
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+    }
+    response = requests.get(f'{ROOT}/api/user/{id}', headers=headers)
+    return response.content
 
-'''
-responses = requests.get(f'{ROOT}:5000/api/user/verification', headers = headers, json=data)
+#修改user
+def update_user_data(access_token, account, password, email, line_id):
+    text = jwt.decode(access_token, JWT_SECRET_KEY, algorithms=['HS256'])
+    id = text.get('sub')
+    headers = {
+        "Authorization" : f'Bearer {access_token}'
+    }
+    password = generate_password_hash(password)
+    user_data = {
+        "account" : f"{account}",
+        "password" : f"{password}",
+        "email" : f"{email}",
+        "line_id" : f"{line_id}"
+    }
+    requests.put(f"{ROOT}/api/user/{id}", headers=headers, json=user_data)
 
-responses = requests.delete(f'{ROOT}:5000/api/reader_record/7', headers = headers)
+def msg(text):
+    string_data = text.decode('utf-8')
+    data_dict = json.loads(string_data)
+    message = data_dict.get('msg')
+    if message == "Username already exists":
+        message = 'exists'
+    return message
 
-try:
-    data = responses.json()
-    print(data['message'])
-    if isinstance(data, dict):  # Single user (a dictionary)
-        # Convert the single user data into a DataFrame
-        user = pd.DataFrame([data])  # Wrap the dictionary in a list
-        print(user)
-    elif isinstance(data, list):  # Multiple users (a list)
-        users = pd.DataFrame(data)
-        print(users)
-    else:
-        print("Unexpected data format:", data)
-except ValueError as e:
-    print("Error while parsing JSON:", e)
-    
-'''
+#獲得user
+def user_data(access_token):
+    texts = access_decode(access_token)
+    decoded_text = texts.decode('utf-8')
+    json_data = json.loads(decoded_text)
+    data = json_data['data']
+    user_data = pd.DataFrame([data])
+    return user_data
+
+def get_recommend(access_token):
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    response = requests.get(f"{ROOT}/api/user_history/recommend/{id}")
+    data = response.json()
+    items = []
+    for entry in data:
+        item_data = entry['item']
+        item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
+        items.append(item_data)
+    item = pd.DataFrame(items)
+    item = item.sort_values('title')
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    return item
+
+def get_unrecommend(access_token):
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    response = requests.get(f"{ROOT}/api/user_history/unrecommend/{id}")
+    data = response.json()
+    items = []
+    for entry in data:
+        item_data = entry['item']
+        item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
+        items.append(item_data)
+    item = pd.DataFrame(items)
+    item = item.sort_values('title')
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    return item
+
+def get_user_cliked(access_token):
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    headers = {
+        "Authorization" : f'Bearer {access_token}'
+    }
+    response = requests.get(f"{ROOT}/api/user_history/{id}", headers=headers)
+    data = response.json()
+    try:
+        item = pd.json_normalize(data['history'])
+        item = item.sort_values('item_title')
+        item['clicked_time'] = item['clicked_time'].apply(format_date)
+        item['item_date'] = item['item_date'].apply(format_date)
+    except:
+        item = ''
+    return item
+
+#獲取新聞
+def item_data():
+    response = requests.get(f'{ROOT}/api/item')
+    items = response.json()
+    items = pd.DataFrame(items['data'])
+    item = items.sort_values('title')
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    return item
+
+def get_formatted_datetime():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def click_data(access_token, link):
+    time = get_formatted_datetime()
+    recommend_item = get_recommend(access_token)
+    unrecommend_item = get_unrecommend(access_token)
+    try:
+        item_content = recommend_item.loc[recommend_item['link'] == link]
+    except:
+        item_content = unrecommend_item.loc[unrecommend_item['link'] == link]
+    item_id = item_content['uuid'].iloc[0]
+    print(item_id)
+    uuid = item_content['recommendation_log_uuid'].iloc[0]
+    user = user_data(access_token)
+    id = user['uuid'].iloc[0]
+    data = {
+        "user_id" : id,
+        "item_id": item_id,
+        "clicked_time": time
+    }
+    status = {
+        "clicked": True
+    }
+    response = requests.put(f'{ROOT}:5000/api/recommend/{uuid}', json=status)
+    requests.post(f'{ROOT}:5000/api/behavior', json = data)
+    print(response.content)
+

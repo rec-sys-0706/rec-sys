@@ -1,15 +1,52 @@
 {% extends "./recommend/recommend.html" %}
 
 {% block content %}
-    <div id="all_news"  class="home">
-        {% for index, news in news_date.iterrows() %}
-            {% for index, new in all_news[all_news['date'] == news['date']].iterrows() %}
-                <div class="news-block">
-                    <h3><a href="{{ url_for('main.news_article', db_name='news1', news_id=1) }}" target="_blank">{{ new['title'] }}</a></h3>
-                    <p>Category: {{ new['category'] }}</p>
-                    <p>Date: {{ new['date'] }}</p>
+    <div id="today_news" class="home">
+        <div class="news-container">
+            {% set news_count = all_news.shape[0] %}
+            {% for row in range((news_count + 1) // 2) %} <!-- 計算總行數 -->
+                <div class="news-row" style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    {% for col in range(2) %}
+                        {% set index = row * 2 + col %}
+                        {% if index < news_count %} <!-- 確保索引不越界 -->
+                            <div class="news-block" style="width: 48%; border: 1px solid #ccc; padding: 10px; box-sizing: border-box;">
+                                {% if row % 2 == 0 %} <!-- 偶數行：文字靠右，圖片靠左 -->
+                                    <div class="news-image" style="float: left; width: 25%; padding-right: 10px;">
+                                        <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
+                                    </div>
+                                    <div class="news-content" style="float: right; width: 70%; text-align: right;">
+                                        <h3>
+                                            <a href="{{ all_news.iloc[index]['link'] }}" target="_blank">
+                                                {{ all_news.iloc[index]['title'] }}
+                                            </a>
+                                        </h3>
+                                        <p>Category: {{ all_news.iloc[index]['abstract'] }}</p>
+                                        <p>Date: {{ all_news.iloc[index]['gattered_datetime'] }}</p>
+                                        <p>Data Source: {{ all_news.iloc[index]['data_source'] }}</p>
+                                    </div>
+                                {% else %} <!-- 奇數行：文字靠左，圖片靠右 -->
+                                    <div class="news-content" style="float: left; width: 70%; text-align: left; padding-right: 10px;">
+                                        <h3>
+                                            <a href="{{ all_news.iloc[index]['link'] }}" target="_blank">
+                                                {{ all_news.iloc[index]['title'] }}
+                                            </a>
+                                        </h3>
+                                        <p>Category: {{ all_news.iloc[index]['abstract'] }}</p>
+                                        <p>Date: {{ all_news.iloc[index]['gattered_datetime'] }}</p>
+                                        <p>Data Source: {{ all_news.iloc[index]['data_source'] }}</p>
+                                    </div>
+                                    <div class="news-image" style="float: right; width: 25%;">
+                                        <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             {% endfor %}
-        {% endfor %}
+        </div>
+        {% if all_news.empty %}
+            <p>No news available for today.</p>
+        {% endif %}
     </div>
 {% endblock %}

@@ -54,7 +54,7 @@ class NRMS(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None:
+        if clicked is not None and not self.args.valid_test:
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
@@ -107,7 +107,7 @@ class NRMS_BERT(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None:
+        if clicked is not None and not self.args.valid_test:
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None

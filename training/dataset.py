@@ -3,6 +3,7 @@ import logging
 import random
 from typing import Any
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import torch
@@ -27,7 +28,7 @@ class NewsDataset(Dataset):
     #     }
     #     clicked(valid/test): (batch_size, 1 + k)
     # } # TODO
-    def __init__(self, args: Arguments, tokenizer: CustomTokenizer, mode) -> None:
+    def __init__(self, args: Arguments, tokenizer: CustomTokenizer, mode: Literal['train', 'valid', 'test']) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
         suffix = get_suffix(args)
@@ -72,15 +73,22 @@ class NewsDataset(Dataset):
                 clicked_news_ids = clicked_news_ids[:args.max_clicked_news] # truncate clicked_news
                 num_missing_news = args.max_clicked_news - len(clicked_news_ids)
 
-                clicked_candidate_ids = literal_eval(row['clicked_candidate'])
-                unclicked_candidate_ids = literal_eval(row['unclicked_candidate'])
-                if args.drop_insufficient:
-                    if len(clicked_candidate_ids) < 1 or len(unclicked_candidate_ids) < args.negative_sampling_ratio:
-                        continue # skip if row is not completed
-                    # Drop if no clicked_news
-                candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
+                # Generate candidate_ids
+                if mode in ['train', 'valid']:
+                    clicked_candidate_ids = literal_eval(row['clicked_candidate'])
+                    unclicked_candidate_ids = literal_eval(row['unclicked_candidate'])
+                    if args.drop_insufficient:
+                        if len(clicked_candidate_ids) < 1 or len(unclicked_candidate_ids) < args.negative_sampling_ratio:
+                            continue # ! skip if row is not completed
+                        # Drop if no clicked_news
+                    candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
+                elif mode == 'test':
+                    candidate_news_ids = literal_eval(row['candidate']) # Expected not empty list.
+
                 if len(clicked_news_ids) < 1:
                     clicked_news_ids += [None] # padded with 1 empty news. # TODO for dynamic padding.
+                    # ! Candidate news don't do this, because it expected to have news.
+
                 clicked_title, clicked_abstract = get_grouped_news(clicked_news_ids)
                 candidate_title, candidate_abstract = get_grouped_news(candidate_news_ids)
 
@@ -93,15 +101,25 @@ class NewsDataset(Dataset):
                     'title': candidate_title,
                     # 'abstract': candidate_abstract
                 }
-                result.append({
-                    'user_id': row['user_id'],
-                    'clicked_news_ids': clicked_news_ids,
-                    'candidate_news_ids': candidate_news_ids,
-                    'clicked_news': clicked_news,
-                    'candidate_news': candidate_news,
-                    'clicked': torch.tensor([1] + [0] * args.negative_sampling_ratio, dtype=torch.float32) # TODO if mode == test
-                    # ! important for [RuntimeError: Expected floating point type for target with class probabilities, got Long]
-                })
+                if mode in ['train', 'valid']:
+                    result.append({
+                        'user_id': row['user_id'],
+                        'clicked_news_ids': clicked_news_ids,
+                        'candidate_news_ids': candidate_news_ids,
+                        'clicked_news': clicked_news,
+                        'candidate_news': candidate_news,
+                        'clicked': torch.tensor([1] + [0] * args.negative_sampling_ratio, dtype=torch.float32)
+                        # ! important for [RuntimeError: Expected floating point type for target with class probabilities, got Long]
+                    })
+                elif mode == 'test':
+                    result.append({
+                        'user_id': row['user_id'],
+                        'clicked_news_ids': clicked_news_ids,
+                        'candidate_news_ids': candidate_news_ids,
+                        'clicked_news': clicked_news,
+                        'candidate_news': candidate_news
+                    })
+
             # Save
             torch.save(result, result_path)
             logging.info(f"{mode}.pt saved successfully at {result_path}.")
@@ -114,7 +132,7 @@ class NewsDataset(Dataset):
 @dataclass
 class CustomDataCollator:
     tokenizer: CustomTokenizer
-
+    mode: str
     def __call__(self, batch: list) -> dict[str, Any]:
         """
         DataLoader will shuffle and sample features(batch), and input `features` into DataCollator,
@@ -138,13 +156,6 @@ class CustomDataCollator:
             clicked     : (batch_size, k+1)
         }
         """ # TODO
-        lengths = [len(example['clicked_news_ids']) for example in batch]
-        # print(sorted(lengths))
-        # max_len = max(lengths)
-        # mean_len = np.ceil(np.mean(lengths)).astype(int)
-        # median_len = np.ceil(np.median(lengths)).astype(int)
-        # percentile_length = int(np.percentile(lengths, 75))
-        fixed_len = np.ceil(np.mean(lengths)).astype(int)
         result = {
             'user': {
                 'user_id': [example['user_id'] for example in batch],
@@ -162,29 +173,62 @@ class CustomDataCollator:
                     'input_ids': [],
                     'attention_mask': []
                 }
-            },
-            'clicked': torch.stack([example['clicked'] for example in batch], dim=0)
+            }
         }
+        if self.mode in ['train', 'valid']:
+            result['clicked'] = torch.stack([example['clicked'] for example in batch], dim=0)
 
-        for item in batch:
-            # Clicked News
-            encodes = item['clicked_news']['title'] # encodes of title of clicked_news
-            num_titles = len(encodes['input_ids'])
-            if num_titles < fixed_len:
-                padding_input_ids = torch.tensor([self.tokenizer.title_padding['input_ids']] * (fixed_len - num_titles))
-                padding_attention_mask = torch.tensor([self.tokenizer.title_padding['attention_mask']] * (fixed_len - num_titles))
-                # TODO, title_padding直接轉tensor
-                encodes['input_ids'] = torch.cat((encodes['input_ids'], padding_input_ids), dim=0)
-                encodes['attention_mask'] = torch.cat((encodes['attention_mask'], padding_attention_mask), dim=0)
-            elif num_titles > fixed_len:
-                encodes['input_ids'] = encodes['input_ids'][:fixed_len]
-                encodes['attention_mask'] = encodes['attention_mask'][:fixed_len]
-            result['clicked_news']['title']['input_ids'].append(encodes['input_ids'])
-            result['clicked_news']['title']['attention_mask'].append(encodes['attention_mask'])
-            # Candidate News
-            encodes = item['candidate_news']['title'] # encodes of title
-            result['candidate_news']['title']['input_ids'].append(encodes['input_ids'])
-            result['candidate_news']['title']['attention_mask'].append(encodes['attention_mask'])
+        if self.mode == 'train':
+            lengths = [len(example['clicked_news_ids']) for example in batch]
+            # print(sorted(lengths))
+            # max_len = max(lengths)
+            # mean_len = np.ceil(np.mean(lengths)).astype(int)
+            # median_len = np.ceil(np.median(lengths)).astype(int)
+            # percentile_length = int(np.percentile(lengths, 75))
+            fixed_len = np.ceil(np.mean(lengths)).astype(int)
+            for item in batch:
+                # Clicked News
+                encodes = item['clicked_news']['title'] # encodes of title of clicked_news
+                num_titles = len(encodes['input_ids'])
+                if num_titles < fixed_len:
+                    padding_input_ids = torch.tensor([self.tokenizer.title_padding['input_ids']] * (fixed_len - num_titles))
+                    padding_attention_mask = torch.tensor([self.tokenizer.title_padding['attention_mask']] * (fixed_len - num_titles))
+                    # TODO, title_padding直接轉tensor
+                    encodes['input_ids'] = torch.cat((encodes['input_ids'], padding_input_ids), dim=0)
+                    encodes['attention_mask'] = torch.cat((encodes['attention_mask'], padding_attention_mask), dim=0)
+                elif num_titles > fixed_len:
+                    encodes['input_ids'] = encodes['input_ids'][:fixed_len]
+                    encodes['attention_mask'] = encodes['attention_mask'][:fixed_len]
+                result['clicked_news']['title']['input_ids'].append(encodes['input_ids'])
+                result['clicked_news']['title']['attention_mask'].append(encodes['attention_mask'])
+                # Candidate News
+                encodes = item['candidate_news']['title'] # encodes of title
+                result['candidate_news']['title']['input_ids'].append(encodes['input_ids'])
+                result['candidate_news']['title']['attention_mask'].append(encodes['attention_mask'])
+        elif self.mode in ['valid', 'test']:
+            length = {
+                'clicked_news': np.ceil(np.mean([len(example['clicked_news_ids']) for example in batch])).astype(int),
+                'candidate_news': np.ceil(np.max([len(example['candidate_news_ids']) for example in batch])).astype(int)
+            }
+            for item in batch:
+                # Unlike training, candidate would be padded to max.
+                for key in ['clicked_news', 'candidate_news']:
+                    fixed_len = length[key]
+                    # Clicked News & Candidate News
+                    encodes = item[key]['title'] # encodes of title of clicked_news
+                    num_titles = len(encodes['input_ids'])
+                    if num_titles < fixed_len:
+                        padding_input_ids = torch.tensor([self.tokenizer.title_padding['input_ids']] * (fixed_len - num_titles))
+                        padding_attention_mask = torch.tensor([self.tokenizer.title_padding['attention_mask']] * (fixed_len - num_titles))
+                        # TODO, title_padding直接轉tensor
+                        encodes['input_ids'] = torch.cat((encodes['input_ids'], padding_input_ids), dim=0)
+                        encodes['attention_mask'] = torch.cat((encodes['attention_mask'], padding_attention_mask), dim=0)
+                    elif num_titles > fixed_len:
+                        encodes['input_ids'] = encodes['input_ids'][:fixed_len]
+                        encodes['attention_mask'] = encodes['attention_mask'][:fixed_len]
+                    result[key]['title']['input_ids'].append(encodes['input_ids'])
+                    result[key]['title']['attention_mask'].append(encodes['attention_mask'])  
+
         result['clicked_news']['title']['input_ids'] = torch.stack(result['clicked_news']['title']['input_ids'])
         result['clicked_news']['title']['attention_mask'] = torch.stack(result['clicked_news']['title']['attention_mask'])
         result['candidate_news']['title']['input_ids'] = torch.stack(result['candidate_news']['title']['input_ids'])

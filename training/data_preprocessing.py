@@ -11,7 +11,7 @@ from typing import Literal
 from parameters import Arguments
 from utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds
 
-def parse_behaviors(src_dir: Path) -> pd.DataFrame:
+def parse_behaviors(src_dir: Path, mode: Literal['train', 'valid', 'test']) -> pd.DataFrame:
     """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.
     
     Output File Format:
@@ -37,6 +37,9 @@ def parse_behaviors(src_dir: Path) -> pd.DataFrame:
     behaviors['impressions'] = behaviors['impressions'].apply(lambda impression: list(set(impression)))
 
     # Create clicked & unclicked columns
+    if mode == 'test': # In test mode, no clicked_news would be created.
+        behaviors = behaviors.rename(columns={'impressions': 'candidate'})
+        return behaviors
     behaviors[['clicked', 'unclicked']] = [None, None]
     for idx, row in tqdm(behaviors['impressions'].items(), total=len(behaviors)):
         candidate_news = {}
@@ -56,34 +59,6 @@ def parse_behaviors(src_dir: Path) -> pd.DataFrame:
                 raise ValueError("An unexpected error has occurred at data processing phase.")
         behaviors.loc[idx, ['clicked_candidate', 'unclicked_candidate']] = str(true_list), str(false_list) # Ground true candidate_news
     return behaviors
-
-def parse_behaviors_for_test(src_dir: Path) -> pd.DataFrame:
-    """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.
-    
-    Output File Format:
-        The resulting CSV file will contain the following columns:
-        - user_id             (str)
-        - clickede_news       (list[str])
-        - candidate_news      (list[str])
-    """
-    raise ValueError("")
-    behaviors = pd.read_csv(src_dir / 'behaviors.tsv',
-                            sep='\t',
-                            names=['impression_id', 'user_id', 'time', 'clicked_news', 'candidate_news'],
-                            dtype='string',
-                            index_col='impression_id')
-    behaviors['clicked_news'] = behaviors['clicked_news'].fillna('') # Handle missing values
-    # behaviors['impressions'] = behaviors['impressions'].str.split() # Convert 'impressions' to list
-    # behaviors = behaviors.drop(columns='time')
-    # behaviors = behaviors.groupby('user_id').agg({
-    #     'clicked_news': ' '.join,
-    #     'impressions': lambda x: sum(x, []) # [['a', 'b'], ['c'], ['d', 'e']] -> ['a', 'b', 'c', 'd', 'e']
-    # }).reset_index()
-    # behaviors['clicked_news'] = behaviors['clicked_news'].apply(lambda h: list(set(h.split()))) # Remove duplicated values in 'clicked_news'
-    # behaviors['impressions'] = behaviors['impressions'].apply(lambda impression: list(set(impression)))
-    behaviors.to_csv(src_dir / 'behaviors_parsed.csv',
-                     index=False,
-                     columns=['user_id', 'clicked_news', 'candidate_news'])
 
 def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> pd.DataFrame:
     """Parse `news.tsv`` file, generate `news_parsed.csv`.
@@ -166,17 +141,17 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
     # Behaviors
     if not behaviors_path.exists() or args.reprocess:
+        start = time.time()
+        behaviors = parse_behaviors(src_dir, mode)
         if mode == 'test':
-            start = time.time()
-            parse_behaviors_for_test(src_dir) # Special handling test data.
-            logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+            behaviors.to_csv(behaviors_path,
+                        index=False,
+                        columns=['user_id', 'clicked_news', 'candidate'])
         elif mode in ['train', 'valid']:
-            start = time.time()
-            behaviors = parse_behaviors(src_dir)
             behaviors.to_csv(behaviors_path,
                         index=False,
                         columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
-            logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
+        logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
     else:
         logging.info(f"{behaviors_path} already exists.")
     # News

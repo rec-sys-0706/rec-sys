@@ -114,7 +114,7 @@ def get_trainer_args(args: Arguments, ckpt_dir) -> TrainingArguments:
         remove_unused_columns=False, # If True, DataCollator will loss some info.
         auto_find_batch_size=True
         # logging_steps=
-        #logging_strategy=
+        # logging_strategy=
         # optim=
         # warmup_steps=500
         # weight_decay=0.01
@@ -129,7 +129,7 @@ def main(args: Arguments):
     # Tokenizer & Model & DataCollator
     tokenizer = CustomTokenizer(args)
     model = get_model(args, tokenizer)
-    collate_fn = CustomDataCollator(tokenizer)
+    collate_fn = CustomDataCollator(tokenizer, args.mode)
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -198,7 +198,7 @@ def main(args: Arguments):
         predictions = np.concatenate(predictions, axis=0)
         result = np.where(predictions > 0.5, 1, 0).tolist()
         labels = np.concatenate(labels, axis=0).astype(int).tolist()
-        
+
         df = pd.DataFrame({
             'user_id': user_ids,
             'clicked_news': clicked_news_ids,
@@ -221,7 +221,7 @@ def main(args: Arguments):
         )
         print(compute_metrics((predictions, labels)))
     elif args.mode == 'test':
-        dataloader = DataLoader(test_dataset, batch_size=1)
+        dataloader = DataLoader(test_dataset, batch_size=args.eval_batch_size, collate_fn=collate_fn)
         model.eval()
         predictions = []
         user_ids = []
@@ -238,25 +238,28 @@ def main(args: Arguments):
         predictions = np.concatenate(predictions, axis=0)
         result = np.where(predictions > 0.5, 1, 0).tolist()
         
+        num_clicked_news = [len(e) for e in clicked_news_ids]
+        num_candidate_news = [len(e) for e in candidate_news_ids]
         df = pd.DataFrame({
             'user_id': user_ids,
             'clicked_news': clicked_news_ids,
             'candidate_news': candidate_news_ids,
-            'predictions': result
+            'predictions': [e[:l] for e, l in zip(result, num_candidate_news)],
+            'num_clicked_news': num_clicked_news,
+            'num_candidate_news': num_candidate_news
         })
         df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])
-        df['num_clicked_news'] = df['clicked_news'].apply(len)
         df = df.sort_values(by='user_id')
         df.to_csv(
             Path(next_ckpt_dir) / 'eval_result.csv',
             columns=['user_id',
                      'clicked_news',
                      'candidate_news',
+                     'predictions',
                      'num_clicked_news',
-                     'predictions'],
+                     'num_candidate_news'],
             index=False
         )
-        print(compute_metrics((predictions, labels)))
     else:
         raise ValueError('')
 
@@ -268,4 +271,5 @@ if __name__ == '__main__':
     args = parse_args()
     data_preprocessing(args, 'train')
     data_preprocessing(args, 'valid')
+    data_preprocessing(args, 'test')
     main(args)

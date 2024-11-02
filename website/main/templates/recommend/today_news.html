@@ -1,97 +1,136 @@
 {% extends "./recommend/recommend.html" %}
 
 {% block content %}
-    <div id="today_news" class="home">
-        <h2>Recommend</h2>
-        <div class="news-container">
-            {% set news_count = recommend_new.shape[0] %}
-            {% for row in range((news_count + 1) // 2) %} <!-- 計算總行數 -->
-                <div class="news-row" style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                    {% for col in range(2) %}
-                        {% set index = row * 2 + col %}
-                        {% if index < news_count %} <!-- 確保索引不越界 -->
-                            <div class="news-block" style="width: 48%; border: 1px solid #ccc; padding: 10px;">
-                                {% if row % 2 == 0 %} <!-- 偶數行：文字靠右，圖片靠左 -->
-                                    <div class="news-image" style="float: left; width: 25%;">
-                                        <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
-                                    </div>
-                                    <div class="news-content" style="float: right; width: 70%; text-align: right;">
-                                        <h3>
-                                            <a href="{{ recommend_new.iloc[index]['link']|e }}" data-link="{{ recommend_new.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();"  class="clickable-link">
-                                                {{ recommend_new.iloc[index]['title'] }}
-                                            </a>
-                                        </h3>
-                                        <p>Category: {{ recommend_new.iloc[index]['abstract'] }}</p>
-                                        <p>Date: {{ recommend_new.iloc[index]['gattered_datetime'] }}</p>
-                                        <p>Data Source: {{ recommend_new.iloc[index]['data_source'] }}</p>
-                                    </div>
-                                {% else %} <!-- 奇數行：文字靠左，圖片靠右 -->
-                                    <div class="news-content" style="float: left; width: 70%; text-align: left;">
-                                        <h3>
-                                            <a href="{{ recommend_new.iloc[index]['link']|e }}" data-link="{{ recommend_new.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();"  class="clickable-link">
-                                                {{ recommend_new.iloc[index]['title'] }}
-                                            </a>
-                                        </h3>
-                                        <p>Category: {{ recommend_new.iloc[index]['abstract'] }}</p>
-                                        <p>Date: {{ recommend_new.iloc[index]['gattered_datetime'] }}</p>
-                                        <p>Data Source: {{ recommend_new.iloc[index]['data_source'] }}</p>
-                                    </div>
-                                    <div class="news-image" style="float: right; width: 25%;">
-                                        <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            {% endfor %}
-        </div>
-        
-        <h2>Not Recommend</h2>
-        <div class="news-container">
-            {% set news_count = unrecommend_news.shape[0] %}
-            {% for row in range((news_count + 1) // 2) %} <!-- 計算總行數 -->
-                <div class="news-row" style="display: flex; justify-content: space-between; margin-bottom: 1px;">
-                    {% for col in range(2) %}
-                        {% set index = row * 2 + col %}
-                        {% if index < news_count %} <!-- 確保索引不越界 -->
-                            <div class="news-block" style="width: 48%; border: 1px solid #ccc; padding: 10px;">
-                                {% if row % 2 == 0 %} <!-- 偶數行：文字靠右，圖片靠左 -->
-                                    <div class="news-image" style="float: left; width: 25%;">
-                                        <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
-                                    </div>
-                                    <div class="news-content" style="float: right; width: 70%; text-align: right;">
-                                        <h3>
-                                            <a href="{{ unrecommend_news.iloc[index]['link']|e }}" data-link="{{ unrecommend_news.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();"  class="clickable-link">
-                                                {{ unrecommend_news.iloc[index]['title'] }}
-                                            </a>
-                                        </h3>
-                                        <p>Category: {{ unrecommend_news.iloc[index]['abstract'] }}</p>
-                                        <p>Date: {{ unrecommend_news.iloc[index]['gattered_datetime'] }}</p>
-                                        <p>Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>
-                                    </div>
-                                {% else %} <!-- 奇數行：文字靠左，圖片靠右 -->
-                                    <div class="news-content" style="float: left; width: 70%; text-align: left;">
-                                        <h3>
-                                            <a href="{{ unrecommend_news.iloc[index]['link']|e }}" data-link="{{ unrecommend_news.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();"  class="clickable-link">
-                                                {{ unrecommend_news.iloc[index]['title'] }}
-                                            </a>
-                                        </h3>
-                                        <p>Category: {{ unrecommend_news.iloc[index]['abstract'] }}</p>
-                                        <p>Date: {{ unrecommend_news.iloc[index]['gattered_datetime'] }}</p>
-                                        <p>Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>
-                                    </div>
-                                    <div class="news-image" style="float: right; width: 25%;">
-                                        <img src="./static/images/news_paper.jpg" alt="news image" style="width: 100%;">
-                                    </div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            {% endfor %}
-        </div>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .news-container {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .news-column {
+            width: 48%;
+        }
+        .news-row {
+            margin-bottom: 20px;
+        }
+        .news-block {
+            width: 100%;
+            border: 1px solid #ddd;
+            padding: 15px;
+            box-sizing: border-box;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        .news-block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        .news-content h3 {
+            margin: 0 0 10px;
+            font-weight: 700;
+            text-align: left;
+        }
+        .news-content a {
+            text-decoration: none;
+            color: #007BFF;
+            transition: color 0.3s;
+        }
+        .news-content a:hover {
+            color: #0056b3;
+        }
+        .news-content a:visited {
+            color: #007BFF; /* 保持與未訪問時相同的顏色 */
+        }
+        .news-content p {
+            margin: 0 0 5px;
+            color: #555;
+            text-align: left;
+        }
+        .news-date {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: #999;
+            font-size: 0.9em;
+        }
+        .no-news {
+            text-align: center;
+            color: #999;
+            font-size: 1.2em;
+        }
+    </style>
 
+    <div id="today_news" class="home">
+        <div class="news-container">
+            <div class="news-column">
+                <h2>Recommend</h2>
+                {% set news_count = recommend_new.shape[0] %}
+                {% for row in range((news_count + 1) // 2) %}
+                    <div class="news-row">
+                        {% for col in range(2) %}
+                            {% set index = row * 2 + col %}
+                            {% if index < news_count %}
+                                <div class="news-block">
+                                    <div class="news-content">
+                                        <h3>
+                                            <a href="{{ recommend_new.iloc[index]['link']|e }}" data-link="{{ recommend_new.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();" class="clickable-link">
+                                                {{ recommend_new.iloc[index]['title'] }}
+                                            </a>
+                                        </h3>
+                                        <p>
+                                            {% set abstract = recommend_new.iloc[index]['abstract'] %}
+                                            {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
+                                        </p>
+                                        <p>Data Source: {{ recommend_new.iloc[index]['data_source'] }}</p>
+                                        <p class="news-date">{{ recommend_new.iloc[index]['gattered_datetime'] }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div class="news-column">
+                <h2>Unrecommend</h2>
+                {% set news_count = unrecommend_news.shape[0] %}
+                {% for row in range((news_count + 1) // 2) %}
+                    <div class="news-row">
+                        {% for col in range(2) %}
+                            {% set index = row * 2 + col %}
+                            {% if index < news_count %}
+                                <div class="news-block">
+                                    <div class="news-content">
+                                        <h3>
+                                            <a href="{{ unrecommend_news.iloc[index]['link']|e }}" data-link="{{ unrecommend_news.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();" class="clickable-link">
+                                                {{ unrecommend_news.iloc[index]['title'] }}
+                                            </a>
+                                        </h3>
+                                        <p>
+                                            {% set abstract = unrecommend_news.iloc[index]['abstract'] %}
+                                            {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
+                                        </p>
+                                        <p>Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>
+                                        <p class="news-date">{{ unrecommend_news.iloc[index]['gattered_datetime'] }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <script>

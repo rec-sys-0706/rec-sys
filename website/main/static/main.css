@@ -1,0 +1,128 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    /* margin-top: 50px; */
+    height: 100vh; /* Ensuring full viewport height */
+}
+
+/* Stacked content area to align vertically */
+.stacked-content-wrapper, .login-signup-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Align vertically center */
+    height: 100%; /* Match the height of the container */
+}
+
+.stacked-content {
+    position: relative;
+    width: 100%;
+    height: 350px; /* Control height of stacked content */
+}
+
+.stacked-content .box {
+    position: absolute;
+    border: 2px solid black;
+    padding: 20px;
+    width: 80%;
+    height: 300px; /* Set a fixed height for all boxes */
+    background-color: white;
+    z-index: 1;
+    overflow: hidden; /* Prevent content overflow */
+}
+
+/* Notable irregular stacking effect */
+.stacked-content .box:nth-child(1) {
+    top: 40px;
+    left: 100px;
+    z-index: 1;
+    transform: rotate(-5deg);
+}
+.stacked-content .box:nth-child(2) {
+    top: 20px;
+    left: 80px;
+    z-index: 2;
+    transform: rotate(3deg);
+}
+.stacked-content .box:nth-child(3) {
+    top: 0px;
+    left: 60px;
+    z-index: 3;
+    transform: rotate(-2deg);
+}
+
+/* Styling for the newspaper-like content */
+.news-header {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.about-us h4 {
+    font-size: 30px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.content-section {
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    line-height: 1;
+}
+
+.left-content {
+    font-weight: bold;
+    max-width: 50%; /* Limit the width to allow for wrapping */
+    overflow-wrap: break-word; /* Ensures long words break to fit */
+}
+
+.right-content {
+    text-align: right;
+    max-width: 50%; /* Limit the width of right content as well */
+}
+
+.content-section .left-content {
+    font-weight: bold;
+}
+
+.content-section .right-content {
+    text-align: right;
+}
+
+/* Styling for login box */
+.login-box {
+    /* background-color: #e7eaf3; */
+    padding: 30px; /* Make the padding bigger */
+    border-radius: 10px;
+    width: 100%; /* Expand the width */
+    max-width: 500px; /* Set a maximum width */
+    height: 400px; /* Set height*/
+}
+
+.login-box .form-control {
+    margin-bottom: 10px;
+}
+
+.login-box .login-button {
+    width: 100%;
+}
+
+/* Adjusting image size and positioning */
+.login-box img {
+    width: 80px;  /* Set the image width */
+    height: 80px; /* Set the image height */
+    border-radius: 50%; /* Make it a circle */
+    object-fit: contain; /* Ensure the image fits within the circle */
+    border: 2px solid #000; /* Optional: add a border around the image */
+    padding: 5px; /* Optional: add some padding inside the circle */
+    background-color: #fff; /* Optional: background color for contrast */
+}
+
+.login-box .tab-content {
+    margin-top: 15px; /* Add some spacing between tabs and form */
+}

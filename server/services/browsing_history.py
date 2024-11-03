@@ -41,34 +41,38 @@ def read_browsing_history(user_uuid):
 def get_recommend_items(user_uuid):
     try:
 
+        # 獲取參數中的 data_source
         data_source = request.args.get('data_source', None)
-
-        recommendation_logs_query = Recommendationlog.query.filter_by(
-            user_id=user_uuid,
-            recommend_score=True
-        )
-
-        recommendation_logs = recommendation_logs_query.all()
-
-        if not recommendation_logs:
-            return jsonify({'message': 'No recommendations found'}), 404
         
-        # 根據 recommendation_log 中的 item_id 查詢對應的 item 資料，並返回 recommendation_log 的 uuid
-        result = []
-        for log in recommendation_logs:
-            item_query = Item.query.filter_by(uuid=log.item_id)
-            if data_source:
-                item_query = item_query.filter_by(data_source=data_source)
+        # 查詢條件：user_id, recommend_score，並預過濾 data_source
+        recommendation_logs_query = DB.session.query(Recommendationlog, Item)\
+            .join(Item, Recommendationlog.item_id == Item.uuid)\
+            .filter(
+                Recommendationlog.user_id == user_uuid,
+                Recommendationlog.recommend_score == True
+            ).order_by(Recommendationlog.gattered_datetime.desc())
+        
+        # 如果有特定 data_source，加入過濾條件
+        if data_source:
+            recommendation_logs_query = recommendation_logs_query.filter(Item.data_source == data_source)
+        
+        # 排序並限制前十筆
+        recommendation_logs = recommendation_logs_query\
+            .order_by(Item.gattered_datetime.desc())\
+            .limit(10)\
+            .all()
 
-            item = item_query.order_by(Item.gattered_datetime.desc()).limit(10).all()
-            if item:
-                result.extend({
-                    'recommendation_log_uuid': log.uuid,
-                    'item': i.serialize()
-                } for i in item)
+        # 檢查結果是否為空
+        if not recommendation_logs:
+            return jsonify({'message': 'No recommendations found for the specified source'}), 404
 
+        # 構建結果
+        result = [{
+            'recommendation_log_uuid': log.uuid,
+            'item': item.serialize()
+        } for log, item in recommendation_logs]
 
-        return jsonify(result[:10]), 200
+        return jsonify(result), 200
 
     except Exception as error:
         logging.error(f'[GET ERROR] - {error}')
@@ -78,31 +82,37 @@ def get_recommend_items(user_uuid):
 @user_history_bp.route('/unrecommend/<uuid:user_uuid>', methods = ['GET'])
 def get_unrecommend_items(user_uuid):
     try:
+        # 獲取參數中的 data_source
         data_source = request.args.get('data_source', None)
-
-        recommendation_logs_query = Recommendationlog.query.filter_by(
-            user_id = user_uuid,
-            recommend_score = False
-        )
-
-        recommendation_logs = recommendation_logs_query.all()
-
-        if not recommendation_logs:
-            return jsonify({'message': 'No recommendations found'}), 404
         
-        # 根據 recommendation_log 中的 item_id 查詢對應的 item 資料，並返回 recommendation_log 的 uuid
-        result = []
-        for log in recommendation_logs:
-            item_query = Item.query.filter_by(uuid=log.item_id)
-            if data_source:
-                item_query = item_query.filter_by(data_source=data_source)
+        # 查詢條件：user_id, recommend_score，並預過濾 data_source
+        recommendation_logs_query = DB.session.query(Recommendationlog, Item)\
+            .join(Item, Recommendationlog.item_id == Item.uuid)\
+            .filter(
+                Recommendationlog.user_id == user_uuid,
+                Recommendationlog.recommend_score == False
+            )
+        
+        # 如果有特定 data_source，加入過濾條件
+        if data_source:
+            recommendation_logs_query = recommendation_logs_query.filter(Item.data_source == data_source)
+        
+        # 排序並限制前十筆
+        recommendation_logs = recommendation_logs_query\
+            .order_by(Item.gattered_datetime.desc())\
+            .limit(10)\
+            .all()
 
-            item = item_query.order_by(Item.gattered_datetime.desc()).limit(10).all()
-            if item:
-                result.extend({
-                    'recommendation_log_uuid': log.uuid,
-                    'item': i.serialize()
-                } for i in item)
+        # 檢查結果是否為空
+        if not recommendation_logs:
+            return jsonify({'message': 'No recommendations found for the specified source'}), 404
+
+        # 構建結果
+        result = [{
+            'recommendation_log_uuid': log.uuid,
+            'item': item.serialize()
+        } for log, item in recommendation_logs]
+
 
         return jsonify(result[:10]), 200
 

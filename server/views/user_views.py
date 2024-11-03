@@ -69,7 +69,7 @@ def user_register():
     # return jsonify({"msg": "Success Register"}), 200
 
     items = Item.query.all()
-    item_list = [{'uuid': str(item.uuid), 'title': item.title, 'abstract': item.abstract, 'link': item.link, 'data_source':item.data_source} for item in items] 
+    item_list = [{'uuid': str(item.uuid), 'title': item.title, 'abstract': item.abstract, 'link': item.link, 'data_source':item.data_source, 'gattered_datetime':item.gattered_datetime} for item in items] 
 
     user_data = {
         'uuid': id,
@@ -87,7 +87,7 @@ def user_register():
                 user_id=recommendation['user_id'],
                 item_id=recommendation['item_id'],
                 recommend_score=recommendation['recommend_score'],
-                recommend_time=datetime.strptime(recommendation['recommend_time'], '%Y-%m-%d %H:%M:%S')
+                gattered_datetime=recommendation['gattered_datetime']
             )
             DB.session.add(new_recommendation)
 

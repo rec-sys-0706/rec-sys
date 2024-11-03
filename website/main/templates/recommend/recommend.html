@@ -5,18 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('main.static', filename='styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <title>Home</title>
 </head>
+<style>
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+    }
+</style>
 <body>
     <header>
         <h1>Recommender System</h1>
     </header>
     <nav>
         <ul>
-            <li><a href="/main/today_news" class="tab">Today News</a></li>
-            <li><a href="/main/all_dates" class="tab">All News</a></li>
-            <li><a href="/main/recommend" class="tab">About Us</a></li>
-            <li><a href="/main/profile" class="tab">Profile</a></li>
+            <li><a href="/main/today_news" class="tab">本週文章</a></li>
+            <!--<li><a href="/main/all_dates" class="tab">All News</a></li>-->
+            <li><a href="/main/recommend" class="tab">關於我們</a></li>
+            <li><a href="/main/profile" class="tab">個人檔案</a></li>
         </ul>
     </nav>
     {% block content %}

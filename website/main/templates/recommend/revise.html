@@ -3,21 +3,21 @@
 {% block contents %}
 <form action="{{ url_for('main.revise') }}" method="POST">
     <table class="user-info" style="width:720px;">
-        <caption>User Info</caption>
+        <caption>個人資訊</caption>
         <tbody>
             <tr>
-                <th>Account</th>
+                <th>帳號</th>
                 {% for index, data in user_data.iterrows() %}
                     <td>
-                        <input style="border: none;font-size: 16px;color: black;" type="text" name="account" value="{{ data['account'] }}"/>
+                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" type="text" name="account" value="{{ data['account'] }}"/>
                     </td>
                 {% endfor %}
             </tr>
             <tr>
-                <th>Email</th>
+                <th>信箱</th>
                 {% for index, data in user_data.iterrows() %}
                     <td>
-                        <input style="border: none;font-size: 16px;color: black;" name="email" value="{{ data['email'] }}"/>
+                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" name="email" value="{{ data['email'] }}"/>
                     </td>
                 {% endfor %}
             </tr>
@@ -25,14 +25,14 @@
                 <th>Line ID</th>
                 {% for index, data in user_data.iterrows() %}
                     <td>
-                        <input style="border: none;font-size: 16px;color: black;" name="line_id" value="{{ data['line_id'] }}"/>
+                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" name="line_id" value="{{ data['line_id'] }}" placeholder="Line ID"/>
                     </td>
                 {% endfor %}
             </tr>
             <tr>
-                <th>Password</th>
+                <th>密碼</th>
                 <td>
-                    <input style="border: none;font-size: 16px;color: black;" text="Password" name="password" placeholder="Password" required/>
+                    <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" text="Password" name="password" placeholder="密碼" required/>
                 </td>
             </tr>
         </tbody>

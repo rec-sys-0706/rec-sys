@@ -1,5 +1,10 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
 .container {
-    margin-top: 50px;
+    /* margin-top: 50px; */
     height: 100vh; /* Ensuring full viewport height */
 }
 
@@ -91,7 +96,7 @@
 
 /* Styling for login box */
 .login-box {
-    background-color: #e7eaf3;
+    /* background-color: #e7eaf3; */
     padding: 30px; /* Make the padding bigger */
     border-radius: 10px;
     width: 100%; /* Expand the width */

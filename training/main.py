@@ -208,15 +208,29 @@ def main(args: Arguments):
                 user_ids += user['user_id']
                 clicked_news_ids += user['clicked_news_ids']
                 candidate_news_ids += user['candidate_news_ids']
-        predictions = np.concatenate(predictions, axis=0)
-        bool_predictions = np.where(predictions > 0.5, 1, 0).tolist()
-        labels = np.concatenate(labels, axis=0).astype(int).tolist()
-
+        temp_predictions = [row.tolist() for arr in predictions for row in arr]
+        temp_labels = [row.tolist() for arr in labels for row in arr]
+        if len(temp_predictions) != len(temp_labels):
+            raise ValueError('predictions and labels have different length.')
+        # Handle ragged list.
+        predictions = []
+        labels = []
+        for row1, row2 in zip(temp_predictions, temp_labels):
+            if len(row1) != len(row2):
+                raise ValueError('predictions and labels have different length.')
+            new_row1 = []
+            new_row2 = []
+            for pred, label in zip(row1, row2):
+                if label != -1:
+                    new_row1.append(1 if pred > 0.5 else 0)
+                    new_row2.append(int(label))
+            predictions.append(new_row1)
+            labels.append(new_row2)
         df = pd.DataFrame({
             'user_id': user_ids,
             'clicked_news': clicked_news_ids,
             'candidate_news': candidate_news_ids,
-            'predictions': bool_predictions,
+            'predictions': predictions,
             'labels': labels
         })
         df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])

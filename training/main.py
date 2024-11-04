@@ -49,9 +49,9 @@ def compute_metrics(eval_preds):
         'acc': acc
     }
 
-def get_model(args: Arguments, tokenizer: CustomTokenizer) -> nn.Module:
+def get_model(args: Arguments, tokenizer: CustomTokenizer, next_ckpt_dir: str) -> nn.Module:
     if args.model_name == 'NRMS':
-        model = NRMS(args=args, vocab_size=tokenizer.vocab_size)
+        model = NRMS(args, tokenizer, next_ckpt_dir)
     elif args.model_name == 'NRMS-Glove':
         pretrained_embedding = torch.load(Path(args.train_dir) / 'pretrained_embedding.pt')
         pretrained_embedding = pretrained_embedding.contiguous()
@@ -61,12 +61,15 @@ def get_model(args: Arguments, tokenizer: CustomTokenizer) -> nn.Module:
                 f"but got {pretrained_embedding.shape} and ({tokenizer.vocab_size}, {args.embedding_dim})."
                 "Please regenerating pretrained word embeddings."
             ))
-        model = NRMS(args=args,
-                     vocab_size=tokenizer.vocab_size,
+        model = NRMS(args,
+                     tokenizer,
+                     next_ckpt_dir,
                      pretrained_embedding=pretrained_embedding)
     elif args.model_name == 'NRMS-BERT':
-        model = NRMS_BERT(args=args,
-                          pretrained_model_name=args.pretrained_model_name)
+        model = NRMS_BERT(args,
+                          args.pretrained_model_name,
+                          tokenizer,
+                          next_ckpt_dir)
     else:
         raise ValueError(f"Model name `{args.model_name}` did not supported.")
     return model
@@ -141,7 +144,7 @@ def main(args: Arguments):
     trainer_args = get_trainer_args(args, next_ckpt_dir)
     # Tokenizer & Model & DataCollator
     tokenizer = CustomTokenizer(args)
-    model = get_model(args, tokenizer)
+    model = get_model(args, tokenizer, next_ckpt_dir)
     collate_fn = CustomDataCollator(tokenizer, args.mode, args.device, args.valid_test)
     # Prepare Datasets
     logging.info(f'Loading datasets...')
@@ -246,16 +249,10 @@ def main(args: Arguments):
                      'predictions'],
             index=False
         )
-        predictions = [
-            [pred for pred, label in zip(row1, row2) if label != -1]
-            for row1, row2 in zip(predictions.tolist(), labels)
-        ]
-
-        labels = [
-            [label for label in row2 if label != -1]
-            for row2 in labels
-        ]
-        print(compute_metrics_new((predictions, labels)))
+        exp_result = compute_metrics_new((predictions, labels))
+        print(exp_result)
+        with open(Path(next_ckpt_dir) / 'log.txt', 'w') as fout:
+            fout.write(str(exp_result))
     elif args.mode == 'test':
         dataloader = DataLoader(test_dataset, batch_size=args.eval_batch_size, collate_fn=collate_fn)
         model.eval()

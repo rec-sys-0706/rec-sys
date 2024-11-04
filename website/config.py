@@ -14,7 +14,6 @@ ROOT = os.environ.get('ROOT')
 BASE_URL = os.environ.get('BASE_URL')
 JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
 
-
 def get_signature(payload=''):
     # Get SQL_SECRET
     #secret_key = '123'

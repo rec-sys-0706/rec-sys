@@ -42,6 +42,7 @@ class Arguments:
     model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
     pretrained_model_name: Literal['distilbert-base-uncased', 'bert-base-uncased']
     reprocess: bool
+    valid_test: bool
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient = True
@@ -61,7 +62,8 @@ def parse_args() -> Arguments:
     parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
     parser.add_argument('--model-name', type=str, default='NRMS')
     parser.add_argument('--pretrained-model-name', type=str, default='distilbert-base-uncased')
-    parser.add_argument('--reprocess', type=bool, default=False, help="Whether to redo data-preprocessing even if processed data exists.")
+    parser.add_argument('--reprocess', action='store_true', help="Whether to redo data-preprocessing even if processed data exists.")
+    parser.add_argument('--valid-test', action='store_true', help="Validation testing mode.")
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')

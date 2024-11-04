@@ -1,9 +1,14 @@
+from pathlib import Path
+import re
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from bertviz import head_view
+
 from transformers import AutoModel
 from .encoder import Encoder
-
+from dataset import CustomTokenizer
 from parameters import Arguments
 
 class NRMS(nn.Module):
@@ -12,13 +17,17 @@ class NRMS(nn.Module):
     UserEncoder: (clicked_news) -> user_vector
     model      : (clicked_news, candidate_news) -> click_probability
     """
-    def __init__(self, args: Arguments, vocab_size: int, pretrained_embedding=None) -> None:
+    def __init__(self,
+                 args: Arguments,
+                 tokenizer: CustomTokenizer,
+                 next_ckpt_dir: str,
+                 pretrained_embedding=None) -> None:
         super().__init__()
         self.args = args
         self.device = args.device
         # ---- Layers ---- #
         if pretrained_embedding is None:
-            self.embedding = nn.Embedding(vocab_size,
+            self.embedding = nn.Embedding(tokenizer.vocab_size,
                                           args.embedding_dim,
                                           padding_idx=0) # TODO padding_idx?
         else:
@@ -54,7 +63,7 @@ class NRMS(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None:
+        if clicked is not None and not self.args.valid_test:
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
@@ -73,15 +82,25 @@ class NRMS(nn.Module):
         # }
 
 class NRMS_BERT(nn.Module):
-    def __init__(self, args: Arguments, pretrained_model_name):
+    def __init__(self,
+                 args: Arguments,
+                 pretrained_model_name,
+                 tokenizer: CustomTokenizer,
+                 next_ckpt_dir: str):
         super().__init__()
         self.args = args
         self.device = args.device
+        self.tokenizer = tokenizer
         # ---- Layers ---- #
-        self.bert = AutoModel.from_pretrained(pretrained_model_name)
+        self.bert = AutoModel.from_pretrained(pretrained_model_name, output_attentions=args.valid_test)
         self.news_encoder = Encoder(args.num_heads, 768)
         self.user_encoder = Encoder(args.num_heads, 768)
         self.to(self.device) # Move all layers to device.
+        # ---- bertviz ---- #
+        self.bertviz_path = Path(next_ckpt_dir) / 'bertviz'
+        if self.args.valid_test:
+            if not self.bertviz_path.exists():
+                self.bertviz_path.mkdir()
     def forward(self,
                 user: dict,
                 clicked_news: dict,
@@ -92,6 +111,21 @@ class NRMS_BERT(nn.Module):
         input_ids = clicked_news['title']['input_ids'].view(-1, seq_len)
         attention_mask = clicked_news['title']['attention_mask'].view(-1, seq_len)
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+        if self.args.valid_test:
+            attentions = bert_output.attentions # tuple with `num_heads` of (batch_size, num_heads, seq, seq) 
+            stacked_tensor = torch.stack(attentions)  # Result shape: (n, m, x, y, z)
+            list_of_tensors = list(stacked_tensor.permute(1, 0, 2, 3, 4))  # Result is a list of n tensors, each with shape (m, n, x, y, z)
+            for ids, attn in zip(input_ids, list_of_tensors):
+                attn = tuple(attn.unsqueeze(1))
+                tokens = self.tokenizer.convert_ids_to_tokens(ids) 
+                html_head_view = head_view(attn, tokens, html_action='return')
+                try:
+                    bertviz_filename = re.sub(r'[\\/:*?"<>|]', '', " ".join(tokens))
+                    with open(self.bertviz_path / f'{bertviz_filename}.html', 'w') as file:
+                        file.write(html_head_view.data)
+                except:
+                    import pdb;
+                    pdb.set_trace()
         last_hidden_state = bert_output.last_hidden_state.view(batch_size, num_articles, seq_len, -1)
         embed = F.dropout(last_hidden_state, p=self.args.dropout_rate, training=self.training)
         clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device))
@@ -107,7 +141,7 @@ class NRMS_BERT(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None:
+        if clicked is not None and not self.args.valid_test:
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None

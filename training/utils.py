@@ -89,9 +89,11 @@ class CustomTokenizer:
         return self.__tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_abstract)
     def encode_category(self, category):
         return self.__categorizer.vocab.get(category, 0)
-    def decode():
+    def decode(self):
         pass
-
+        # TODO
+    def convert_ids_to_tokens(self, *args, **kwargs):
+        return self.__tokenizer.convert_ids_to_tokens(*args, **kwargs)
     def __build_tokenizer(self) -> PreTrainedTokenizerFast:
         args = self.args
         news = pd.read_csv(Path(args.train_dir) / 'news.tsv',

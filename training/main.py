@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 from transformers import TrainingArguments, Trainer, EarlyStoppingCallback
 from transformers.trainer_utils import get_last_checkpoint
 from safetensors.torch import load_file
+from tqdm import tqdm
 
 from data_preprocessing import data_preprocessing
 from model.NRMS import NRMS, NRMS_BERT
@@ -22,8 +23,20 @@ from parameters import Arguments, parse_args
 from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv
 from dataset import NewsDataset, CustomDataCollator
 from evaluate import nDCG, ROC_AUC, recall, accuracy
+from evaluate import nDCG_new, ROC_AUC_new, recall_new, accuracy_new
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
+evaluate_new = lambda _pred, _true: (recall_new(_pred, _true), ROC_AUC_new(_pred, _true), nDCG_new(_pred, _true, 5), nDCG_new(_pred, _true, 10), accuracy_new(_pred, _true))
 
+def compute_metrics_new(eval_preds):
+    predictions, label_ids = eval_preds
+    recall, auc, ndcg5, ndcg10, acc = evaluate_new(predictions, label_ids)
+    return {
+        'recall': recall,
+        'auc': auc,
+        'ndcg5': ndcg5,
+        'ndcg10': ndcg10,
+        'acc': acc
+    }
 
 def compute_metrics(eval_preds):
     predictions, label_ids = eval_preds
@@ -36,9 +49,9 @@ def compute_metrics(eval_preds):
         'acc': acc
     }
 
-def get_model(args: Arguments, tokenizer: CustomTokenizer) -> nn.Module:
+def get_model(args: Arguments, tokenizer: CustomTokenizer, next_ckpt_dir: str) -> nn.Module:
     if args.model_name == 'NRMS':
-        model = NRMS(args=args, vocab_size=tokenizer.vocab_size)
+        model = NRMS(args, tokenizer, next_ckpt_dir)
     elif args.model_name == 'NRMS-Glove':
         pretrained_embedding = torch.load(Path(args.train_dir) / 'pretrained_embedding.pt')
         pretrained_embedding = pretrained_embedding.contiguous()
@@ -48,12 +61,15 @@ def get_model(args: Arguments, tokenizer: CustomTokenizer) -> nn.Module:
                 f"but got {pretrained_embedding.shape} and ({tokenizer.vocab_size}, {args.embedding_dim})."
                 "Please regenerating pretrained word embeddings."
             ))
-        model = NRMS(args=args,
-                     vocab_size=tokenizer.vocab_size,
+        model = NRMS(args,
+                     tokenizer,
+                     next_ckpt_dir,
                      pretrained_embedding=pretrained_embedding)
     elif args.model_name == 'NRMS-BERT':
-        model = NRMS_BERT(args=args,
-                          pretrained_model_name=args.pretrained_model_name)
+        model = NRMS_BERT(args,
+                          args.pretrained_model_name,
+                          tokenizer,
+                          next_ckpt_dir)
     else:
         raise ValueError(f"Model name `{args.model_name}` did not supported.")
     return model
@@ -128,8 +144,8 @@ def main(args: Arguments):
     trainer_args = get_trainer_args(args, next_ckpt_dir)
     # Tokenizer & Model & DataCollator
     tokenizer = CustomTokenizer(args)
-    model = get_model(args, tokenizer)
-    collate_fn = CustomDataCollator(tokenizer, args.mode)
+    model = get_model(args, tokenizer, next_ckpt_dir)
+    collate_fn = CustomDataCollator(tokenizer, args.mode, args.device, args.valid_test)
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -139,7 +155,7 @@ def main(args: Arguments):
         test_dataset = None
     if args.mode == 'valid':
         train_dataset = None
-        valid_dataset = NewsDataset(args, tokenizer, mode='valid')
+        valid_dataset = NewsDataset(args, tokenizer, mode='valid', valid_test=True)
         test_dataset = None
     if args.mode == 'test':
         train_dataset = None
@@ -187,7 +203,7 @@ def main(args: Arguments):
         candidate_news_ids = []
         labels = []
         with torch.no_grad():
-            for batch in dataloader:
+            for batch in tqdm(dataloader):
                 outputs = model(**batch)
                 predictions.append(outputs['logits'].cpu().numpy())
                 labels.append(batch['clicked'].numpy())
@@ -195,15 +211,29 @@ def main(args: Arguments):
                 user_ids += user['user_id']
                 clicked_news_ids += user['clicked_news_ids']
                 candidate_news_ids += user['candidate_news_ids']
-        predictions = np.concatenate(predictions, axis=0)
-        result = np.where(predictions > 0.5, 1, 0).tolist()
-        labels = np.concatenate(labels, axis=0).astype(int).tolist()
-
+        temp_predictions = [row.tolist() for arr in predictions for row in arr]
+        temp_labels = [row.tolist() for arr in labels for row in arr]
+        if len(temp_predictions) != len(temp_labels):
+            raise ValueError('predictions and labels have different length.')
+        # Handle ragged list.
+        predictions = []
+        labels = []
+        for row1, row2 in zip(temp_predictions, temp_labels):
+            if len(row1) != len(row2):
+                raise ValueError('predictions and labels have different length.')
+            new_row1 = []
+            new_row2 = []
+            for pred, label in zip(row1, row2):
+                if label != -1:
+                    new_row1.append(1 if pred > 0.5 else 0)
+                    new_row2.append(int(label))
+            predictions.append(new_row1)
+            labels.append(new_row2)
         df = pd.DataFrame({
             'user_id': user_ids,
             'clicked_news': clicked_news_ids,
             'candidate_news': candidate_news_ids,
-            'predictions': result,
+            'predictions': predictions,
             'labels': labels
         })
         df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])
@@ -219,7 +249,10 @@ def main(args: Arguments):
                      'predictions'],
             index=False
         )
-        print(compute_metrics((predictions, labels)))
+        exp_result = compute_metrics_new((predictions, labels))
+        print(exp_result)
+        with open(Path(next_ckpt_dir) / 'log.txt', 'w') as fout:
+            fout.write(str(exp_result))
     elif args.mode == 'test':
         dataloader = DataLoader(test_dataset, batch_size=args.eval_batch_size, collate_fn=collate_fn)
         model.eval()
@@ -228,7 +261,7 @@ def main(args: Arguments):
         clicked_news_ids = []
         candidate_news_ids = []
         with torch.no_grad():
-            for batch in dataloader:
+            for batch in tqdm(dataloader):
                 outputs = model(**batch)
                 predictions.append(outputs['logits'].cpu().numpy())
                 user = outputs['user']
@@ -271,5 +304,6 @@ if __name__ == '__main__':
     args = parse_args()
     data_preprocessing(args, 'train')
     data_preprocessing(args, 'valid')
-    data_preprocessing(args, 'test')
+    if args.mode == 'test':
+        data_preprocessing(args, 'test')
     main(args)

@@ -28,7 +28,11 @@ class NewsDataset(Dataset):
     #     }
     #     clicked(valid/test): (batch_size, 1 + k)
     # } # TODO
-    def __init__(self, args: Arguments, tokenizer: CustomTokenizer, mode: Literal['train', 'valid', 'test']) -> None:
+    def __init__(self,
+                 args: Arguments,
+                 tokenizer: CustomTokenizer,
+                 mode: Literal['train', 'valid', 'test'],
+                 valid_test: bool=False) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
         suffix = get_suffix(args)
@@ -82,6 +86,8 @@ class NewsDataset(Dataset):
                             continue # ! skip if row is not completed
                         # Drop if no clicked_news
                     candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
+                    if valid_test:
+                        candidate_news_ids = clicked_candidate_ids + unclicked_candidate_ids
                 elif mode == 'test':
                     candidate_news_ids = literal_eval(row['candidate']) # Expected not empty list.
 
@@ -101,7 +107,16 @@ class NewsDataset(Dataset):
                     'title': candidate_title,
                     # 'abstract': candidate_abstract
                 }
-                if mode in ['train', 'valid']:
+                if valid_test:
+                    result.append({
+                        'user_id': row['user_id'],
+                        'clicked_news_ids': clicked_news_ids,
+                        'candidate_news_ids': candidate_news_ids,
+                        'clicked_news': clicked_news,
+                        'candidate_news': candidate_news,
+                        'clicked': torch.tensor([1] * len(clicked_candidate_ids) + [0] * len(unclicked_candidate_ids), dtype=torch.float32)
+                    })
+                elif mode in ['train', 'valid']:
                     result.append({
                         'user_id': row['user_id'],
                         'clicked_news_ids': clicked_news_ids,
@@ -133,6 +148,8 @@ class NewsDataset(Dataset):
 class CustomDataCollator:
     tokenizer: CustomTokenizer
     mode: str
+    device: torch.device
+    valid_test: bool
     def __call__(self, batch: list) -> dict[str, Any]:
         """
         DataLoader will shuffle and sample features(batch), and input `features` into DataCollator,
@@ -175,9 +192,16 @@ class CustomDataCollator:
                 }
             }
         }
-        if self.mode in ['train', 'valid']:
-            result['clicked'] = torch.stack([example['clicked'] for example in batch], dim=0)
-
+        if self.valid_test:
+            max_clicked_len = max(len(example['clicked']) for example in batch)
+            temp = []
+            for example in batch:
+                s = max_clicked_len - len(example['clicked'])
+                padded = torch.full((s,), -1)
+                temp.append(torch.cat((example['clicked'], padded)))
+            result['clicked'] = torch.stack(temp, dim=0) # Don't need to(device).
+        elif self.mode in ['train', 'valid']:
+            result['clicked'] = torch.stack([example['clicked'] for example in batch], dim=0) # Don't need to(device).
         if self.mode == 'train':
             lengths = [len(example['clicked_news_ids']) for example in batch]
             # print(sorted(lengths))
@@ -229,10 +253,10 @@ class CustomDataCollator:
                     result[key]['title']['input_ids'].append(encodes['input_ids'])
                     result[key]['title']['attention_mask'].append(encodes['attention_mask'])  
 
-        result['clicked_news']['title']['input_ids'] = torch.stack(result['clicked_news']['title']['input_ids'])
-        result['clicked_news']['title']['attention_mask'] = torch.stack(result['clicked_news']['title']['attention_mask'])
-        result['candidate_news']['title']['input_ids'] = torch.stack(result['candidate_news']['title']['input_ids'])
-        result['candidate_news']['title']['attention_mask'] = torch.stack(result['candidate_news']['title']['attention_mask'])
+        result['clicked_news']['title']['input_ids'] = torch.stack(result['clicked_news']['title']['input_ids']).to(self.device)
+        result['clicked_news']['title']['attention_mask'] = torch.stack(result['clicked_news']['title']['attention_mask']).to(self.device)
+        result['candidate_news']['title']['input_ids'] = torch.stack(result['candidate_news']['title']['input_ids']).to(self.device)
+        result['candidate_news']['title']['attention_mask'] = torch.stack(result['candidate_news']['title']['attention_mask']).to(self.device)
         return result
 
 if __name__ == '__main__':

@@ -29,3 +29,4 @@ pyodbc
 flask_sqlalchemy
 python-dotenv
 marshmallow_sqlalchemy
+bertviz

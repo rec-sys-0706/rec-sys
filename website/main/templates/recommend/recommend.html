@@ -110,7 +110,7 @@
             event.preventDefault(); // Prevents the link from navigating away
     
             Swal.fire({
-                title: 'Choose an Option',
+                title: '選擇資料來源',
                 html: `
                     <div style="text-align: center; margin-top: 20px; justify-content: center; display: flex; flex-wrap: wrap;">
                         <div style="display: flex; flex-wrap: wrap; gap: 20px;">
@@ -136,7 +136,8 @@
                     }
                     return selectedOption ? selectedOption.value : null;
                 },
-                confirmButtonText: 'Submit',
+                confirmButtonText: '確認',
+                cancelButtonText: '取消',
                 showCancelButton: true,
                 customClass: {
                     popup: 'my-swal'

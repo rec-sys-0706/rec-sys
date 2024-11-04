@@ -18,6 +18,8 @@ main_bp = Blueprint('main',
 @main_bp.route('/login', methods = ['GET','POST'])
 def login_user():
     status = 'T'
+    if session['token']:
+        return redirect('/main')
     if request.method == 'POST':
         account = request.form['account']
         password = request.form['password']
@@ -29,7 +31,7 @@ def login_user():
             session['page'] = 'recommend'
             session['source'] = 'all'
             session['account'] = account
-            return render_template('./recommend/about.html')
+            return redirect('/main')
     return render_template('./main/login.html', status = status)
 
 def is_valid_email(email):
@@ -95,7 +97,7 @@ def index():
         else:
             recommend_new = recommend_data_source(session['token'], session['source'])
             unrecommend_news = unrecommend_data_source(session['token'], session['source']) 
-        return render_template('./recommend/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news)
+        return render_template('./recommend/today_news.html', status = status, recommend_new = recommend_new, unrecommend_news = unrecommend_news)
     else:
         recommend_new = ''
         session['token'] = ''
@@ -145,7 +147,7 @@ def allnews():
 def profile():
     session['page'] = 'profile'
     if 'token' in session and session['token'] != '':
-        status = 'Login'
+        is_login = 'True'
         user = user_data(session['token'])
         if session['source'] == 'all':
             history = get_user_cliked(session['token'])
@@ -155,15 +157,17 @@ def profile():
             data = request.get_json()
             source = data.get('source')
             session['source'] = source
-        return render_template('./recommend/profile.html', user_data = user, history = history, status = status)
+        return render_template('./recommend/profile.html', user_data = user, history = history, is_login = is_login)
     else:
-        status = 'Not Login'
-        return render_template('./recommend/profile.html', status = status)
+        is_login = 'False'
+        return render_template('./recommend/profile.html', is_login = is_login)
 
 @main_bp.route('/revise', methods = ['GET','POST'])
 def revise():
     session['page'] = 'revise'
+    is_login = 'False'
     if 'token' in session:
+        is_login = 'True'
         user = user_data(session['token'])
         if session['source'] == 'all':
             history = get_user_cliked(session['token'])
@@ -187,4 +191,4 @@ def revise():
                 update_user_data(session['token'], account, password, email, line_id)
             else:
                 status = 'False'
-    return render_template('./recommend/revise.html', status = status, user_data = user, history = history)
+    return render_template('./recommend/revise.html', status = status, user_data = user, history = history, is_login = is_login)

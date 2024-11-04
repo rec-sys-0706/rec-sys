@@ -30,3 +30,5 @@ flask_sqlalchemy
 python-dotenv
 marshmallow_sqlalchemy
 bertviz
+apiflask
+flask-jwt-extended

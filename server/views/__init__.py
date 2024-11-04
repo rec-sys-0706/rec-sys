@@ -1,32 +1,36 @@
 import logging
 import functools
+import uuid
 
+from apiflask import APIBlueprint, Schema
+from apiflask.fields import String
 from flask import Blueprint, request, jsonify, abort
+from flask_jwt_extended import create_access_token, jwt_required
 from flask_sqlalchemy.model import Model
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
-from server.utils import dict_has_exact_keys, validate_dict_keys, check_api_key
+from server.utils import dict_has_exact_keys, validate_dict_keys
+from server.models.user import User
 from config import DB
 
+class HeaderSchema(Schema):
+    signature = String(
+        required=True,
+        metatdata={'description': 'signature'}
+    )
 
-def authenticate(func):
-    """Decorator for SQLError & api key checking"""
-    @functools.wraps(func) # ? ChatGPT magic.
-    def wrapper(*args, **kwargs):
-        if not check_api_key(request):
-            abort(403) # Permission denied.
-        return func(*args, **kwargs)
-    return wrapper
-
-
-
-
-def generate_blueprint(model: Model, table_name: str) -> Blueprint:
+def generate_blueprint(model: Model,
+                       schema: SQLAlchemyAutoSchema,
+                       table_name: str,
+                       input_schema) -> Blueprint:
     """Generate basic RESTful API endpoints by `table_name`"""
-    blueprint = Blueprint(table_name, __name__)
+    blueprint = APIBlueprint(table_name, __name__)
+    
+    #從模型中提取數據表的所有列名
     headers = [column.name for column in model.__table__.columns]
 
     @blueprint.route('', methods=['GET'])
-    @authenticate
+    @jwt_required()
     def read_data():
         rows = model.query.all()
         return jsonify({
@@ -34,17 +38,21 @@ def generate_blueprint(model: Model, table_name: str) -> Blueprint:
         }), 200
 
     @blueprint.route('/<string:uuid>', methods=['GET'])
-    @authenticate
+    @jwt_required()
     def read_data_by_uuid(uuid):
+        logging.info(uuid)
         row = model.query.get_or_404(uuid)
         return jsonify({
             'data': row.serialize()
         }), 200
 
     @blueprint.route('', methods=['POST'])
-    @authenticate
+    @blueprint.input(input_schema, location='json')
+    @jwt_required()
     def create_data():
-        data = request.json
+        logging.info(f'[Received Data] {request.json}')
+        data = schema.load(request.json, partial=True)
+        data['uuid'] = str(uuid.uuid4())
         if not dict_has_exact_keys(data, headers):
             abort(400)
         try:
@@ -53,15 +61,17 @@ def generate_blueprint(model: Model, table_name: str) -> Blueprint:
             DB.session.commit()
             return jsonify({'message': 'Success'}), 201 # Created
         except Exception as error:
-            logging.error('INSERT ERROR')
+            logging.error(f'[INSERT ERROR] - {error}')
             DB.session.rollback()
             abort(500)
 
+
     @blueprint.route('/<string:uuid>', methods=['PUT'])
-    @authenticate
+    @blueprint.input(input_schema(partial=True), location='json')
+    @jwt_required()
     def update_data(uuid):
         item = model.query.get_or_404(uuid)
-        data = request.json
+        data = schema.load(request.json, partial=True)
         if not validate_dict_keys(data, headers):
             abort(400)
         try:
@@ -75,7 +85,7 @@ def generate_blueprint(model: Model, table_name: str) -> Blueprint:
             abort(500)
 
     @blueprint.route('/<string:uuid>', methods=['DELETE'])
-    @authenticate
+    @jwt_required()
     def delete_data(uuid):
         item = model.query.get_or_404(uuid)
         try:
@@ -86,5 +96,5 @@ def generate_blueprint(model: Model, table_name: str) -> Blueprint:
             logging.error('UPDATE ERROR')
             DB.session.rollback()
             abort(500)
-
+    
     return blueprint

@@ -196,11 +196,22 @@ def get_user_cliked(access_token):
     return item
 
 #獲取新聞
+'''
 def item_data():
     response = requests.get(f'{ROOT}/api/item')
     items = response.json()
-    items = pd.DataFrame(items['data'])
+    
     item = items.sort_values('title')
+    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    return item
+'''
+
+def user_news(data_source):
+    if data_source == 'all':
+        data_source = ''
+    response = requests.get(f'{ROOT}/api/item/today?data_source={data_source}')
+    data = response.json()
+    item = pd.DataFrame(data)
     item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
     return item
 

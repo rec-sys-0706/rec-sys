@@ -68,10 +68,17 @@
     <div id="today_news" class="home">
         <div class="news-container">
             {% if recommend_new|length == 0 %}
-                <div class="news-column">
-                    <h2>為您推薦</h2>
-                    <p>目前沒有推薦的文章，稍後再來看看吧！</p>
-                </div>
+                {% if status == 'Login' %}
+                    <div class="news-column">
+                        <h2>為您推薦</h2>
+                        <p>目前沒有推薦的文章，稍後再來看看吧！</p>
+                    </div>
+                {% else %}
+                    <div class="news-column">
+                        <h2>為您推薦</h2>
+                        <p>請先<a  href="/main/login">登入</a>，讓我們為您推薦文章</p>
+                    </div>
+                {% endif %}
             {% else %}
                 <div class="news-column">                
                     <h2>為您推薦</h2>

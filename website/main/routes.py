@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, session, redirect
-from config import register, login, BASE_URL, click_data, user_data, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked, recommend_data_source, unrecommend_data_source, history_data_source, click_data_source
+from config import register, login, BASE_URL, click_data, user_data, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked, recommend_data_source, unrecommend_data_source, history_data_source, click_data_source, user_news
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -15,8 +15,8 @@ main_bp = Blueprint('main',
                     url_prefix='/main')
 
 # index 資料夾
-@main_bp.route('/', methods = ['GET','POST'])
-def index():
+@main_bp.route('/login', methods = ['GET','POST'])
+def login_user():
     status = 'T'
     if request.method == 'POST':
         account = request.form['account']
@@ -28,6 +28,7 @@ def index():
             session['token'] = msg
             session['page'] = 'recommend'
             session['source'] = 'all'
+            session['account'] = account
             return render_template('./recommend/about.html')
     return render_template('./main/login.html', status = status)
 
@@ -71,10 +72,11 @@ def recommend():
         print('error')
     return render_template('./recommend/about.html')
 
-@main_bp.route('/today_news', methods = ['GET','POST'])
-def today_news():
-    session['page'] = 'today_news'
-    if 'token' in session:
+@main_bp.route('/', methods = ['GET','POST'])
+def index():
+    session['page'] = ''
+    if 'token' in session and session['token'] != '':
+        status = 'Login'
         if request.method == 'POST':
             try:                    
                 data = request.get_json()
@@ -95,7 +97,28 @@ def today_news():
             unrecommend_news = unrecommend_data_source(session['token'], session['source']) 
         return render_template('./recommend/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news)
     else:
-        return redirect(f'{BASE_URL}:8080/main')
+        recommend_new = ''
+        session['token'] = ''
+        try:
+            data = request.get_json()
+            source = data.get('source')
+            session['source'] = source
+        except:
+            pass
+        if 'source' in session:
+            unrecommend_news = user_news(session['source']) 
+        else:
+            session['source'] = 'all'
+            unrecommend_news = user_news("all")
+            print(2)
+        status = 'Not Login'
+        return render_template('./recommend/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news, status = status)
+
+@main_bp.route('/logout')
+def logout():
+    session['token'] = ''
+    session['account'] = ''
+    return redirect(f'{BASE_URL}:8080/main')
 
 ''''
 @main_bp.route('/all_dates')
@@ -121,7 +144,8 @@ def allnews():
 @main_bp.route('/profile', methods = ['GET','POST'])
 def profile():
     session['page'] = 'profile'
-    if 'token' in session:
+    if 'token' in session and session['token'] != '':
+        status = 'Login'
         user = user_data(session['token'])
         if session['source'] == 'all':
             history = get_user_cliked(session['token'])
@@ -131,9 +155,10 @@ def profile():
             data = request.get_json()
             source = data.get('source')
             session['source'] = source
-        return render_template('./recommend/profile.html', user_data = user, history = history)
+        return render_template('./recommend/profile.html', user_data = user, history = history, status = status)
     else:
-        return redirect(f'{BASE_URL}:8080/main')
+        status = 'Not Login'
+        return render_template('./recommend/profile.html', status = status)
 
 @main_bp.route('/revise', methods = ['GET','POST'])
 def revise():

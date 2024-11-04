@@ -75,7 +75,7 @@
             {% else %}
                 <div class="news-column">                
                     <h2>為您推薦</h2>
-                    {% set news_count = recommend_new.shape[0] %}
+                    {% set news_count = recommend_new|length %}
                     {% for row in range((news_count + 1) // 2) %}
                         <div class="news-row">
                             {% for col in range(2) %}
@@ -92,8 +92,9 @@
                                                 {% set abstract = recommend_new.iloc[index]['abstract'] %}
                                                 {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
                                             </p>
-                                            <!--<p>Data Source: {{ recommend_new.iloc[index]['data_source'] }}</p>-->
+
                                             <p class="news-date">{{ recommend_new.iloc[index]['gattered_datetime'] }}</p>
+                                            <!--<p class="news-date">Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>-->
                                         </div>
                                     </div>
                                 {% endif %}
@@ -104,7 +105,7 @@
             {% endif %}
             <div class="news-column">
                 <h2>其他文章</h2>
-                {% set news_count = unrecommend_news.shape[0] %}
+                {% set news_count = unrecommend_news|length %}
                 {% for row in range((news_count + 1) // 2) %}
                     <div class="news-row">
                         {% for col in range(2) %}
@@ -121,8 +122,9 @@
                                             {% set abstract = unrecommend_news.iloc[index]['abstract'] %}
                                             {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
                                         </p>
-                                        <!--<p>Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>-->
+
                                         <p class="news-date">{{ unrecommend_news.iloc[index]['gattered_datetime'] }}</p>
+                                        <!--<p class="news-date">Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>-->
                                     </div>
                                 </div>
                             {% endif %}

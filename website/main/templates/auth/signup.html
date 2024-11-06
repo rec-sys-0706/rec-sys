@@ -1,0 +1,60 @@
+{% extends "./layout/auth_layout.html" %}
+
+{% block content %}
+    <!-- Tab Content -->
+    <h3 class="text-center fw-bold">註冊</h3>
+    <div class="tab-content" id="myTabContent">
+        <!-- SignUp Tab -->
+        <div class="tab-pane fade show active" id="signup" role="tabpanel" aria-labelledby="signup-tab">
+            <!-- SignUp form with action to /recommend -->
+            <form action="{{ url_for('main.signup') }}" method="post" class="mt-3">
+                <label for="email">信箱</label>
+                <input name="email" class="form-control" placeholder="輸入信箱" aria-label="email" required>
+                <label for="account" class="mt-3">帳號</label>
+                <input name="account" type="text" class="form-control" placeholder="輸入帳號" aria-label="account" required>
+                <label for="password" class="mt-3">密碼</label>
+                <input name="password" type="password" class="form-control" placeholder="輸入密碼" aria-label="password" required>
+                <button type="submit" class="mt-3 btn btn-primary login-button">送出</button>
+
+                <p class="mt-3 text-center">已擁有帳戶？ <a href="./" class="fw-bold no-underline text-[#00335f] hover:text-[#00335f] hover:no-underline">登入</a></p>
+            </form>
+        </div>
+    </div>
+    {% if status == 'False' %}
+        <script>
+            Swal.fire({
+                title:"註冊失敗",
+                text:"email 不符合格式",
+                icon:"error",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/signup"
+            });
+        </script>
+    {% elif status == 'F' %}
+        <script>
+            Swal.fire({
+                title:"註冊失敗",
+                text:"帳號名稱已存在",
+                icon:"error",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/signup"
+            });
+        </script>
+    {% elif status == 'True' %}
+        <script>
+            Swal.fire({
+                title:"註冊成功",
+                text:"已建立帳號",
+                icon:"success",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main"
+            });
+        </script>
+    {% endif %}
+{% endblock %}

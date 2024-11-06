@@ -1,7 +1,8 @@
+import uuid
 from flask import Flask
 
 app = Flask(__name__)
-app.secret_key = 'wqF1rXGsOgY8NyKslxTZXE8YFqnbv0FG'
+app.secret_key = uuid.uuid4().hex
 
 # Register Blueprints
 from main.routes import main_bp

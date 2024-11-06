@@ -1,0 +1,72 @@
+{% extends "./main/profile.html" %}
+
+{% block contents %}
+<form action="{{ url_for('main.revise') }}" method="POST">
+    <table class="user-info" style="width:720px;">
+        <caption>個人資訊</caption>
+        <tbody>
+            <tr>
+                <th>帳號</th>
+                {% for index, data in user_data.iterrows() %}
+                    <td>
+                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" type="text" name="account" value="{{ data['account'] }}"/>
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th>信箱</th>
+                {% for index, data in user_data.iterrows() %}
+                    <td>
+                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" name="email" value="{{ data['email'] }}"/>
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th>Line ID</th>
+                {% for index, data in user_data.iterrows() %}
+                    <td>
+                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" name="line_id" value="{{ data['line_id'] }}" placeholder="Line ID"/>
+                    </td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <th>密碼</th>
+                <td>
+                    <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" text="Password" name="password" placeholder="密碼" required/>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div class = buttons>
+        <a href="javascript: void(0)" class="btn">Line</a>
+        <a href="/main/profile" class="btn">取消修改</a>
+        <button type="submit" class="btn1">確認修改</button>  
+    </div>
+</form>
+
+    {% if status == 'False' %}
+        <script>
+            Swal.fire({
+                title:"修改失敗",
+                text:"email 不符合格式",
+                icon:"error",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/revise"
+            });
+        </script>
+    {% elif status == 'True' %}
+        <script>
+            Swal.fire({
+                title:"修改成功",
+                text:"已修改資料",
+                icon:"success",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/profile"
+            });
+        </script>
+    {% endif %}
+{% endblock %}

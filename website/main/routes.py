@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, session, redirect
-from config import register, login, BASE_URL, click_data, user_data, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked, recommend_data_source, unrecommend_data_source, history_data_source, click_data_source, user_news
+from .utils import register, login, click_data, get_user, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked, recommend_data_source, unrecommend_data_source, history_data_source, click_data_source, user_news
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -32,7 +32,7 @@ def login_user():
             session['source'] = 'all'
             session['account'] = account
             return redirect('/main')
-    return render_template('./main/login.html', status = status)
+    return render_template('./auth/login.html', status = status)
 
 def is_valid_email(email):
     #電子郵件格式
@@ -59,7 +59,7 @@ def signup():
                 status = 'F'
         else:
             status = 'False' 
-    return render_template('./main/signup.html', status = status)
+    return render_template('./auth/signup.html', status = status)
 
 # recommend 資料夾
 @main_bp.route('/recommend', methods = ['GET','POST'])
@@ -72,7 +72,7 @@ def recommend():
         print(source)
     except:
         print('error')
-    return render_template('./recommend/about.html')
+    return render_template('./main/about.html')
 
 @main_bp.route('/', methods = ['GET','POST'])
 def index():
@@ -97,7 +97,7 @@ def index():
         else:
             recommend_new = recommend_data_source(session['token'], session['source'])
             unrecommend_news = unrecommend_data_source(session['token'], session['source']) 
-        return render_template('./recommend/today_news.html', status = status, recommend_new = recommend_new, unrecommend_news = unrecommend_news)
+        return render_template('./main/today_news.html', status = status, recommend_new = recommend_new, unrecommend_news = unrecommend_news)
     else:
         recommend_new = ''
         session['token'] = ''
@@ -112,43 +112,42 @@ def index():
         else:
             session['source'] = 'all'
             unrecommend_news = user_news("all")
-            print(2)
         status = 'Not Login'
-        return render_template('./recommend/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news, status = status)
+        return render_template('./main/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news, status = status)
 
 @main_bp.route('/logout')
 def logout():
     session['token'] = ''
     session['account'] = ''
-    return redirect(f'{BASE_URL}:8080/main')
+    return redirect(f'/main')
 
-''''
-@main_bp.route('/all_dates')
-def all_dates():
-    if 'token' in session:
-        all_news = item_data()
-        news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
-        return render_template('./recommend/all_dates.html', news_date = news_dates)        
-    else:
-        return redirect(f'{BASE_URL}:8080/main')
+# TODO
+# @main_bp.route('/all_dates')
+# def all_dates():
+#     if 'token' in session:
+#         all_news = item_data()
+#         news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
+#         return render_template('./recommend/all_dates.html', news_date = news_dates)        
+#     else:
+#         return redirect(f'{BASE_URL}:8080/main')
 
-@main_bp.route('/all_news')
-def allnews():
-    if 'token' in session:
-        all_news = item_data()
-        date = request.args.get('gattered_datetime')
-        date_news = all_news.loc[all_news['gattered_datetime'] == date]
-        return render_template('./recommend/all_news.html', all_news = date_news)        
-    else:
-        return redirect(f'{BASE_URL}:8080/main')
-'''
+# @main_bp.route('/all_news')
+# def allnews():
+#     if 'token' in session:
+#         all_news = item_data()
+#         date = request.args.get('gattered_datetime')
+#         date_news = all_news.loc[all_news['gattered_datetime'] == date]
+#         return render_template('./recommend/all_news.html', all_news = date_news)        
+#     else:
+#         return redirect(f'{BASE_URL}:8080/main')
+
 
 @main_bp.route('/profile', methods = ['GET','POST'])
 def profile():
     session['page'] = 'profile'
     if 'token' in session and session['token'] != '':
         is_login = 'True'
-        user = user_data(session['token'])
+        user = get_user(session['token'])
         if session['source'] == 'all':
             history = get_user_cliked(session['token'])
         else:
@@ -157,18 +156,18 @@ def profile():
             data = request.get_json()
             source = data.get('source')
             session['source'] = source
-        return render_template('./recommend/profile.html', user_data = user, history = history, is_login = is_login)
+        return render_template('./main/profile.html', user=user, history=history, is_login=is_login)
     else:
         is_login = 'False'
-        return render_template('./recommend/profile.html', is_login = is_login)
+        return render_template('./main/profile.html', is_login=is_login)
 
-@main_bp.route('/revise', methods = ['GET','POST'])
-def revise():
-    session['page'] = 'revise'
+@main_bp.route('/edit-profile', methods = ['GET','POST'])
+def edit_profile():
+    session['page'] = 'edit'
     is_login = 'False'
     if 'token' in session:
         is_login = 'True'
-        user = user_data(session['token'])
+        user = get_user(session['token'])
         if session['source'] == 'all':
             history = get_user_cliked(session['token'])
         else:
@@ -191,4 +190,8 @@ def revise():
                 update_user_data(session['token'], account, password, email, line_id)
             else:
                 status = 'False'
-    return render_template('./recommend/revise.html', status = status, user_data = user, history = history, is_login = is_login)
+    return render_template('./main/edit_profile.html', status = status, user_data = user, history = history, is_login = is_login)
+
+@main_bp.route('/test', methods = ['GET'])
+def test():
+    return render_template('./layout/test.html')

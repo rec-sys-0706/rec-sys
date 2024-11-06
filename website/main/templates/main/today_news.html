@@ -1,0 +1,164 @@
+{% extends "./layout/main_layout.html" %}
+
+{% block content %}
+    <style>
+        .news-container {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .news-column {
+            width: 48%;
+        }
+        .news-row {
+            margin-bottom: 20px;
+        }
+        .news-block {
+            width: 100%;
+            border: 1px solid #ddd;
+            padding: 15px;
+            box-sizing: border-box;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        .news-block:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        .news-content h3 {
+            margin: 0 0 10px;
+            font-weight: 700;
+            text-align: left;
+        }
+        .news-content a {
+            text-decoration: none;
+            color: #007BFF;
+            transition: color 0.3s;
+        }
+        .news-content a:hover {
+            color: #0056b3;
+        }
+        .news-content a:visited {
+            color: #007BFF; /* 保持與未訪問時相同的顏色 */
+        }
+        .news-content p {
+            margin: 0 0 5px;
+            color: #555;
+            text-align: left;
+        }
+        .news-date {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: #999;
+            font-size: 0.9em;
+        }
+        .no-news {
+            text-align: center;
+            color: #999;
+            font-size: 1.2em;
+        }
+    </style>
+
+    <div id="today_news" class="home">
+        <div class="news-container">
+            <div class="news-column">
+                <h2 class="text-2xl mt-3 mb-3 ml-0 mr-0 font-bold">為您推薦</h2>
+                {% if recommend_new|length == 0 %}
+                    {% if status == 'Login' %}
+                        <p>目前沒有推薦的文章，稍後再來看看吧！</p>
+                    {% else %}
+                        <p>請先<a href="/main/login" class="font-bold no-underline text-[#00335f] hover:text-[#00335f] hover:no-underline">登入</a>，讓我們為您推薦文章</p>
+                    {% endif %}
+                {% else %}
+                    {% set news_count = recommend_new|length %}
+                    {% for row in range((news_count + 1) // 2) %}
+                        <div class="news-row">
+                            {% for col in range(2) %}
+                                {% set index = row * 2 + col %}
+                                {% if index < news_count %}
+                                    <div class="news-block">
+                                        <div class="news-content">
+                                            <h3>
+                                                <a href="{{ recommend_new.iloc[index]['link']|e }}" data-link="{{ recommend_new.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();" class="clickable-link">
+                                                    {{ recommend_new.iloc[index]['title'] }}
+                                                </a>
+                                            </h3>
+                                            <p  style="margin-bottom:30px;">
+                                                {% set abstract = recommend_new.iloc[index]['abstract'] %}
+                                                {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
+                                            </p>
+
+                                            <p class="news-date">{{ recommend_new.iloc[index]['gattered_datetime'] }}</p>
+                                            <!--<p class="news-date">Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>-->
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="news-column">
+                <h2 class="text-2xl mt-3 mb-3 ml-0 mr-0 font-bold">其他文章</h2>
+                {% set news_count = unrecommend_news|length %}
+                {% for row in range((news_count + 1) // 2) %}
+                    <div class="news-row">
+                        {% for col in range(2) %}
+                            {% set index = row * 2 + col %}
+                            {% if index < news_count %}
+                                <div class="news-block">
+                                    <div class="news-content">
+                                        <h3>
+                                            <a href="{{ unrecommend_news.iloc[index]['link']|e }}" data-link="{{ unrecommend_news.iloc[index]['link']|e }}" onclick="sendValueAndRedirect(this); event.preventDefault();" class="clickable-link">
+                                                {{ unrecommend_news.iloc[index]['title'] }}
+                                            </a>
+                                        </h3>
+                                        <p style="margin-bottom:30px;">
+                                            {% set abstract = unrecommend_news.iloc[index]['abstract'] %}
+                                            {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
+                                        </p>
+
+                                        <p class="news-date">{{ unrecommend_news.iloc[index]['gattered_datetime'] }}</p>
+                                        <!--<p class="news-date">Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>-->
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function sendValueAndRedirect(element) {
+            var link = element.getAttribute('data-link');
+        
+            // 立即打開新鏈接，不等待 fetch 完成
+            window.open(link, '_blank');
+        
+            // 後台發送數據到伺服器，無需等待回應
+            fetch('/main', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    link: link
+                })
+            }).catch(error => {
+                console.error('Error sending data:', error);
+            });
+        
+            // 阻止默認行為，防止瀏覽器重定向
+            return false;
+        }
+    </script>
+{% endblock %}

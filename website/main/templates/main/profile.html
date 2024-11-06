@@ -1,0 +1,87 @@
+{% extends "./layout/main_layout.html" %}
+
+{% block content %}
+<div class="container mx-auto mt-10">
+    {% if is_login == 'True' %}
+        <div class="container-lg mx-[180px]">
+            <div class="grid grid-cols-10 gap-4">
+                <div class="col-span-7 bg-white shadow-md rounded-lg px-10 py-6 space-y-20">
+                    <!-- User Information -->
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">個人資訊</h2>
+                    <div class="grid grid-cols-5 gap-y-4">
+                            <div class="col-span-2 font-medium text-gray-700">
+                                帳號
+                            </div>
+                            <div class="col-span-3 text-gray-500">
+                                {{ user.account }}
+                            </div>
+                            <div class="col-span-2 font-medium text-gray-700">
+                                信箱
+                            </div>
+                            <div class="col-span-3 text-gray-500">
+                                {{ user.email }}
+                            </div>
+                            <div class="col-span-2 font-medium text-gray-700">
+                                Line ID
+                            </div>
+                            <div class="col-span-3 text-gray-500">
+                                {{ user.line_id }}
+                            </div>
+                    </div>
+                    <!-- Button Group -->
+                    <div class="flex gap-3 justify-end">
+                        <a href="javascript: void(0)" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+                            綁定Line
+                        </a>
+                        <a href="/main/edit-profile" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+                            修改資料
+                        </a>
+                        <a href="/main/logout" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+                            登出
+                        </a>
+                    </div>
+                    <!-- View History -->
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">文章瀏覽紀錄</h2>
+                    <div>
+                        {% if history|length == 0 %}
+                            <div style="margin-bottom:40px;display:flex;justify-content: center;">
+                                <p>目前沒有瀏覽紀錄</p>
+                            </div>
+                        {% else %}
+                            {% set news_count = history.shape[0] %}
+                            {% for row in range((news_count + 1) // 2) %}
+                                {% for col in range(2) %}
+                                    {% set index = row * 2 + col %}
+                                    {% if index < news_count %}
+                                        <div class="mb-5">
+                                            {% with 
+                                                link=history.iloc[index]['item_link'],
+                                                title=history.iloc[index]['item_title'],
+                                                abstract="",
+                                                gattered_datetime=""
+                                            %}
+                                                {% include 'components/doc_block.html' %}
+                                            {% endwith %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}   
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-span-3 bg-white shadow-md rounded-lg p-6 flex justify-center">
+                    <!-- Avatar and Avatar Setting -->
+                    <div class="w-36 h-36 border-2 border-[#666] rounded-full overflow-hidden my-4">
+                        <img src="./static/images/gura.png" alt="User Avatar" class="object-cover w-full h-full">
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="mt-10 flex justify-center">
+            <h1 class="text-xl font-semibold text-gray-800">請先登入</h1>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "./layout/auth_layout.html" %}
+
+{% block content %}
+    <!-- Tab Content -->
+    <h3 class="text-center fw-bold">登入</h3>
+    <div class="tab-content" id="myTabContent">
+        <!-- LogIn Tab -->
+        <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+            <div class="text-center my-3 flex justify-content-center">
+                <!-- Insert your custom image here in src -->
+                <!-- <img src="./static/images/login.png" class="w-20 h-20 rounded-full object-contain border-2 border-black p-1 bg-white" alt="profile icon"> -->
+            </div>
+            <!-- LogIn form with action to /recommend -->
+            <form  method = 'post' action = "{{ url_for('main.login_user') }}">
+                <label for="account">帳號</label>
+                <input name="account" type="text" class="form-control" placeholder="輸入帳號" aria-label="account">
+                <label for="password" class="mt-3">密碼</label>
+                <input name="password" type="password" class="form-control" placeholder="輸入密碼" aria-label="password">
+                <button type="submit" class="btn btn-primary login-button mt-3">LogIn</button>
+
+                <p class="mt-3 text-center">還沒有帳戶嗎？ <a href="./signup" class="fw-bold no-underline text-[#00335f] hover:text-[#00335f] hover:no-underline">註冊</a></p>
+            </form>
+        </div>
+    </div>
+
+    {% if status == 'F' %}
+        <script>
+            Swal.fire({
+                title:"登入失敗",
+                text:"請輸入正確的帳號密碼",
+                icon:"error",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/login"
+            });
+        </script>
+    {% endif %}
+{% endblock %}

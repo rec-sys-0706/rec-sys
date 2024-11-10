@@ -38,10 +38,10 @@ def scrape_huggingface_papers(output_file='output5.csv'):
     while True:
         last_height = driver.execute_script("return document.body.scrollHeight")
 
-        # 滾動頁面，直到到底部
+        
         while True:
-            driver.execute_script("window.scrollBy(0, 1000);")  # 每次滾動 1000 像素
-            time.sleep(2)  # 等待內容載入
+            driver.execute_script("window.scrollBy(0, 1000);")  
+            time.sleep(2)  
 
             new_height = driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:

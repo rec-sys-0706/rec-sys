@@ -14,33 +14,22 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from recommendation import generate_random_scores
 
-def scrape_cnn_articles():
-    output_folder = 'cnn_news_output'
-    os.makedirs(output_folder, exist_ok=True)
+def scrape_cnn_articles(output_file='output7.csv'):
+    response = requests.get(f"{os.environ.get('ROOT')}/api/user")
+    data = response.json()
+    users = data["data"]
     
     driver = webdriver.Chrome()
     driver.get('https://edition.cnn.com/search?q=Artificial+Intelligence&from=0&size=10&page=1&sort=newest&types=article&section=')
 
-    items = []
+    items_data = []
     seen = set()
     
-    with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
-        open('cnn_news_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
-        
-        fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
-        writer_new = csv.DictWriter(new_file, fieldnames=fieldnames)
-        writer_original = csv.DictWriter(original_file, fieldnames=fieldnames)
-        
-        if not file_exists:
-            writer_original.writeheader()
-        
-        if os.stat(filename).st_size == 0:
-            writer_new.writeheader()
-            
-        last_title, last_link = None, None
-        skip_count = 0
+    with open(output_file, mode='w', newline='', encoding='utf-8') as file:
+        fieldnames = ['uuid', 'title', 'abstract', 'link', 'data_source', 'gattered_datetime']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
 
         while True:
             try:
@@ -71,7 +60,7 @@ def scrape_cnn_articles():
                 if title and abstract and link and gattered_datetime:
                     if record not in seen:
                         seen.add(record)
-                        item_data = {
+                        items_list = {
                             'uuid': str(uuid.uuid4()),
                             'title': title,
                             'category': category,
@@ -102,7 +91,7 @@ def scrape_cnn_articles():
                         
                         with open(output_file, mode='a', newline='', encoding='utf-8') as file:
                                 writer = csv.DictWriter(file, fieldnames=fieldnames)
-                                writer.writerow(item_data)
+                                writer.writerow(items_list)
                                 
                 else:
                         print(f"缺少資料: title={title}, abstract={abstract}, link={link}, gattered_datetime={gattered_datetime}")

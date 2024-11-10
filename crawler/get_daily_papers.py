@@ -27,51 +27,38 @@ def scrape_huggingface_papers(output_file='output5.csv'):
     driver = webdriver.Chrome()
     driver.get('https://huggingface.co/papers')
     
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = os.path.join(output_folder, f'daily_papers_{current_time}.csv')
-    
-    file_exists = os.path.isfile('daily_papers_original.csv')
-    
-    if file_exists:
-        existing_data = pd.read_csv('daily_papers_original.csv')
-        existing_titles_links = set(zip(existing_data['title'], existing_data['link']))
-    else:
-        existing_data = pd.DataFrame(columns=['title', 'link'])
-        existing_titles_links = set()
-    
-    with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
-        open('daily_papers_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
-        
-        fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
-        writer_new = csv.DictWriter(new_file, fieldnames=fieldnames)
-        writer_original = csv.DictWriter(original_file, fieldnames=fieldnames)
-        
-        if not file_exists:
-            writer_original.writeheader()
-        
-        if os.stat(filename).st_size == 0:
-            writer_new.writeheader()
-        
+
+    items_data = []
+    seen = set()
+
+    # 初始化 CSV，寫入欄位名稱
+    with open(output_file, mode='w', newline='', encoding='utf-8') as file:
+        fieldnames = ['uuid', 'title', 'abstract', 'link', 'data_source', 'gattered_datetime']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+
+    while True:
+        last_height = driver.execute_script("return document.body.scrollHeight")
+
+        # 滾動頁面，直到到底部
         while True:
-            last_height = driver.execute_script("return document.body.scrollHeight")
-            while True:
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(1.5)
-                
-                new_height = driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    print("已達頁面底部，無更多內容。")
-                    break
-                last_height = new_height
-                
-            try:
-                articles_elements = WebDriverWait(driver, 10).until(
-                    EC.presence_of_all_elements_located((By.TAG_NAME, 'article'))
-                )
-            except TimeoutException:
-                print("文章載入超時，結束爬取。")
-                driver.quit()
-                return
+            driver.execute_script("window.scrollBy(0, 1000);")  # 每次滾動 1000 像素
+            time.sleep(2)  # 等待內容載入
+
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                print("已達頁面底部，無更多內容。")
+                break
+            last_height = new_height
+
+        try:
+            articles_elements = WebDriverWait(driver, 10).until(
+                EC.presence_of_all_elements_located((By.TAG_NAME, 'article'))
+            )
+        except TimeoutException:
+            print("文章載入超時，結束爬取。")
+            driver.quit()
+            return
 
         for article_element in articles_elements:
             try:

@@ -1,4 +1,5 @@
 import logging
+import uuid
 from apiflask import APIFlask
 from config import Config, DB
 from server.bot import linebot_bp
@@ -15,7 +16,7 @@ def create_app():
     app = APIFlask(__name__)
     app.config.from_object(Config)
     app.config['SPEC_FORMAT'] = 'yaml'
-    
+    app.secret_key = uuid.uuid4().hex
     # 初始化數據資料庫
     DB.init_app(app)
 
@@ -32,6 +33,9 @@ def create_app():
 
     app.register_blueprint(user_history_bp, url_prefix='/api/user_history')
 
+    from website.main.routes import main_bp
+    app.register_blueprint(main_bp)
+
     with app.app_context():
         DB.create_all()
 
@@ -41,4 +45,4 @@ def create_app():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
     app = create_app()
-    app.run(host='0.0.0.0', port=80, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)

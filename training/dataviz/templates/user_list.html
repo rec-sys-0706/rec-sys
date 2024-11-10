@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNN News</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <div class="background"></div>
+    <div class="container2">
+        <div class="user_table">
+            <table class="table table-bordered border-dark">
+                <tr>
+                    <th colspan="4" class="user_title"><strong>User ID</strong></th>
+                </tr>
+                <tr>
+                    <th  class="table_text">User</th>
+                </tr>
+                {% for user_id, user in users.iterrows() %}
+                    <tr>
+                        <th  class="table_text"><a class="link_text" href="/user?user_id={{ user_id }}">{{ user_id }}</a></th>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</body>
+</html>

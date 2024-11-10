@@ -31,7 +31,7 @@ class NewsDataset(Dataset):
                  args: Arguments,
                  tokenizer: CustomTokenizer,
                  mode: Literal['train', 'valid', 'test'],
-                 valid_test: bool=False) -> None:
+                 use_full_candidate: bool=False) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
         suffix = get_suffix(args)
@@ -95,7 +95,7 @@ class NewsDataset(Dataset):
                             continue # ! skip if row is not completed
                         # Drop if no clicked_news
                     candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
-                    if valid_test:
+                    if use_full_candidate:
                         candidate_news_ids = clicked_candidate_ids + unclicked_candidate_ids
                 elif mode == 'test':
                     candidate_news_ids = literal_eval(row['candidate']) # Expected not empty list.
@@ -118,7 +118,7 @@ class NewsDataset(Dataset):
                     'category': candidate_category
                     # 'abstract': candidate_abstract
                 }
-                if valid_test:
+                if use_full_candidate:
                     result.append({
                         'user_id': row['user_id'],
                         'clicked_news_ids': clicked_news_ids,
@@ -159,7 +159,7 @@ class NewsDataset(Dataset):
 class CustomDataCollator:
     tokenizer: CustomTokenizer
     mode: str
-    valid_test: bool
+    use_full_candidate: bool
     def __call__(self, batch: list) -> dict[str, Any]:
         """
         DataLoader will shuffle and sample features(batch), and input `features` into DataCollator,
@@ -187,7 +187,9 @@ class CustomDataCollator:
             'user': {
                 'user_id': [example['user_id'] for example in batch],
                 'clicked_news_ids': [example['clicked_news_ids'] for example in batch],
-                'candidate_news_ids': [example['candidate_news_ids'] for example in batch]
+                'candidate_news_ids': [example['candidate_news_ids'] for example in batch],
+                'clicked_news_category': [example['clicked_news']['category'] for example in batch],
+                'candidate_news_category': [example['candidate_news']['category'] for example in batch]
             },
             'clicked_news': {
                 'title': {
@@ -204,7 +206,7 @@ class CustomDataCollator:
             }
         }
         # Clicked & Clicked news category
-        if self.valid_test:
+        if self.use_full_candidate:
             max_clicked_len = max(len(example['clicked']) for example in batch)
             category_list = []
             clicked_list = []

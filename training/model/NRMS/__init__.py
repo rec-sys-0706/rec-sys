@@ -41,7 +41,13 @@ class NRMS(nn.Module):
         self.user_encoder = Encoder(args.num_heads, args.embedding_dim)
         self.dropout = nn.Dropout(args.dropout_rate)
         self.to(self.device) # Move all layers to device.
-
+        # ---- t-SNE ---- #
+        if self.args.generate_tsne:
+            self.record_vector = {
+                'news_id': [],
+                'vec': [],
+                'category': []
+            }
     def forward(self,
                 user: dict,
                 clicked_news: dict,
@@ -73,7 +79,7 @@ class NRMS(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None and not self.args.valid_test:
+        if not (clicked is None or self.args.use_full_candidate):
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
@@ -84,6 +90,13 @@ class NRMS(nn.Module):
         }
         if self.args.mode == 'train':
             output.pop('user')
+        if self.args.mode == 'valid' and self.args.generate_tsne:
+            news_ids = user['clicked_news_ids']
+            for i in range(len(news_ids)):
+                size = min(len(news_ids[i]), len(clicked_news_vec[i]))
+                self.record_vector['news_id'] += news_ids[i][:size]
+                self.record_vector['vec'] += clicked_news_vec[i][:size].tolist()
+                self.record_vector['category'] += user['clicked_news_category'][i][:size].tolist()
         return output
         # click_probability = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         # return {
@@ -102,7 +115,7 @@ class NRMS_BERT(nn.Module):
         self.device = args.device
         self.tokenizer = tokenizer
         # ---- Layers ---- #
-        self.bert = AutoModel.from_pretrained(pretrained_model_name, output_attentions=args.valid_test)
+        self.bert = AutoModel.from_pretrained(pretrained_model_name, output_attentions=args.generate_bertviz)
         self.news_encoder = Encoder(args.num_heads, 768)
         self.user_encoder = Encoder(args.num_heads, 768)
         if args.use_category:
@@ -110,10 +123,18 @@ class NRMS_BERT(nn.Module):
                                                    args.embedding_dim)
         self.to(self.device) # Move all layers to device.
         # ---- bertviz ---- #
-        self.bertviz_path = Path(next_ckpt_dir) / 'bertviz'
-        if self.args.valid_test:
-            if not self.bertviz_path.exists():
-                self.bertviz_path.mkdir()
+        if self.args.generate_bertviz:
+            self.bertviz_path = Path(next_ckpt_dir) / 'bertviz'
+            if self.args.generate_bertviz:
+                if not self.bertviz_path.exists():
+                    self.bertviz_path.mkdir()
+        # ---- t-SNE ---- #
+        if self.args.generate_tsne:
+            self.record_vector = {
+                'news_id': [],
+                'vec': [],
+                'category': []
+            }
     def forward(self,
                 user: dict,
                 clicked_news: dict,
@@ -131,20 +152,6 @@ class NRMS_BERT(nn.Module):
         input_ids = clicked_news['title']['input_ids'].view(-1, seq_len).to(self.device)
         attention_mask = clicked_news['title']['attention_mask'].view(-1, seq_len).to(self.device)
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        if self.args.valid_test:
-            attentions = bert_output.attentions # tuple with `num_heads` of (batch_size, num_heads, seq, seq) 
-            stacked_tensor = torch.stack(attentions)  # Result shape: (n, m, x, y, z)
-            list_of_tensors = list(stacked_tensor.permute(1, 0, 2, 3, 4))  # Result is a list of n tensors, each with shape (m, n, x, y, z)
-            for ids, attn in zip(input_ids, list_of_tensors):
-                attn = tuple(attn.unsqueeze(1))
-                tokens = self.tokenizer.convert_ids_to_tokens(ids) 
-                html_head_view = head_view(attn, tokens, html_action='return')
-                try:
-                    bertviz_filename = re.sub(r'[\\/:*?"<>|]', '', " ".join(tokens))
-                    with open(self.bertviz_path / f'{bertviz_filename}.html', 'w') as file:
-                        file.write(html_head_view.data)
-                except:
-                    raise ValueError("Bertviz error.")
         last_hidden_state = bert_output.last_hidden_state.view(batch_size, num_articles, seq_len, -1)
         embed = F.dropout(last_hidden_state, p=self.args.dropout_rate, training=self.training)
         clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device), clicked_category_embed)
@@ -160,7 +167,7 @@ class NRMS_BERT(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None and not self.args.valid_test:
+        if not (clicked is None or self.args.use_full_candidate):
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
@@ -171,6 +178,28 @@ class NRMS_BERT(nn.Module):
         }
         if self.args.mode == 'train':
             output.pop('user')
+
+        if self.args.mode == 'valid' and self.args.generate_tsne:
+            news_ids = user['clicked_news_ids']
+            for i in range(len(news_ids)):
+                size = min(len(news_ids[i]), len(clicked_news_vec[i]))
+                self.record_vector['news_id'] += news_ids[i][:size]
+                self.record_vector['vec'] += clicked_news_vec[i][:size].tolist()
+                self.record_vector['category'] += user['clicked_news_category'][i][:size].tolist()
+        # if self.args.valid_test:
+        #     attentions = bert_output.attentions # tuple with `num_heads` of (batch_size, num_heads, seq, seq) 
+        #     stacked_tensor = torch.stack(attentions)  # Result shape: (n, m, x, y, z)
+        #     list_of_tensors = list(stacked_tensor.permute(1, 0, 2, 3, 4))  # Result is a list of n tensors, each with shape (m, n, x, y, z)
+        #     for ids, attn in zip(input_ids, list_of_tensors):
+        #         attn = tuple(attn.unsqueeze(1))
+        #         tokens = self.tokenizer.convert_ids_to_tokens(ids) 
+        #         html_head_view = head_view(attn, tokens, html_action='return')
+        #         try:
+        #             bertviz_filename = re.sub(r'[\\/:*?"<>|]', '', " ".join(tokens))
+        #             with open(self.bertviz_path / f'{bertviz_filename}.html', 'w') as file:
+        #                 file.write(html_head_view.data)
+        #         except:
+        #             raise ValueError("Bertviz error.")
         return output
 if __name__ == '__main__':
     pass

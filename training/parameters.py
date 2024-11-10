@@ -24,6 +24,7 @@ class Arguments:
     dropout_rate: float
     max_dataset_size: int
     use_category: bool
+    use_full_candidate: bool
     # Training Process
     epochs: int
     eval_strategy: Literal['steps', 'epoch']
@@ -44,7 +45,8 @@ class Arguments:
     pretrained_model_name: Literal['distilbert-base-uncased', 'bert-base-uncased']
     reprocess_data: bool
     regenerate_dataset: bool 
-    valid_test: bool
+    generate_bertviz: bool
+    generate_tsne: bool
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient = True
@@ -66,7 +68,8 @@ def parse_args() -> Arguments:
     parser.add_argument('--pretrained-model-name', type=str, default='distilbert-base-uncased')
     parser.add_argument('--reprocess-data', action='store_true', help="Whether to redo data-preprocessing even if processed data exists.")
     parser.add_argument('--regenerate-dataset', action='store_true', help="Whether to redo dataset even if .pt exists.")
-    parser.add_argument('--valid-test', action='store_true', help="Validation testing mode.")
+    parser.add_argument('--generate-bertviz', action='store_true', help="Whether to generate BERTViz.")
+    parser.add_argument('--generate-tsne', action='store_true', help="Whether to generate t-SNE.")
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
@@ -85,6 +88,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--max-dataset-size', type=int, default=60000, help="The upper limit of the dataset size.")
     parser.add_argument('--use-category', action='store_true', help="Use category as features.")
+    parser.add_argument('--use-full-candidate', action='store_true', help="Use full candidate set.")
     # Training Process
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")

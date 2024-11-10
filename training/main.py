@@ -20,7 +20,7 @@ from tqdm import tqdm
 from data_preprocessing import data_preprocessing
 from model.NRMS import NRMS, NRMS_BERT
 from parameters import Arguments, parse_args
-from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv
+from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv, draw_tsne
 from dataset import NewsDataset, CustomDataCollator
 from evaluate import nDCG, ROC_AUC, recall, accuracy
 from evaluate import nDCG_new, ROC_AUC_new, recall_new, accuracy_new
@@ -145,7 +145,7 @@ def main(args: Arguments):
     # Tokenizer & Model & DataCollator
     tokenizer = CustomTokenizer(args)
     model = get_model(args, tokenizer, next_ckpt_dir)
-    collate_fn = CustomDataCollator(tokenizer, args.mode, args.valid_test)
+    collate_fn = CustomDataCollator(tokenizer, args.mode, args.use_full_candidate)
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -155,7 +155,7 @@ def main(args: Arguments):
         test_dataset = None
     if args.mode == 'valid':
         train_dataset = None
-        valid_dataset = NewsDataset(args, tokenizer, mode='valid', valid_test=args.valid_test)
+        valid_dataset = NewsDataset(args, tokenizer, mode='valid', use_full_candidate=args.use_full_candidate)
         test_dataset = None
     if args.mode == 'test':
         train_dataset = None
@@ -191,6 +191,7 @@ def main(args: Arguments):
     if args.mode == 'train':
         if args.ckpt_dir is None:
             trainer.train()
+            trainer.save_model(next_ckpt_dir + '/checkpoint-best') # Save final best model
         else:
             pass
             # trainer.train(resume_from_checkpoint=f'checkpoints/{args.ckpt_dir}') # TODO continue training
@@ -229,6 +230,24 @@ def main(args: Arguments):
                     new_row2.append(int(label))
             predictions.append(new_row1)
             labels.append(new_row2)
+        # Generate t-SNE
+        if args.generate_tsne:
+            model.record_vector['news_id'] = np.array(model.record_vector['news_id'])
+            model.record_vector['vec'] = np.array(model.record_vector['vec'])
+            model.record_vector['category'] = np.array(model.record_vector['category'])
+            df = pd.DataFrame(model.record_vector['vec'], columns=[f'vector_{i}' for i in range(args.embedding_dim)])
+            df.insert(0, 'id', model.record_vector['news_id'])
+            df.insert(1, 'category', model.record_vector['category'])
+            # Drop duplicates news_id
+            df = df.drop_duplicates(subset='id', keep='first')
+
+            df.to_csv(
+                Path(next_ckpt_dir) / 'record_vector.csv',
+                index=False
+            )
+            fig = draw_tsne(df, tokenizer)
+            fig.savefig(Path(next_ckpt_dir) / 'tsne.png')
+        # Save eval_result.csv
         df = pd.DataFrame({
             'user_id': user_ids,
             'clicked_news': clicked_news_ids,

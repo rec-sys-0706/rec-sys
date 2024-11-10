@@ -29,3 +29,5 @@ rec-sys/
 │
 └── run.py
 ```
+
+# Sign up 和下登入後會回到index

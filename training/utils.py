@@ -69,6 +69,7 @@ class CustomTokenizer:
         self.title_padding = self.encode_title('')
         self.abstract_padding = self.encode_abstract('')
         self.vocab_size = self.__tokenizer.vocab_size
+        self.num_category = self.__categorizer.vocab_size
 
     def __call__(self, *args, **kwargs):
         return self.__tokenizer(*args, **kwargs)
@@ -129,7 +130,8 @@ class CustomTokenizer:
                         names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
                         index_col='news_id')
 
-        categories = pd.concat([news['category'], news['subcategory']]).unique().tolist()
+        # categories = pd.concat([news['category'], news['subcategory']]).unique().tolist() # TODO delete
+        categories = news['category'].unique().tolist()
         vocab = {category: idx for idx, category in enumerate(categories, start=1)}
         vocab.update({'<unk>': 0})
         _categorizer = Tokenizer(models.WordLevel(vocab, unk_token="<unk>"))

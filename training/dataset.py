@@ -15,7 +15,6 @@ from parameters import Arguments
 from utils import CustomTokenizer, list_to_dict, dict_to_tensors, get_src_dir, get_suffix
 
 
-
 class NewsDataset(Dataset):
     """Sample data form `behaviors.tsv` and create dataset based on `news.tsv`
     """
@@ -40,11 +39,14 @@ class NewsDataset(Dataset):
         behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
         
         result_path = src_dir / f'{mode}{suffix}.pt'
-        if result_path.exists() and not args.reprocess:
+        if result_path.exists() and not args.regenerate_dataset:
             self.result = torch.load(result_path)
         else:
-            logging.info(f"Cannot locate file {mode}.pt in '{src_dir}'.")
-            logging.info(f"Starting data processing.")
+            if not result_path.exists():
+                logging.info(f"Cannot locate file {mode}.pt in '{src_dir}'.")
+                logging.info(f"Starting data processing.")
+            elif args.regenerate_dataset:
+                logging.info(f"Regenerating {mode}.pt.")
             __news = pd.read_csv(news_path, index_col='news_id')
             __news['title'] = __news['title'].apply(literal_eval)
             __news['abstract'] = __news['abstract'].apply(literal_eval) # literal_eval first, this is an improvement from 05:00 to 00:15
@@ -57,16 +59,23 @@ class NewsDataset(Dataset):
             def get_news(news_id):
                 title = tokenizer.title_padding if news_id is None else __news[news_id]['title']
                 abstract = tokenizer.abstract_padding if news_id is None else __news[news_id]['abstract']
-                return title, abstract
+                category = 0 if news_id is None else __news[news_id]['category']
+                return title, abstract, category
             def get_grouped_news(news_ids):
                 title_list = []
                 abstract_list = []
+                category_list = []
                 for news_id in news_ids:
-                    title, abstract = get_news(news_id)
+                    title, abstract, category = get_news(news_id)
                     title_list.append(title)
                     abstract_list.append(abstract)
-                return dict_to_tensors(list_to_dict(title_list), torch.int), dict_to_tensors(list_to_dict(abstract_list), torch.int) # Reduce memory usage
-
+                    category_list.append(category)
+                
+                return (
+                    dict_to_tensors(list_to_dict(title_list), torch.int),
+                    dict_to_tensors(list_to_dict(abstract_list), torch.int), # ? Reduce memory usage?
+                    torch.tensor(category_list, dtype=torch.int)
+                )
             __behaviors = __behaviors.sample(frac=1, random_state=args.seed).reset_index(drop=True) # suffle
             result = []
             for idx, row in tqdm(__behaviors.iterrows(), total=len(__behaviors)):
@@ -95,16 +104,18 @@ class NewsDataset(Dataset):
                     clicked_news_ids += [None] # padded with 1 empty news. # TODO for dynamic padding.
                     # ! Candidate news don't do this, because it expected to have news.
 
-                clicked_title, clicked_abstract = get_grouped_news(clicked_news_ids)
-                candidate_title, candidate_abstract = get_grouped_news(candidate_news_ids)
+                clicked_title, clicked_abstract, clicked_category = get_grouped_news(clicked_news_ids)
+                candidate_title, candidate_abstract, candidate_category = get_grouped_news(candidate_news_ids)
 
                 clicked_news = {
                     'title': clicked_title,
+                    'category': clicked_category
                     # 'abstract': clicked_abstract
                 }
                 
                 candidate_news = {
                     'title': candidate_title,
+                    'category': candidate_category
                     # 'abstract': candidate_abstract
                 }
                 if valid_test:
@@ -148,7 +159,6 @@ class NewsDataset(Dataset):
 class CustomDataCollator:
     tokenizer: CustomTokenizer
     mode: str
-    device: torch.device
     valid_test: bool
     def __call__(self, batch: list) -> dict[str, Any]:
         """
@@ -183,26 +193,36 @@ class CustomDataCollator:
                 'title': {
                     'input_ids': [],
                     'attention_mask': []
-                }
+                },
+                'category': []
             },
             'candidate_news': {
                 'title': {
                     'input_ids': [],
                     'attention_mask': []
-                }
+                },
             }
         }
+        # Clicked & Clicked news category
         if self.valid_test:
             max_clicked_len = max(len(example['clicked']) for example in batch)
-            temp = []
+            category_list = []
+            clicked_list = []
             for example in batch:
                 s = max_clicked_len - len(example['clicked'])
-                padded = torch.full((s,), -1)
-                temp.append(torch.cat((example['clicked'], padded)))
-            result['clicked'] = torch.stack(temp, dim=0) # Don't need to(device).
+                category_padded = torch.full((s,), 0)
+                clicked_padded = torch.full((s,), -1)
+                category_list.append(torch.cat((example['candidate_news']['category'], category_padded)))
+                clicked_list.append(torch.cat((example['clicked'], clicked_padded)))
+            result['candidate_news']['category'] = torch.stack(category_list, dim=0)
+            result['clicked'] = torch.stack(clicked_list, dim=0)
         elif self.mode in ['train', 'valid']:
-            result['clicked'] = torch.stack([example['clicked'] for example in batch], dim=0) # Don't need to(device).
-        if self.mode == 'train':
+            result['candidate_news']['category'] = torch.stack([example['candidate_news']['category'] for example in batch], dim=0)
+            result['clicked'] = torch.stack([example['clicked'] for example in batch], dim=0) 
+            # ! RuntimeError: cannot pin 'torch.cuda.LongTensor' only dense CPU tensors can be pinned
+            # ! Don't need to move clicked and category to(device), do this in forward.
+
+        if self.mode == 'train': # padded to same length
             lengths = [len(example['clicked_news_ids']) for example in batch]
             # print(sorted(lengths))
             # max_len = max(lengths)
@@ -212,34 +232,55 @@ class CustomDataCollator:
             fixed_len = np.ceil(np.mean(lengths)).astype(int)
             for item in batch:
                 # Clicked News
-                encodes = item['clicked_news']['title'] # encodes of title of clicked_news
+                encodes = item['clicked_news']['title'].copy() # encodes of title of clicked_news
+                # ! 如果在 batching 的時候沒有用 shallow copy, 它會直接改變 dataset 的 value
                 num_titles = len(encodes['input_ids'])
+                category_list = item['clicked_news']['category'] # ! 是 tensor 所以不用 copy
+
                 if num_titles < fixed_len:
                     padding_input_ids = torch.tensor([self.tokenizer.title_padding['input_ids']] * (fixed_len - num_titles))
                     padding_attention_mask = torch.tensor([self.tokenizer.title_padding['attention_mask']] * (fixed_len - num_titles))
                     # TODO, title_padding直接轉tensor
                     encodes['input_ids'] = torch.cat((encodes['input_ids'], padding_input_ids), dim=0)
                     encodes['attention_mask'] = torch.cat((encodes['attention_mask'], padding_attention_mask), dim=0)
+
+                    padding_category = torch.tensor([0] * (fixed_len - num_titles))
+                    category_list = torch.cat((category_list, padding_category), dim=0)
+
                 elif num_titles > fixed_len:
                     encodes['input_ids'] = encodes['input_ids'][:fixed_len]
                     encodes['attention_mask'] = encodes['attention_mask'][:fixed_len]
+                
+                    category_list = category_list[:fixed_len]
                 result['clicked_news']['title']['input_ids'].append(encodes['input_ids'])
                 result['clicked_news']['title']['attention_mask'].append(encodes['attention_mask'])
+                
+                result['clicked_news']['category'].append(category_list)
                 # Candidate News
                 encodes = item['candidate_news']['title'] # encodes of title
                 result['candidate_news']['title']['input_ids'].append(encodes['input_ids'])
                 result['candidate_news']['title']['attention_mask'].append(encodes['attention_mask'])
-        elif self.mode in ['valid', 'test']:
+        elif self.mode in ['valid', 'test']: # padded to dynamic length
             length = {
                 'clicked_news': np.ceil(np.mean([len(example['clicked_news_ids']) for example in batch])).astype(int),
                 'candidate_news': np.ceil(np.max([len(example['candidate_news_ids']) for example in batch])).astype(int)
             }
+            category_fixed_len = length['clicked_news']
             for item in batch:
+                # Category
+                category_list = item['clicked_news']['category']
+                category_len = len(category_list)
+                if category_len < category_fixed_len:
+                    padded = torch.tensor([0] * (category_fixed_len - category_len))
+                    category_list = torch.cat((category_list, padded), dim=0)
+                elif category_len > category_fixed_len:
+                    category_list = category_list[:category_fixed_len]
+                result['clicked_news']['category'].append(category_list)
                 # Unlike training, candidate would be padded to max.
                 for key in ['clicked_news', 'candidate_news']:
                     fixed_len = length[key]
                     # Clicked News & Candidate News
-                    encodes = item[key]['title'] # encodes of title of clicked_news
+                    encodes = item[key]['title'].copy() # encodes of title of clicked_news
                     num_titles = len(encodes['input_ids'])
                     if num_titles < fixed_len:
                         padding_input_ids = torch.tensor([self.tokenizer.title_padding['input_ids']] * (fixed_len - num_titles))
@@ -251,13 +292,16 @@ class CustomDataCollator:
                         encodes['input_ids'] = encodes['input_ids'][:fixed_len]
                         encodes['attention_mask'] = encodes['attention_mask'][:fixed_len]
                     result[key]['title']['input_ids'].append(encodes['input_ids'])
-                    result[key]['title']['attention_mask'].append(encodes['attention_mask'])  
+                    result[key]['title']['attention_mask'].append(encodes['attention_mask'])
 
-        result['clicked_news']['title']['input_ids'] = torch.stack(result['clicked_news']['title']['input_ids']).to(self.device)
-        result['clicked_news']['title']['attention_mask'] = torch.stack(result['clicked_news']['title']['attention_mask']).to(self.device)
-        result['candidate_news']['title']['input_ids'] = torch.stack(result['candidate_news']['title']['input_ids']).to(self.device)
-        result['candidate_news']['title']['attention_mask'] = torch.stack(result['candidate_news']['title']['attention_mask']).to(self.device)
+
+        result['clicked_news']['title']['input_ids'] = torch.stack(result['clicked_news']['title']['input_ids'])
+        result['clicked_news']['title']['attention_mask'] = torch.stack(result['clicked_news']['title']['attention_mask'])
+        result['candidate_news']['title']['input_ids'] = torch.stack(result['candidate_news']['title']['input_ids'])
+        result['candidate_news']['title']['attention_mask'] = torch.stack(result['candidate_news']['title']['attention_mask'])
+        result['clicked_news']['category'] = torch.stack(result['clicked_news']['category'])
         return result
 
 if __name__ == '__main__':
+
     pass

@@ -140,7 +140,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     news_path = src_dir / f'news_parsed{suffix}.csv'
     behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
     # Behaviors
-    if not behaviors_path.exists() or args.reprocess:
+    if not behaviors_path.exists() or args.reprocess_data:
         start = time.time()
         behaviors = parse_behaviors(src_dir, mode)
         if mode == 'test':
@@ -155,7 +155,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     else:
         logging.info(f"{behaviors_path} already exists.")
     # News
-    if not news_path.exists() or args.reprocess:
+    if not news_path.exists() or args.reprocess_data:
         start = time.time()
         tokenizer = CustomTokenizer(args)
         news = parse_news(src_dir, tokenizer)
@@ -166,7 +166,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     # Glove
     if mode == 'train' and args.model_name == 'NRMS-Glove':
         embedding_path = Path(args.train_dir) / 'pretrained_embedding.pt'
-        if not embedding_path.exists() or args.reprocess:
+        if not embedding_path.exists() or args.reprocess_data:
             embedding = generate_word_embedding(args, tokenizer)
             torch.save(torch.tensor(embedding, dtype=torch.float32), embedding_path)
 

@@ -34,6 +34,9 @@ class NRMS(nn.Module):
             self.embedding = nn.Embedding.from_pretrained(pretrained_embedding,
                                                           freeze=False,
                                                           padding_idx=0)
+        if args.use_category:
+            self.category_embedding = nn.Embedding(tokenizer.num_category,
+                                                   args.embedding_dim)
         self.news_encoder = Encoder(args.num_heads, args.embedding_dim)
         self.user_encoder = Encoder(args.num_heads, args.embedding_dim)
         self.dropout = nn.Dropout(args.dropout_rate)
@@ -53,13 +56,20 @@ class NRMS(nn.Module):
             final_representation: (batch_size, d_embed, 1)
             click_probability   : (batch_size, 2)
         """
+        # Category
+        if self.args.use_category:
+            clicked_category_embed = self.category_embedding(clicked_news['category'].to(self.device))
+            candidate_category_embed = self.category_embedding(candidate_news['category'].to(self.device))
+        else:
+            clicked_category_embed = None
+            candidate_category_embed = None
         # Clicked news
         embed = self.dropout(self.embedding(clicked_news['title']['input_ids'].to(self.device)))
-        clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device))
+        clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device), clicked_category_embed)
         final_representation = self.user_encoder(clicked_news_vec).unsqueeze(dim=-1)
         # Candidate news
         embed = self.embedding(candidate_news['title']['input_ids'].to(self.device))
-        candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device))
+        candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device), candidate_category_embed)
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
@@ -95,6 +105,9 @@ class NRMS_BERT(nn.Module):
         self.bert = AutoModel.from_pretrained(pretrained_model_name, output_attentions=args.valid_test)
         self.news_encoder = Encoder(args.num_heads, 768)
         self.user_encoder = Encoder(args.num_heads, 768)
+        if args.use_category:
+            self.category_embedding = nn.Embedding(tokenizer.num_category,
+                                                   args.embedding_dim)
         self.to(self.device) # Move all layers to device.
         # ---- bertviz ---- #
         self.bertviz_path = Path(next_ckpt_dir) / 'bertviz'
@@ -106,10 +119,17 @@ class NRMS_BERT(nn.Module):
                 clicked_news: dict,
                 candidate_news: dict,
                 clicked=None):
+        # Category
+        if self.args.use_category:
+            clicked_category_embed = self.category_embedding(clicked_news['category'].to(self.device))
+            candidate_category_embed = self.category_embedding(candidate_news['category'].to(self.device))
+        else:
+            clicked_category_embed = None
+            candidate_category_embed = None
         # Clicked news
         batch_size, num_articles, seq_len = clicked_news['title']['input_ids'].size()
-        input_ids = clicked_news['title']['input_ids'].view(-1, seq_len)
-        attention_mask = clicked_news['title']['attention_mask'].view(-1, seq_len)
+        input_ids = clicked_news['title']['input_ids'].view(-1, seq_len).to(self.device)
+        attention_mask = clicked_news['title']['attention_mask'].view(-1, seq_len).to(self.device)
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         if self.args.valid_test:
             attentions = bert_output.attentions # tuple with `num_heads` of (batch_size, num_heads, seq, seq) 
@@ -124,20 +144,19 @@ class NRMS_BERT(nn.Module):
                     with open(self.bertviz_path / f'{bertviz_filename}.html', 'w') as file:
                         file.write(html_head_view.data)
                 except:
-                    import pdb;
-                    pdb.set_trace()
+                    raise ValueError("Bertviz error.")
         last_hidden_state = bert_output.last_hidden_state.view(batch_size, num_articles, seq_len, -1)
         embed = F.dropout(last_hidden_state, p=self.args.dropout_rate, training=self.training)
-        clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device))
+        clicked_news_vec = self.news_encoder(embed, clicked_news['title']['attention_mask'].to(self.device), clicked_category_embed)
         final_representation = self.user_encoder(clicked_news_vec).unsqueeze(dim=-1)
         # Candidate news
         batch_size, num_articles, seq_len = candidate_news['title']['input_ids'].size()
-        input_ids = candidate_news['title']['input_ids'].view(-1, seq_len)
-        attention_mask = candidate_news['title']['attention_mask'].view(-1, seq_len)
+        input_ids = candidate_news['title']['input_ids'].view(-1, seq_len).to(self.device)
+        attention_mask = candidate_news['title']['attention_mask'].view(-1, seq_len).to(self.device)
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask)
         last_hidden_state = bert_output.last_hidden_state.view(batch_size, num_articles, seq_len, -1)
         embed = F.dropout(last_hidden_state, p=self.args.dropout_rate, training=self.training)
-        candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device))
+        candidate_news_vec = self.news_encoder(embed, candidate_news['title']['attention_mask'].to(self.device), candidate_category_embed)
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)

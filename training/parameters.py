@@ -23,6 +23,7 @@ class Arguments:
     num_heads: int
     dropout_rate: float
     max_dataset_size: int
+    use_category: bool
     # Training Process
     epochs: int
     eval_strategy: Literal['steps', 'epoch']
@@ -41,7 +42,8 @@ class Arguments:
     cpu: bool
     model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
     pretrained_model_name: Literal['distilbert-base-uncased', 'bert-base-uncased']
-    reprocess: bool
+    reprocess_data: bool
+    regenerate_dataset: bool 
     valid_test: bool
     device: Any = None
     def __post_init__(self):
@@ -62,7 +64,8 @@ def parse_args() -> Arguments:
     parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
     parser.add_argument('--model-name', type=str, default='NRMS')
     parser.add_argument('--pretrained-model-name', type=str, default='distilbert-base-uncased')
-    parser.add_argument('--reprocess', action='store_true', help="Whether to redo data-preprocessing even if processed data exists.")
+    parser.add_argument('--reprocess-data', action='store_true', help="Whether to redo data-preprocessing even if processed data exists.")
+    parser.add_argument('--regenerate-dataset', action='store_true', help="Whether to redo dataset even if .pt exists.")
     parser.add_argument('--valid-test', action='store_true', help="Validation testing mode.")
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
@@ -81,6 +84,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--max-dataset-size', type=int, default=60000, help="The upper limit of the dataset size.")
+    parser.add_argument('--use-category', action='store_true', help="Use category as features.")
     # Training Process
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")

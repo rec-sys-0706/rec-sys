@@ -145,7 +145,7 @@ def main(args: Arguments):
     # Tokenizer & Model & DataCollator
     tokenizer = CustomTokenizer(args)
     model = get_model(args, tokenizer, next_ckpt_dir)
-    collate_fn = CustomDataCollator(tokenizer, args.mode, args.device, args.valid_test)
+    collate_fn = CustomDataCollator(tokenizer, args.mode, args.valid_test)
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -155,7 +155,7 @@ def main(args: Arguments):
         test_dataset = None
     if args.mode == 'valid':
         train_dataset = None
-        valid_dataset = NewsDataset(args, tokenizer, mode='valid', valid_test=True)
+        valid_dataset = NewsDataset(args, tokenizer, mode='valid', valid_test=args.valid_test)
         test_dataset = None
     if args.mode == 'test':
         train_dataset = None
@@ -301,7 +301,7 @@ def main(args: Arguments):
 # TODO bert attention layers?
 if __name__ == '__main__': 
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
-    args = parse_args()
+    args = parse_args()    
     data_preprocessing(args, 'train')
     data_preprocessing(args, 'valid')
     if args.mode == 'test':

@@ -2,48 +2,50 @@ import csv
 import time
 import uuid
 import random
-import pandas as pd
-import json
 import re
 import os
 import pandas as pd
+import json
+import re
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
-    NoSuchElementException, TimeoutException, 
-    StaleElementReferenceException)
+    NoSuchElementException, TimeoutException, StaleElementReferenceException
+)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib.parse import urlparse
-from recommendation import generate_random_scores
-import os, requests
 
 def scrape_huggingface_papers(output_file='output5.csv'):
-    # response = requests.get(f"{os.environ.get('ROOT')}/api/user")
-    # data = response.json()
-    # users = data["data"]
+    response = requests.get(f"{os.environ.get('ROOT')}/api/user")
+    data = response.json()
+    users = data["data"]
     
     driver = webdriver.Chrome()
     driver.get('https://huggingface.co/papers')
     
-
-    items_data = []
-    seen = set()
-
-    # 初始化 CSV，寫入欄位名稱
-    with open(output_file, mode='w', newline='', encoding='utf-8') as file:
-        fieldnames = ['uuid', 'title', 'abstract', 'link', 'data_source', 'gattered_datetime']
+    file_exists = os.path.isfile('daily_papers.csv')
+    
+    if file_exists:
+        existing_data = pd.read_csv('daily_papers.csv')
+        existing_titles_links = set(zip(existing_data['title'], existing_data['link']))
+    else:
+        existing_data = pd.DataFrame(columns=['title', 'link'])
+        existing_titles_links = set()
+    
+    with open('daily_papers.csv', mode='a', newline='', encoding='utf-8') as file:
+        fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
 
     while True:
         last_height = driver.execute_script("return document.body.scrollHeight")
 
-        # 滾動頁面，直到到底部
+        
         while True:
-            driver.execute_script("window.scrollBy(0, 1000);")  # 每次滾動 1000 像素
-            time.sleep(2)  # 等待內容載入
+            driver.execute_script("window.scrollBy(0, 1000);")  
+            time.sleep(2)  
 
             new_height = driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:
@@ -66,9 +68,9 @@ def scrape_huggingface_papers(output_file='output5.csv'):
                 try:
                     title_element = article_element.find_element(By.TAG_NAME, 'h3')
                     title = title_element.text
-                    print(title)
+                    # print(title)
                     link = title_element.find_element(By.TAG_NAME, 'a').get_attribute('href')
-                    print(link)
+                    # print(link)
                 except StaleElementReferenceException:
                     print("元素已失效，重新嘗試抓取。")
                     continue
@@ -82,7 +84,7 @@ def scrape_huggingface_papers(output_file='output5.csv'):
                     abstract = WebDriverWait(driver, 5).until(
                         EC.presence_of_element_located((By.CLASS_NAME, 'abstract'))
                     ).text
-                    print(abstract)
+                    # print(abstract)
                     gattered_datetime_element = driver.find_element(By.ID, 'content-inner')
                     gattered_datetime_original = gattered_datetime_element.find_element(By.CLASS_NAME, 'dateline').text
 
@@ -92,7 +94,7 @@ def scrape_huggingface_papers(output_file='output5.csv'):
                     date_str = match.group(0) if match else None
                     date_obj = datetime.strptime(date_str, "%d %b %Y")
                     gattered_datetime = date_obj.strftime("%Y-%m-%d %H:%M:%S")
-                    print(gattered_datetime)
+                    # print(gattered_datetime)
 
                     # 防止重複記錄
                     record = (title, abstract, link, gattered_datetime)
@@ -111,21 +113,21 @@ def scrape_huggingface_papers(output_file='output5.csv'):
                             items_data.append(items_list)    
                             items = [items_list]
                                                 
-                            # api_url = f"{os.environ.get('ROOT')}/api/item/crawler"
-                            # if api_url:  # 檢查環境變數是否存在
-                            #     item_post = requests.post(api_url, json=items_list, timeout=20) 
+                            api_url = f"{os.environ.get('ROOT')}/api/item/crawler"
+                            if api_url:  # 檢查環境變數是否存在
+                                item_post = requests.post(api_url, json=items_list, timeout=20) 
                                 
-                            #     if item_post.status_code == 201:
-                            #         recommendations = generate_random_scores(items,users)
-                            #         time.sleep(3)
-                            #         api_recommendations = f"{os.environ.get('ROOT')}/api/recommend/model"
-                            #         for recommendation in recommendations:
-                            #             recommendations_post = requests.post(api_recommendations, json=recommendation, timeout=30) 
-                            #             if recommendations_post.status_code == 201:
-                            #                 print(f"API 發送成功: {recommendations_post.text}")
+                                if item_post.status_code == 201:
+                                    recommendations = generate_random_scores(items,users)
+                                    time.sleep(3)
+                                    api_recommendations = f"{os.environ.get('ROOT')}/api/recommend/model"
+                                    for recommendation in recommendations:
+                                        recommendations_post = requests.post(api_recommendations, json=recommendation, timeout=30) 
+                                        if recommendations_post.status_code == 201:
+                                            print(f"API 發送成功: {recommendations_post.text}")
                 
-                            #     if item_post.status_code != 201:
-                            #         print(f"API 發送失敗: {item_post.text}")
+                                if item_post.status_code != 201:
+                                    print(f"API 發送失敗: {item_post.text}")
                                 
                             
                             with open(output_file, mode='a', newline='', encoding='utf-8') as file:
@@ -141,42 +143,18 @@ def scrape_huggingface_papers(output_file='output5.csv'):
                 driver.switch_to.window(driver.window_handles[0])
                 time.sleep(1)    
                 
-                        row_data = {
-                            'uuid': unique_id,
-                            'title': title,
-                            'category': category,
-                            'abstract': abstract,
-                            'link': link,
-                            'data_source': data_source,
-                            'gattered_datetime': gattered_datetime,
-                            'crawler_datetime': crawler_datetime,
-                            'any_category': any_category
-                        }
-                             
-                        writer_new.writerow(row_data)
-                        writer_original.writerow(row_data) 
-                          
-                        new_file.flush()
-                        original_file.flush()
-                        
-                        existing_titles_links.add((title, link))
-                        
-                    else:
-                        print(f"資料已存在，跳過標題: {title}")
-                        driver.quit()
-                        return filename
-                            
-                except (NoSuchElementException, StaleElementReferenceException) as e:
-                    print(f"遇到錯誤，跳過該項：{e}")
-                    continue
-                    
-            try:
-                next_page_button = driver.find_element(By.LINK_TEXT, 'Previous')
-                next_page_button.click()
-                time.sleep(1)
-            except NoSuchElementException:
-                print("沒有更多頁面了，結束爬取。")
-                break
+            except (NoSuchElementException, TimeoutException) as e:
+                print(f"跳過該元素，原因：{e}")
+                continue    
             
+        # 處理換頁按鈕
+        try:
+            next_page_button = driver.find_element(By.LINK_TEXT, 'Previous')
+            next_page_button.click()
+            time.sleep(1)
+        except NoSuchElementException:
+            print("沒有更多頁面了，結束爬取。")
+            break
+
     driver.quit()
     return filename

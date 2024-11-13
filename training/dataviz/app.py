@@ -42,12 +42,16 @@ def user():
     df = pd.DataFrame({'y_pred': preds, 'y_true': labels})
     # 根據預測是否正確設定顏色（綠色表示正確，紅色表示錯誤）
     df['color'] = np.where(df['y_pred'] == df['y_true'], 'green', 'red')
+    # 將predict添加到candidate_news
+    candidate_news['label'] = df['y_true'].values
+    candidate_news['predict'] = df['y_pred'].values
     # 將顏色添加到candidate_news
     candidate_news['color'] = df['color'].values
     # 按照category進行排序
-    candidate_articles = candidate_news.sort_values('category')
-    import pdb; pdb.set_trace();
-    return render_template('user_profile.html', user=user_id, clicked_articles=clicked_articles, candidate_articles=candidate_articles)
+    recommend = candidate_news[candidate_news['predict'] == 1].sort_values('category')
+    unrecommend = candidate_news[candidate_news['predict'] == 0].sort_values('category')
+    print(unrecommend)
+    return render_template('user_profile.html', user=user_id, clicked_articles=clicked_articles, recommend=recommend, unrecommend=unrecommend)
 
 # 文字雲
 @app.route('/wordcloud.png')

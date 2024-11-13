@@ -43,14 +43,42 @@
             <table class="table caption-top table-bordered border-dark">
                 <tr>
                     <th colspan="4" class="candidate_title">
-                        <strong>Recommend to {{ user }}</strong>
+                        <strong>Recommend</strong>
                     </th>
                 </tr>
-                {% for index, news in candidate_articles.iterrows() %}
+                <tr>
+                    <th class="table_text">ID</th>
+                    <th class="table_text">Category</th>
+                    <th class="table_text">Title</th>
+                    <th class="table_text">Predict</th>
+                </tr>
+                {% for index, news in recommend.iterrows() %}
                     <tr>
                         <th class="table_text {{ news['color'] }}">{{ news.name }}</th>
                         <th class="table_text {{ news['color'] }}">{{ news['category'] }}</th>
                         <th class="table_text {{ news['color'] }}">{{ news['title'] }}</th>
+                        <th class="table_text {{ news['color'] }}">{{ news['predict'] }}</th>
+                    </tr>
+                {% endfor %}
+            </table>
+            <table class="table caption-top table-bordered border-dark">
+                <tr>
+                    <th colspan="4" class="candidate_title">
+                        <strong>Unrecommend</strong>
+                    </th>
+                </tr>
+                <tr>
+                    <th class="table_text">ID</th>
+                    <th class="table_text">Category</th>
+                    <th class="table_text">Title</th>
+                    <th class="table_text">Predict</th>
+                </tr>
+                {% for index, news in unrecommend.iterrows() %}
+                    <tr>
+                        <th class="table_text {{ news['color'] }}">{{ news.name }}</th>
+                        <th class="table_text {{ news['color'] }}">{{ news['category'] }}</th>
+                        <th class="table_text {{ news['color'] }}">{{ news['title'] }}</th>
+                        <th class="table_text {{ news['color'] }}">{{ news['predict'] }}</th>
                     </tr>
                 {% endfor %}
             </table>

@@ -9,7 +9,7 @@ import torch
 from typing import Literal
 
 from parameters import Arguments
-from utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds
+from utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds, reclassify_category
 
 def parse_behaviors(src_dir: Path, mode: Literal['train', 'valid', 'test']) -> pd.DataFrame:
     """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.
@@ -78,6 +78,7 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> pd.DataFrame:
     news['abstract'] = news['abstract'].fillna('') # TODO drop abstract None?
 
     # ! processing news
+    news['category'] = news.apply(reclassify_category, axis=1)
     news = news.drop(columns=['subcategory', 'url', 'title_entities', 'abstract_entities'])
     news = news.sort_index()
     news['category'] = news['category'].apply(lambda c: tokenizer.encode_category(c))

@@ -36,6 +36,8 @@ class Example(BaseModel):
     clicked_news: GroupedNews
     candidate_news: GroupedNews
     clicked: list[int]
+REMAINS_CATEGORY = ['autos', 'entertainment', 'finance', 'foodanddrink', 'health', 'weather', 'middleeast', 'sports', 'travel', 'tv']
+NOT_IN_CNN = ['movies', 'music', 'video'] # 'games', 'kids', 
 
 class CustomTokenizer:
     """CustomTokenizer, wrapping HuggingFace Tokenizer inside"""
@@ -124,26 +126,80 @@ class CustomTokenizer:
         return tokenizer
 
     def __build_categorizer(self) -> PreTrainedTokenizerFast:
+        logging.info("Building categorizer...")
         args = self.args
         news = pd.read_csv(Path(args.train_dir) / 'news.tsv',
                         sep='\t',
                         names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
                         index_col='news_id')
-
+        news['category'] = news.apply(reclassify_category, axis=1)
         # categories = pd.concat([news['category'], news['subcategory']]).unique().tolist() # TODO delete
-        categories = news['category'].unique().tolist()
+        categories = news['category'].dropna().unique().tolist()
         vocab = {category: idx for idx, category in enumerate(categories, start=1)}
         vocab.update({'<unk>': 0})
         _categorizer = Tokenizer(models.WordLevel(vocab, unk_token="<unk>"))
         _categorizer.pre_tokenizer = pre_tokenizers.Whitespace()
         _categorizer.save(self.categorizer_file.__str__())
-
         categorizer = PreTrainedTokenizerFast(tokenizer_object=_categorizer, unk_token="<unk>")
         return categorizer
     def save_pretrained(self, *args, **kwargs):
         self.__tokenizer.save_pretrained(*args, **kwargs)
     def get_vocab(self) -> dict[str, int]:
         return self.__tokenizer.get_vocab()
+
+
+def reclassify_category(row):
+    if row['category'] == 'finance':
+        return 'economy'
+    if row['category'] == 'middleeast':
+        return '其他地區新聞'
+    if row['category'] in REMAINS_CATEGORY:
+        return row['category']
+
+    if row['category'] in NOT_IN_CNN:
+        return row['category']
+
+    if row['category'] in ['news', 'lifestyle']:
+        c = row['category'] + ' ' + row['subcategory']
+        if c in ['news causes', 'news causes-military-appreciation', 'news causes-poverty', 'news newscrime', 'lifestyle causes-green-living']:
+            return '社會議題'
+        elif c in ['news causes-disaster-relief', 'news causes-environment']:
+            return '環境、氣候、天氣' # weather
+        elif c in ['news elections-2020-us', 'news newselection2020', 'news indepth', 'news newspolitics', 'news newsworldpolitics']:
+            return '選舉與政治' # politics
+        elif c in ['news factcheck', 'news newsfactcheck', 'news narendramodi_opinion', 'news newsopinion', 'news newstvmedia']:
+            return '評論'
+        elif c in ['news newsus', 'news newsworld', 'news newsnational']:
+            return '其他地區新聞' # area-world
+        elif c in ['news newsbusiness']:
+            return '商業' # business
+        elif c in ['news newsscience', 'news newsscienceandtechnology', 'news newstechnology']:
+            return '科學與科技' # scienceandtechnology
+        elif c in ['news personalfinance', 'news newsrealestate']:
+            return 'economy與finance'
+        elif c in ['news empowering-the-planet', 'news newsweather']:
+            return '環境、氣候、天氣'
+        elif c in ['news newsvideo', 'news newsvideos']:
+            return 'video'
+        elif c in ['lifestyle lifestylefamily', 'lifestyle lifestylefamilyandrelationships', 'lifestyle lifestyleparenting', 'lifestyle lifestylelovesex', 'lifestyle lifestylemarriage', 'lifestyle pregnancyparenting', 'lifestyle advice']:
+            return '家庭、情感相關'
+        elif c in ['lifestyle lifestylepets', 'lifestyle lifestylepetsanimals', 'lifestyle causes-animals', 'lifestyle lifestyleanimals']:
+            return '寵物或動物'
+        elif c in ['lifestyle lifestylefashion', 'lifestyle lifestylebeauty', 'lifestyle awardstyle', 'lifestyle lifestylecelebstyle']:
+            return '時尚'
+        elif c in ['lifestyle lifestyleshopping', 'lifestyle shop-all', 'lifestyle shop-apparel', 'lifestyle shop-books-movies-tv', 'lifestyle shop-computers-electronics', 'lifestyle shop-holidays', 'lifestyle shop-home-goods', 'lifestyle lifestyleshoppinghomegarden']:
+            return '購物'
+        elif c in ['lifestyle lifestylecleaningandorganizing', 'lifestyle lifestyledecor', 'lifestyle lifestylehomeandgarden']:
+            return '居家'
+        elif c in ['lifestyle holidays', 'lifestyle lifestylestyle', 'lifestyle lifestyletravel', 'lifestyle travel', 'lifestyle lifestyle-wedding', 'lifestyle lifestyleweddings']:
+            return '節慶'
+        elif c in ['lifestyle lifestylecareer']:
+            return '職場'
+        elif c in ['lifestyle lifestylehoroscope', 'lifestyle lifestylehoroscopefish']:
+            return '占星'
+    return None  # Return None if no match is found
+
+
 def time_since(base: float, format: None|Literal['seconds']=None):
     now = time.time()
     elapsed_time = now - base

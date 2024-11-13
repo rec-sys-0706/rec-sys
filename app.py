@@ -9,6 +9,7 @@ from server.views.item_views import item_blueprint
 from server.views.behavior_views import behavior_blueprint
 from server.services.browsing_history import user_history_bp
 from server.views.recommendation_log_views import recommendation_bp
+from server.views.mind_views import mind_blueprint
 
 def create_app():
     app = APIFlask(__name__)
@@ -27,6 +28,7 @@ def create_app():
     app.register_blueprint(item_blueprint, url_prefix='/api/item')
     app.register_blueprint(behavior_blueprint, url_prefix='/api/behavior')
     app.register_blueprint(recommendation_bp, url_prefix='/api/recommend')
+    app.register_blueprint(mind_blueprint, url_prefix='/api/mind')
 
     app.register_blueprint(user_history_bp, url_prefix='/api/user_history')
 

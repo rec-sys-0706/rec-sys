@@ -4,12 +4,14 @@ from sqlalchemy import Uuid, String, Text, Enum, DateTime, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from .behavior import Behavior
 from .recommendation_log import Recommendationlog
+from .mind import Mind
 
 class Item(DB.Model):
     __tablename__ = 'item'
 
     uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     title = mapped_column(String(500), nullable=False)
+    category = mapped_column(String(100), nullable=True)
     abstract = mapped_column(Text, nullable=False)
     link = mapped_column(String(255))
     data_source = mapped_column(Enum('mind_small',
@@ -23,6 +25,7 @@ class Item(DB.Model):
 
     behavior = relationship('Behavior', backref='item', uselist=True, lazy='dynamic')
     recommendationlog = relationship('Recommendationlog', backref='item', uselist=True, lazy='dynamic')
+    mind = relationship('Mind', backref='item', uselist=True, lazy='dynamic')
 
     def serialize(self) -> dict:
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}

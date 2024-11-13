@@ -160,3 +160,51 @@ def delete_user(user_id):
     except Exception as e:
         DB.session.rollback()
         return jsonify({"message": f"Error deleting user: {str(e)}"}), 500
+    
+
+@user_blueprint.route('/mind', methods=['POST'])
+def create_user_data():
+    data = request.json
+    account = data.get('account')
+    password = data.get('password')
+    email = data.get('email')
+    line_id = data.get('line_id', None)
+
+    # 檢查必要欄位
+    if not account or not password or not email:
+        return jsonify({"msg": "Missing username, email, or password"}), 400
+
+    # 檢查帳號和電子郵件是否已存在
+    if User.query.filter_by(account=account).first():
+        return jsonify({"msg": "Username already exists"}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({"msg": "Email already registered"}), 400
+
+    # 生成 UUID 和密碼哈希
+    id = str(uuid.uuid4())
+    password_hash = generate_password_hash(password)
+
+    # 新增使用者到資料庫
+    new_user = User(uuid=id, account=account, password=password_hash, email=email, line_id=line_id)
+    DB.session.add(new_user)
+    DB.session.commit()
+
+    return jsonify({"msg": "Success Register"}), 200  
+
+# 透過 account 獲取 user_uuid
+@user_blueprint.route('/get_uuid_by_account', methods=['GET'])
+def get_user_uuid_by_account():
+    account = request.args.get('account')
+    
+    if not account:
+        return jsonify({"msg": "Missing account parameter"}), 400
+
+    # 查詢 User 表中的 account
+    user = User.query.filter_by(account=account).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # 返回 user_uuid
+    return jsonify({
+        'user_uuid': str(user.uuid)
+    }), 200 

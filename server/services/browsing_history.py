@@ -58,6 +58,10 @@ def read_browsing_history(user_uuid):
 @user_history_bp.route('/recommend/<uuid:user_uuid>', methods = ['GET'])
 def get_recommend_items(user_uuid):
     try:
+        # this week
+        # today = datetime.today() + timedelta(days=1)
+        today = datetime(2024, 10, 22) + timedelta(days=1)
+        start_of_week = today - timedelta(days=8)
 
         # 獲取參數中的 data_source
         data_source = request.args.get('data_source', None)
@@ -67,7 +71,9 @@ def get_recommend_items(user_uuid):
             .join(Item, Recommendationlog.item_id == Item.uuid)\
             .filter(
                 Recommendationlog.user_id == user_uuid,
-                Recommendationlog.recommend_score == True
+                Recommendationlog.recommend_score == True,
+                Recommendationlog.gattered_datetime <= today,
+                Recommendationlog.gattered_datetime >= start_of_week,
             ).order_by(Recommendationlog.gattered_datetime.desc())
         
         # 判斷 data_source 的值
@@ -108,6 +114,11 @@ def get_recommend_items(user_uuid):
 @user_history_bp.route('/unrecommend/<uuid:user_uuid>', methods = ['GET'])
 def get_unrecommend_items(user_uuid):
     try:
+        # this week
+        # today = datetime.today() + timedelta(days=1)
+        today = datetime(2024, 10, 22) + timedelta(days=1)
+        start_of_week = today - timedelta(days=8)
+
         # 獲取參數中的 data_source
         data_source = request.args.get('data_source', None)
         
@@ -116,7 +127,9 @@ def get_unrecommend_items(user_uuid):
             .join(Item, Recommendationlog.item_id == Item.uuid)\
             .filter(
                 Recommendationlog.user_id == user_uuid,
-                Recommendationlog.recommend_score == False
+                Recommendationlog.recommend_score == False,
+                Recommendationlog.gattered_datetime <= today,
+                Recommendationlog.gattered_datetime >= start_of_week,
             ).order_by(Recommendationlog.gattered_datetime.desc())
         
         # 判斷 data_source 的值

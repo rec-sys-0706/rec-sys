@@ -1,7 +1,6 @@
 import csv
 import time
 import uuid
-import random
 import re
 import os
 import pandas as pd
@@ -25,16 +24,21 @@ def scrape_huggingface_papers(output_file='output5.csv'):
     driver = webdriver.Chrome()
     driver.get('https://huggingface.co/papers')
     
-    file_exists = os.path.isfile('daily_papers.csv')
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = os.path.join(output_folder, f'daily_papers_{current_time}.csv')
+    
+    file_exists = os.path.isfile('daily_papers_original.csv')
     
     if file_exists:
-        existing_data = pd.read_csv('daily_papers.csv')
+        existing_data = pd.read_csv('daily_papers_original.csv')
         existing_titles_links = set(zip(existing_data['title'], existing_data['link']))
     else:
         existing_data = pd.DataFrame(columns=['title', 'link'])
         existing_titles_links = set()
     
-    with open('daily_papers.csv', mode='a', newline='', encoding='utf-8') as file:
+    with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
+        open('daily_papers_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
+        
         fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()

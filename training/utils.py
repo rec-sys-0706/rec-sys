@@ -27,6 +27,7 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.lines import Line2D
+from tqdm import tqdm
 class Encoding(BaseModel):
     input_ids: list[int]
     token_type_ids: list[int]
@@ -156,7 +157,7 @@ class CustomTokenizer:
 
 def reclassify_category(row):
     if row['category'] == 'finance':
-        return 'economy'
+        return 'economy-and-finance'
     if row['category'] == 'middleeast':
         return 'area-world'
     if row['category'] in REMAINS_CATEGORY:
@@ -168,44 +169,44 @@ def reclassify_category(row):
     if row['category'] in ['news', 'lifestyle']:
         c = row['category'] + ' ' + row['subcategory']
         if c in ['news causes', 'news causes-military-appreciation', 'news causes-poverty', 'news newscrime', 'lifestyle causes-green-living']:
-            return 'socialissues'
+            return 'social-issues' # 社會議題
         elif c in ['news causes-disaster-relief', 'news causes-environment']:
-            return '環境、氣候、天氣' # weather
+            return 'weather' # 環境、氣候、天氣
         elif c in ['news elections-2020-us', 'news newselection2020', 'news indepth', 'news newspolitics', 'news newsworldpolitics']:
-            return '選舉與政治' # politics
+            return 'politics' # 選舉與政治
         elif c in ['news factcheck', 'news newsfactcheck', 'news narendramodi_opinion', 'news newsopinion', 'news newstvmedia']:
-            return '評論'
+            return 'comment' # 評論
         elif c in ['news newsus', 'news newsworld', 'news newsnational']:
             return 'area-world' # area-world
         elif c in ['news newsbusiness']:
-            return '商業' # business
+            return 'business' # 商業
         elif c in ['news newsscience', 'news newsscienceandtechnology', 'news newstechnology']:
-            return '科學與科技' # scienceandtechnology
+            return 'science-and-technology' # 科學與科技
         elif c in ['news personalfinance', 'news newsrealestate']:
-            return 'economy與finance'
+            return 'economy-and-finance'
         elif c in ['news empowering-the-planet', 'news newsweather']:
-            return '環境、氣候、天氣'
+            return 'weather' # 環境、氣候、天氣
         elif c in ['news newsvideo', 'news newsvideos']:
             return 'video'
         elif c in ['lifestyle lifestylefamily', 'lifestyle lifestylefamilyandrelationships', 'lifestyle lifestyleparenting', 'lifestyle lifestylelovesex', 'lifestyle lifestylemarriage', 'lifestyle pregnancyparenting', 'lifestyle advice']:
-            return '家庭、情感相關'
+            return 'emotional' # 家庭、情感相關
         elif c in ['lifestyle lifestylepets', 'lifestyle lifestylepetsanimals', 'lifestyle causes-animals', 'lifestyle lifestyleanimals']:
-            return 'petandanimal'
+            return 'pet-and-animal'
         elif c in ['lifestyle lifestylefashion', 'lifestyle lifestylebeauty', 'lifestyle awardstyle', 'lifestyle lifestylecelebstyle']:
-            return '時尚'
+            return 'fashion'
         elif c in ['lifestyle lifestyleshopping', 'lifestyle shop-all', 'lifestyle shop-apparel', 'lifestyle shop-books-movies-tv', 'lifestyle shop-computers-electronics', 'lifestyle shop-holidays', 'lifestyle shop-home-goods', 'lifestyle lifestyleshoppinghomegarden']:
-            return '購物'
+            return 'shopping' # 購物
         elif c in ['lifestyle lifestylecleaningandorganizing', 'lifestyle lifestyledecor', 'lifestyle lifestylehomeandgarden']:
-            return '居家'
+            return 'home' # 居家
         elif c in ['lifestyle holidays', 'lifestyle lifestylestyle', 'lifestyle lifestyletravel', 'lifestyle travel', 'lifestyle lifestyle-wedding', 'lifestyle lifestyleweddings']:
-            return '節慶'
+            return 'festival'
         elif c in ['lifestyle lifestylecareer']:
-            return '職場'
+            return 'workplace' # 職場
         elif c in ['lifestyle lifestylehoroscope', 'lifestyle lifestylehoroscopefish']:
-            return '占星'
+            return 'astrology' # 占星
     return None  # Return None if no match is found
 
-def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42, perplexity: int=30, learning_rate='auto', n_iter=1000):
+def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42, perplexity: int=30, learning_rate='auto', max_iter=1000):
     distinct_colors = [
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
         "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
@@ -214,6 +215,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
         "#fdd49e", "#ffffb3", "#b2df8a", "#cab2d6", "#33a02c",
         "#fb9a99", "#e31a1c", "#a6cee3", "#1f78b4", "#b15928"
     ]
+    start_time = time.time()
     info = df.groupby('category').size().reset_index()
     info['label'] = info['category'].apply(tokenizer.decode_category)
     print(info)
@@ -223,11 +225,11 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     data_pca = pca.fit_transform(df.iloc[:, 2:])  # Assuming df.iloc[:, 2:] has the 768-dim BERT embeddings
 
     # Step 2: Apply t-SNE to the PCA-reduced data
-    tsne = TSNE(n_components=2, random_state=random_state, perplexity=perplexity, learning_rate=learning_rate, n_iter=n_iter)
+    tsne = TSNE(n_components=2, random_state=random_state, perplexity=perplexity, learning_rate=learning_rate, max_iter=max_iter)
     tsne_result = tsne.fit_transform(data_pca)
     df['tsne_x'] = tsne_result[:, 0]
     df['tsne_y'] = tsne_result[:, 1]
-
+    print(f"t-SNE took {time_since(start_time)}")
     # Get unique categories and a continuous colormap
     unique_categories = df['category'].unique()
     # cmap = cm.get_cmap('viridis', len(unique_categories)) # Color too similar

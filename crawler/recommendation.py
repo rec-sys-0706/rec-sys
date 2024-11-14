@@ -1,14 +1,6 @@
 import random
 import uuid
 from datetime import datetime
-import os, requests
-import json
-
-import requests
-import os
-from datetime import datetime
-
-
 
 def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
     recommendations = []

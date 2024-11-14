@@ -1,9 +1,21 @@
-from get_bbc_news import scrape_bbc_articles
 from get_cnn_news import scrape_cnn_articles
+from convert_category import convert_category
 from get_daily_papers import scrape_huggingface_papers
-from get_mit_news import scrape_mit_news_articles
+from insret_item_and_score import post_news_and_score
+import pandas as pd
 
-scrape_cnn_articles()
-scrape_bbc_articles()
-scrape_huggingface_papers()
-scrape_mit_news_articles()
+papers_file = scrape_huggingface_papers()
+
+cnn_file = scrape_cnn_articles()
+
+if cnn_file:
+    df = pd.read_csv(cnn_file)
+    df = convert_category(df)
+    df.to_csv(cnn_file, index=False)
+    print("整理成功")
+else:
+    print("未產生新檔案。")
+    
+
+
+

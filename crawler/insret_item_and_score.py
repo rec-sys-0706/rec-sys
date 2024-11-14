@@ -1,0 +1,41 @@
+import requests
+import os
+import pandas as pd
+import time
+from recommendation import generate_random_scores
+
+def post_news_and_score(item_data):
+    response = requests.get(f"{os.environ.get('ROOT')}/api/user")
+    data = response.json()
+    users = data["data"]
+    
+    df = pd.read_csv(item_data)
+    
+    api_item = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
+    
+    if api_item:  # 檢查環境變數是否存在
+        
+        for index, row in df.iterrows():
+            
+            json_data = row.to_json(force_ascii=False, indent=4)
+            
+            try:
+                item_post = requests.post(api_item, json=json_data, timeout=10)
+                
+                if item_post.status_code == 201:
+                    recommendations = generate_random_scores(json_data,users)
+                    time.sleep(1)
+                    api_recommendations = f"{os.environ.get('ROOT')}/api/recommend/model"
+                    for recommendation in recommendations:
+                        recommendations_post = requests.post(api_recommendations, json=recommendation, timeout=30) 
+                        if recommendations_post.status_code == 201:
+                            print(f"API 發送成功: {recommendations_post.text}")
+                
+                if item_post.status_code != 201:
+                    print(f"API 發送失敗: {item_post.text}")
+                
+            except requests.exceptions.RequestException as e:
+                print(f"請求發生錯誤: {e}")
+    else:
+        print("環境變數 ROOT 未設置")
+    

@@ -187,7 +187,9 @@ class CustomDataCollator:
             'user': {
                 'user_id': [example['user_id'] for example in batch],
                 'clicked_news_ids': [example['clicked_news_ids'] for example in batch],
-                'candidate_news_ids': [example['candidate_news_ids'] for example in batch]
+                'candidate_news_ids': [example['candidate_news_ids'] for example in batch],
+                'clicked_news_category': [example['clicked_news']['category'] for example in batch],
+                'candidate_news_category': [example['candidate_news']['category'] for example in batch]
             },
             'clicked_news': {
                 'title': {

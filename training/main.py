@@ -20,7 +20,7 @@ from tqdm import tqdm
 from data_preprocessing import data_preprocessing
 from model.NRMS import NRMS, NRMS_BERT
 from parameters import Arguments, parse_args
-from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv
+from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv, draw_tsne
 from dataset import NewsDataset, CustomDataCollator
 from evaluate import nDCG, ROC_AUC, recall, accuracy
 from evaluate import nDCG_new, ROC_AUC_new, recall_new, accuracy_new
@@ -229,6 +229,20 @@ def main(args: Arguments):
                     new_row2.append(int(label))
             predictions.append(new_row1)
             labels.append(new_row2)
+        # Save record_vector.csv
+        model.record_vector['news_id'] = np.array(model.record_vector['news_id'])
+        model.record_vector['vec'] = np.array(model.record_vector['vec'])
+        model.record_vector['category'] = np.array(model.record_vector['category'])
+        df = pd.DataFrame(model.record_vector['vec'], columns=[f'vector_{i}' for i in range(args.embedding_dim)])
+        df.insert(0, 'id', model.record_vector['news_id'])
+        df.insert(1, 'category', model.record_vector['category'])
+        df.to_csv(
+            Path(next_ckpt_dir) / 'record_vector.csv',
+            index=False
+        )
+        fig = draw_tsne(df, tokenizer)
+        fig.savefig(Path(next_ckpt_dir) / 'tsne.png')
+        # Save eval_result.csv
         df = pd.DataFrame({
             'user_id': user_ids,
             'clicked_news': clicked_news_ids,

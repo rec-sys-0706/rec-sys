@@ -22,7 +22,10 @@ from tokenizers import (
 )
 from parameters import Arguments
 from pydantic import BaseModel
-
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from matplotlib.lines import Line2D
 class Encoding(BaseModel):
     input_ids: list[int]
     token_type_ids: list[int]
@@ -95,6 +98,8 @@ class CustomTokenizer:
     def decode(self):
         pass
         # TODO
+    def decode_category(self, category_id):
+        return self.__categorizer.decode(category_id)
     def convert_ids_to_tokens(self, *args, **kwargs):
         return self.__tokenizer.convert_ids_to_tokens(*args, **kwargs)
     def __build_tokenizer(self) -> PreTrainedTokenizerFast:
@@ -199,6 +204,49 @@ def reclassify_category(row):
             return '占星'
     return None  # Return None if no match is found
 
+def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer):
+    distinct_colors = [
+        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+        "#bc80bd", "#ffed6f", "#fb8072", "#b3de69", "#80b1d3",
+        "#fdb462", "#ffb3b3", "#a6cee3", "#b15928", "#6a3d9a",
+        "#fdd49e", "#ffffb3", "#b2df8a", "#cab2d6", "#33a02c",
+        "#fb9a99", "#e31a1c", "#a6cee3", "#1f78b4", "#b15928"
+    ]
+    df = df.drop_duplicates(subset='id', keep='first')
+    info = df.groupby('category').size().reset_index()
+    info['label'] = info['category'].apply(tokenizer.decode_category)
+    print(info)
+
+
+    tsne = TSNE(n_components=2, random_state=42)
+    tsne_result = tsne.fit_transform(df.iloc[:, 2:])
+    df['tsne_x'] = tsne_result[:, 0]
+    df['tsne_y'] = tsne_result[:, 1]
+
+    # Get unique categories and a continuous colormap
+    unique_categories = df['category'].unique()
+    # cmap = cm.get_cmap('viridis', len(unique_categories)) # Color too similar
+
+    # Create a color mapping using the continuous colormap
+    color_mapping = {category: (f'{category}: {tokenizer.decode_category(category)}', distinct_colors[i % len(distinct_colors)])
+                     for i, category in enumerate(unique_categories)}
+    # Plot with unique colors
+    fig, ax = plt.subplots(figsize=(10, 8))
+    for category, (label, color) in color_mapping.items():
+        subset = df[df['category'] == category]
+        ax.scatter(subset['tsne_x'], subset['tsne_y'], label=category, color=color, edgecolors='black', linewidths=0.5)
+
+    # Custom legend
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label=label, markerfacecolor=color, markersize=10)
+                    for label, color in color_mapping.values()]
+    ax.legend(handles=legend_elements, title="Categories")
+
+    # Show the plot
+    ax.set_xlabel('t-SNE X')
+    ax.set_ylabel('t-SNE Y')
+    ax.set_title('t-SNE Scatter Plot with Category Labels')
+    return fig
 
 def time_since(base: float, format: None|Literal['seconds']=None):
     now = time.time()

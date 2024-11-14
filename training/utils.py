@@ -20,9 +20,10 @@ from tokenizers import (
     trainers,
     Tokenizer,
 )
-from parameters import Arguments
+from parameters import Arguments, parse_args
 from pydantic import BaseModel
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.lines import Line2D
@@ -157,7 +158,7 @@ def reclassify_category(row):
     if row['category'] == 'finance':
         return 'economy'
     if row['category'] == 'middleeast':
-        return '其他地區新聞'
+        return 'area-world'
     if row['category'] in REMAINS_CATEGORY:
         return row['category']
 
@@ -167,7 +168,7 @@ def reclassify_category(row):
     if row['category'] in ['news', 'lifestyle']:
         c = row['category'] + ' ' + row['subcategory']
         if c in ['news causes', 'news causes-military-appreciation', 'news causes-poverty', 'news newscrime', 'lifestyle causes-green-living']:
-            return '社會議題'
+            return 'socialissues'
         elif c in ['news causes-disaster-relief', 'news causes-environment']:
             return '環境、氣候、天氣' # weather
         elif c in ['news elections-2020-us', 'news newselection2020', 'news indepth', 'news newspolitics', 'news newsworldpolitics']:
@@ -175,7 +176,7 @@ def reclassify_category(row):
         elif c in ['news factcheck', 'news newsfactcheck', 'news narendramodi_opinion', 'news newsopinion', 'news newstvmedia']:
             return '評論'
         elif c in ['news newsus', 'news newsworld', 'news newsnational']:
-            return '其他地區新聞' # area-world
+            return 'area-world' # area-world
         elif c in ['news newsbusiness']:
             return '商業' # business
         elif c in ['news newsscience', 'news newsscienceandtechnology', 'news newstechnology']:
@@ -189,7 +190,7 @@ def reclassify_category(row):
         elif c in ['lifestyle lifestylefamily', 'lifestyle lifestylefamilyandrelationships', 'lifestyle lifestyleparenting', 'lifestyle lifestylelovesex', 'lifestyle lifestylemarriage', 'lifestyle pregnancyparenting', 'lifestyle advice']:
             return '家庭、情感相關'
         elif c in ['lifestyle lifestylepets', 'lifestyle lifestylepetsanimals', 'lifestyle causes-animals', 'lifestyle lifestyleanimals']:
-            return '寵物或動物'
+            return 'petandanimal'
         elif c in ['lifestyle lifestylefashion', 'lifestyle lifestylebeauty', 'lifestyle awardstyle', 'lifestyle lifestylecelebstyle']:
             return '時尚'
         elif c in ['lifestyle lifestyleshopping', 'lifestyle shop-all', 'lifestyle shop-apparel', 'lifestyle shop-books-movies-tv', 'lifestyle shop-computers-electronics', 'lifestyle shop-holidays', 'lifestyle shop-home-goods', 'lifestyle lifestyleshoppinghomegarden']:
@@ -204,7 +205,7 @@ def reclassify_category(row):
             return '占星'
     return None  # Return None if no match is found
 
-def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer):
+def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42, perplexity: int=30, learning_rate='auto', n_iter=1000):
     distinct_colors = [
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
         "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
@@ -213,14 +214,17 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer):
         "#fdd49e", "#ffffb3", "#b2df8a", "#cab2d6", "#33a02c",
         "#fb9a99", "#e31a1c", "#a6cee3", "#1f78b4", "#b15928"
     ]
-    df = df.drop_duplicates(subset='id', keep='first')
     info = df.groupby('category').size().reset_index()
     info['label'] = info['category'].apply(tokenizer.decode_category)
     print(info)
+    
+    # Step 1: Apply PCA to reduce dimensionality from 768 to 50 (or another suitable value)
+    pca = PCA(n_components=50)  # Adjust n_components based on the data structure
+    data_pca = pca.fit_transform(df.iloc[:, 2:])  # Assuming df.iloc[:, 2:] has the 768-dim BERT embeddings
 
-
-    tsne = TSNE(n_components=2, random_state=42)
-    tsne_result = tsne.fit_transform(df.iloc[:, 2:])
+    # Step 2: Apply t-SNE to the PCA-reduced data
+    tsne = TSNE(n_components=2, random_state=random_state, perplexity=perplexity, learning_rate=learning_rate, n_iter=n_iter)
+    tsne_result = tsne.fit_transform(data_pca)
     df['tsne_x'] = tsne_result[:, 0]
     df['tsne_y'] = tsne_result[:, 1]
 
@@ -247,6 +251,13 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer):
     ax.set_ylabel('t-SNE Y')
     ax.set_title('t-SNE Scatter Plot with Category Labels')
     return fig
+
+def draw_tsne_with_ckpt(record_vector_path: str, random_state: int=42, perplexity: int=30, learning_rate='auto', n_iter=1000):
+    df = pd.read_csv(record_vector_path)
+    args = parse_args()
+    tokenizer = CustomTokenizer(args)
+    fig = draw_tsne(df, tokenizer, random_state, perplexity, learning_rate, n_iter)
+    fig.savefig(f'tsne_{get_datetime_now()}.png')
 
 def time_since(base: float, format: None|Literal['seconds']=None):
     now = time.time()

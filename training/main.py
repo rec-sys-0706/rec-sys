@@ -236,6 +236,7 @@ def main(args: Arguments):
         df = pd.DataFrame(model.record_vector['vec'], columns=[f'vector_{i}' for i in range(args.embedding_dim)])
         df.insert(0, 'id', model.record_vector['news_id'])
         df.insert(1, 'category', model.record_vector['category'])
+        df = df.drop_duplicates(subset='id', keep='first')
         df.to_csv(
             Path(next_ckpt_dir) / 'record_vector.csv',
             index=False

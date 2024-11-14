@@ -1,7 +1,6 @@
 import csv
 import time
 import uuid
-import random
 import re
 import os
 import pandas as pd
@@ -10,31 +9,42 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
     NoSuchElementException, TimeoutException, 
-    StaleElementReferenceException, ElementClickInterceptedException
-)
+    StaleElementReferenceException)
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib.parse import urlparse
 
 def scrape_huggingface_papers():
+    output_folder = 'daily_papers_output'
+    os.makedirs(output_folder, exist_ok=True)
+    
     driver = webdriver.Chrome()
     driver.get('https://huggingface.co/papers')
     
-    file_exists = os.path.isfile('daily_papers.csv')
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = os.path.join(output_folder, f'daily_papers_{current_time}.csv')
+    
+    file_exists = os.path.isfile('daily_papers_original.csv')
     
     if file_exists:
-        existing_data = pd.read_csv('daily_papers.csv')
+        existing_data = pd.read_csv('daily_papers_original.csv')
         existing_titles_links = set(zip(existing_data['title'], existing_data['link']))
     else:
         existing_data = pd.DataFrame(columns=['title', 'link'])
         existing_titles_links = set()
     
-    with open('daily_papers.csv', mode='a', newline='', encoding='utf-8') as file:
+    with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
+        open('daily_papers_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
+        
         fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer_new = csv.DictWriter(new_file, fieldnames=fieldnames)
+        writer_original = csv.DictWriter(original_file, fieldnames=fieldnames)
         
         if not file_exists:
-            writer.writeheader()
+            writer_original.writeheader()
+        
+        if os.stat(filename).st_size == 0:
+            writer_new.writeheader()
         
         while True:
             last_height = driver.execute_script("return document.body.scrollHeight")
@@ -113,7 +123,7 @@ def scrape_huggingface_papers():
                         driver.switch_to.window(driver.window_handles[0])
                         time.sleep(1)
                 
-                        writer.writerow({
+                        row_data = {
                             'uuid': unique_id,
                             'title': title,
                             'category': category,
@@ -123,13 +133,20 @@ def scrape_huggingface_papers():
                             'gattered_datetime': gattered_datetime,
                             'crawler_datetime': crawler_datetime,
                             'any_category': any_category
-                        })
-                                
-                        file.flush()
+                        }
+                             
+                        writer_new.writerow(row_data)
+                        writer_original.writerow(row_data) 
+                          
+                        new_file.flush()
+                        original_file.flush()
+                        
                         existing_titles_links.add((title, link))
                         
                     else:
                         print(f"資料已存在，跳過標題: {title}")
+                        driver.quit()
+                        return filename
                             
                 except (NoSuchElementException, StaleElementReferenceException) as e:
                     print(f"遇到錯誤，跳過該項：{e}")
@@ -144,5 +161,4 @@ def scrape_huggingface_papers():
                 break
             
     driver.quit()
-
-scrape_huggingface_papers()
+    return filename

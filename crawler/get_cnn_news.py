@@ -16,24 +16,39 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 def scrape_cnn_articles():
+    output_folder = 'cnn_news_output'
+    os.makedirs(output_folder, exist_ok=True)
+    
     driver = webdriver.Chrome()
     driver.get('https://edition.cnn.com/search?q=&from=0&size=10&page=1&sort=newest&types=article&section=')
     
-    file_exists = os.path.isfile('cnn_news_1.csv')
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = os.path.join(output_folder, f'cnn_news_{current_time}.csv')
+    
+    file_exists = os.path.isfile('cnn_news_original.csv')
     
     if file_exists:
-        existing_data = pd.read_csv('cnn_news_1.csv')
+        existing_data = pd.read_csv('cnn_news_original.csv')
         existing_titles_links = set(zip(existing_data['title'], existing_data['link']))
     else:
         existing_data = pd.DataFrame(columns=['title', 'link'])
         existing_titles_links = set()
     
-    with open('cnn_news_1.csv', mode='a', newline='', encoding='utf-8') as file:
+    with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
+        open('cnn_news_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
+        
         fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer_new = csv.DictWriter(new_file, fieldnames=fieldnames)
+        writer_original = csv.DictWriter(original_file, fieldnames=fieldnames)
         
         if not file_exists:
-            writer.writeheader()
+            writer_original.writeheader()
+        
+        if os.stat(filename).st_size == 0:
+            writer_new.writeheader()
+            
+        last_title, last_link = None, None
+        skip_count = 0
 
         while True:
             try:
@@ -58,7 +73,12 @@ def scrape_cnn_articles():
                     link = class_element.find_element(By.CLASS_NAME, 'container__link').get_attribute('href')
                     #print(link)
                     
+                    if (title == last_title and link == last_link):
+                        print("已經爬取過此文章，跳過此筆資料。")
+                        continue
+                    
                     if (title, link) not in existing_titles_links:
+                        skip_count = 0
                         abstract = WebDriverWait(class_element, 3).until(
                                 EC.presence_of_element_located((By.CLASS_NAME, 'container__description'))
                             ).text
@@ -112,7 +132,7 @@ def scrape_cnn_articles():
                             if gattered_datetime.startswith("2023"):
                                 print("資料日期為2023，停止爬取。")
                                 driver.quit()
-                                return
+                                return filename
                             
                         except (NoSuchElementException, ValueError) as e:
                             if isinstance(e, NoSuchElementException):
@@ -121,7 +141,7 @@ def scrape_cnn_articles():
                                 print(f"日期格式錯誤，無法解析日期: '{date_str}'")
                             continue  
                         
-                        writer.writerow({
+                        row_data = {
                             'uuid': unique_id,
                             'title': title,
                             'category': category,
@@ -131,14 +151,25 @@ def scrape_cnn_articles():
                             'gattered_datetime': gattered_datetime,
                             'crawler_datetime': crawler_datetime,
                             'any_category': any_category
-                        })
+                        }
                         
-                        file.flush()
+                        writer_new.writerow(row_data)
+                        writer_original.writerow(row_data)
+                        
+                        new_file.flush()
+                        original_file.flush()
+                        
                         existing_titles_links.add((title, link))
                         
+                        last_title, last_link = title, link
+                        
                     else:
+                        skip_count += 1  # 如果資料重複，計數器+1
                         print(f"資料已存在，跳過標題: {title}")
-                    
+                        if skip_count >= 2:  # 檢查是否連續跳過兩筆
+                            driver.quit()
+                            return filename
+                        
                 except (NoSuchElementException, StaleElementReferenceException) as e:
                     print(f"遇到錯誤，跳過該項：{e}")
                     continue
@@ -157,5 +188,6 @@ def scrape_cnn_articles():
                 break
             
     driver.quit()
+    return filename 
 
-scrape_cnn_articles()
+

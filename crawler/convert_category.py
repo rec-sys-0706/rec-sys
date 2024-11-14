@@ -4,8 +4,10 @@ def convert_category(df):
     
     categories_to_remove = ['cnn10', 'success', 'homes', 'money']
     df = df[~df['category'].isin(categories_to_remove)]
+    
+    df = df.dropna(subset=['category'])
 
-    df['category'] = df['category'].replace(['us', 'asia', 'americas', 'middleeast', 'china', 'europe', 'australia', 'world', 'africa', 'uk', 'india', 'World'], 'other_area')
+    df['category'] = df['category'].replace(['us', 'asia', 'americas', 'middleeast', 'china', 'europe', 'australia', 'world', 'africa', 'uk', 'india', 'World'], 'area-world')
     df['category'] = df['category'].replace(['health', 'health-fitness'], 'health')
     df['category'] = df['category'].replace(['politics', 'electronics'], 'electionsandpolitics')
     df['category'] = df['category'].replace(['sport', 'golf', 'football'], 'sports')
@@ -25,12 +27,3 @@ def convert_category(df):
     df['category'] = df['category'].replace(['cars'], 'autos')
 
     return df
-
-# 讀取資料
-df = pd.read_csv('cnn_news_1.csv')
-# 轉換分類
-df = convert_category(df)
-# 檢查轉換後的分類
-print(df['category'].unique())
-# 儲存結果
-df.to_csv('cnn_news_1.csv', index=False)

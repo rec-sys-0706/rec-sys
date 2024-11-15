@@ -160,6 +160,8 @@ def reclassify_category(row):
         return 'economy-and-finance'
     if row['category'] == 'middleeast':
         return 'area-world'
+    if row['category'] == 'foodanddrink':
+        return 'food-and-drink'
     if row['category'] in REMAINS_CATEGORY:
         return row['category']
 

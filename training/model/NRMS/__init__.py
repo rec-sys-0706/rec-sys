@@ -41,12 +41,13 @@ class NRMS(nn.Module):
         self.user_encoder = Encoder(args.num_heads, args.embedding_dim)
         self.dropout = nn.Dropout(args.dropout_rate)
         self.to(self.device) # Move all layers to device.
-        self.record_vector = {
-            'news_id': [],
-            'vec': [],
-            'category': []
-        }
-
+        # ---- t-SNE ---- #
+        if self.args.generate_tsne:
+            self.record_vector = {
+                'news_id': [],
+                'vec': [],
+                'category': []
+            }
     def forward(self,
                 user: dict,
                 clicked_news: dict,
@@ -78,7 +79,7 @@ class NRMS(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None:
+        if not (clicked is None or self.args.use_full_candidate):
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
@@ -122,15 +123,18 @@ class NRMS_BERT(nn.Module):
                                                    args.embedding_dim)
         self.to(self.device) # Move all layers to device.
         # ---- bertviz ---- #
-        self.bertviz_path = Path(next_ckpt_dir) / 'bertviz'
         if self.args.generate_bertviz:
-            if not self.bertviz_path.exists():
-                self.bertviz_path.mkdir()
-        self.record_vector = {
-            'news_id': [],
-            'vec': [],
-            'category': []
-        }
+            self.bertviz_path = Path(next_ckpt_dir) / 'bertviz'
+            if self.args.generate_bertviz:
+                if not self.bertviz_path.exists():
+                    self.bertviz_path.mkdir()
+        # ---- t-SNE ---- #
+        if self.args.generate_tsne:
+            self.record_vector = {
+                'news_id': [],
+                'vec': [],
+                'category': []
+            }
     def forward(self,
                 user: dict,
                 clicked_news: dict,
@@ -163,7 +167,7 @@ class NRMS_BERT(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None:
+        if not (clicked is None or self.args.use_full_candidate):
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None

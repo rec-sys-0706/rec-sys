@@ -222,6 +222,29 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
         '#b15928',
     ]
     start_time = time.time()
+    # Drop <unk>
+    df = df[~df['category'].isin([0, 15])]
+    # Filter top 10 frequent categories
+    filter = df.groupby('category').size().reset_index(name='count').sort_values(by='count', ascending=False).head(10)['category'].unique()
+    df = df[df['category'].isin(filter)]
+
+    # Add proportions (if unequal proportions are needed, specify them here)
+    proportions = [0.1] * 10  # Equal proportion, adjust if needed
+
+    # Calculate sample sizes for each category
+    sample_sizes = [int(p * min(len(df), 10000)) for p in proportions]
+
+    # Sample proportionately
+    sampled_data = pd.DataFrame(columns=df.columns)
+
+    for category, size in zip(df['category'].unique(), sample_sizes):
+        try:
+            sampled_rows = df[df['category'] == category].sample(size)
+        except:
+            sampled_rows = df[df['category'] == category]
+        sampled_data = pd.concat([sampled_data, sampled_rows])
+
+    sampled_data.reset_index(drop=True, inplace=True)
     info = df.groupby('category').size().reset_index()
     info['label'] = info['category'].apply(tokenizer.decode_category)
     print(info)

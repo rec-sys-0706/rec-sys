@@ -145,7 +145,7 @@ def main(args: Arguments):
     # Tokenizer & Model & DataCollator
     tokenizer = CustomTokenizer(args)
     model = get_model(args, tokenizer, next_ckpt_dir)
-    collate_fn = CustomDataCollator(tokenizer, args.mode, args.valid_test)
+    collate_fn = CustomDataCollator(tokenizer, args.mode, args.use_full_candidate)
     # Prepare Datasets
     logging.info(f'Loading datasets...')
     start_time = time.time()
@@ -155,7 +155,7 @@ def main(args: Arguments):
         test_dataset = None
     if args.mode == 'valid':
         train_dataset = None
-        valid_dataset = NewsDataset(args, tokenizer, mode='valid', valid_test=args.valid_test)
+        valid_dataset = NewsDataset(args, tokenizer, mode='valid', use_full_candidate=args.use_full_candidate)
         test_dataset = None
     if args.mode == 'test':
         train_dataset = None

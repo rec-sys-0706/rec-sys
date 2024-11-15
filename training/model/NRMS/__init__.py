@@ -78,7 +78,7 @@ class NRMS(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None and not self.args.valid_test:
+        if clicked is not None:
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
@@ -89,7 +89,7 @@ class NRMS(nn.Module):
         }
         if self.args.mode == 'train':
             output.pop('user')
-        if self.args.mode == 'valid' and self.args.valid_test:
+        if self.args.mode == 'valid' and self.args.generate_tsne:
             news_ids = user['clicked_news_ids']
             for i in range(len(news_ids)):
                 size = min(len(news_ids[i]), len(clicked_news_vec[i]))
@@ -114,7 +114,7 @@ class NRMS_BERT(nn.Module):
         self.device = args.device
         self.tokenizer = tokenizer
         # ---- Layers ---- #
-        self.bert = AutoModel.from_pretrained(pretrained_model_name, output_attentions=args.valid_test)
+        self.bert = AutoModel.from_pretrained(pretrained_model_name, output_attentions=args.generate_bertviz)
         self.news_encoder = Encoder(args.num_heads, 768)
         self.user_encoder = Encoder(args.num_heads, 768)
         if args.use_category:
@@ -123,7 +123,7 @@ class NRMS_BERT(nn.Module):
         self.to(self.device) # Move all layers to device.
         # ---- bertviz ---- #
         self.bertviz_path = Path(next_ckpt_dir) / 'bertviz'
-        if self.args.valid_test:
+        if self.args.generate_bertviz:
             if not self.bertviz_path.exists():
                 self.bertviz_path.mkdir()
         self.record_vector = {
@@ -163,7 +163,7 @@ class NRMS_BERT(nn.Module):
         # Dot product
         scores = (candidate_news_vec @ final_representation).squeeze(dim=-1)
         click_probability = F.sigmoid(scores)
-        if clicked is not None and not self.args.valid_test:
+        if clicked is not None:
             loss = F.binary_cross_entropy(click_probability, clicked.to(self.device))
         else:
             loss = None
@@ -175,7 +175,7 @@ class NRMS_BERT(nn.Module):
         if self.args.mode == 'train':
             output.pop('user')
 
-        if self.args.mode == 'valid' and self.args.valid_test:
+        if self.args.mode == 'valid' and self.args.generate_tsne:
             news_ids = user['clicked_news_ids']
             for i in range(len(news_ids)):
                 size = min(len(news_ids[i]), len(clicked_news_vec[i]))

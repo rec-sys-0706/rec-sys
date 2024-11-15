@@ -239,6 +239,8 @@ def main(args: Arguments):
             df.insert(0, 'id', model.record_vector['news_id'])
             df.insert(1, 'category', model.record_vector['category'])
             df = df.drop_duplicates(subset='id', keep='first')
+            filter = df.groupby('category').size().reset_index(name='count').sort_values(by='count', ascending=False).head(10)['category'].unique()
+            df = df[df['category'].isin(filter)]
             df.to_csv(
                 Path(next_ckpt_dir) / 'record_vector.csv',
                 index=False

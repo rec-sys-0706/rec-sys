@@ -210,12 +210,16 @@ def reclassify_category(row):
 
 def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42, perplexity: int=30, learning_rate='auto', max_iter=1000):
     distinct_colors = [
-        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-        "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
-        "#bc80bd", "#ffed6f", "#fb8072", "#b3de69", "#80b1d3",
-        "#fdb462", "#ffb3b3", "#a6cee3", "#b15928", "#6a3d9a",
-        "#fdd49e", "#ffffb3", "#b2df8a", "#cab2d6", "#33a02c",
-        "#fb9a99", "#e31a1c", "#a6cee3", "#1f78b4", "#b15928"
+        '#fb8072',
+        '#ff7f0e',
+        '#ffed6f',
+        '#33a02c',
+        '#17becf',
+        '#1f78b4',
+        '#9467bd',
+        '#e377c2',
+        '#7f7f7f',
+        '#b15928',
     ]
     start_time = time.time()
     info = df.groupby('category').size().reset_index()
@@ -255,6 +259,9 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     ax.set_ylabel('t-SNE Y')
     ax.set_title('t-SNE Scatter Plot with Category Labels')
     return fig
+    # 1. 去除小樣本
+    # 2. id排序
+    # 3. 顏色選擇
 
 def draw_tsne_with_ckpt(record_vector_path: str, random_state: int=42, perplexity: int=30, learning_rate='auto', n_iter=1000):
     df = pd.read_csv(record_vector_path)

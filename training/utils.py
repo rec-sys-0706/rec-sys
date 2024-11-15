@@ -141,7 +141,7 @@ class CustomTokenizer:
                         index_col='news_id')
         news['category'] = news.apply(reclassify_category, axis=1)
         # categories = pd.concat([news['category'], news['subcategory']]).unique().tolist() # TODO delete
-        categories = news['category'].dropna().unique().tolist()
+        categories = news['category'].dropna().sort_values().unique().tolist()
         vocab = {category: idx for idx, category in enumerate(categories, start=1)}
         vocab.update({'<unk>': 0})
         _categorizer = Tokenizer(models.WordLevel(vocab, unk_token="<unk>"))
@@ -210,7 +210,7 @@ def reclassify_category(row):
 
 def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42, perplexity: int=30, learning_rate='auto', max_iter=1000):
     distinct_colors = [
-        '#fb8072',
+        '#d62728',
         '#ff7f0e',
         '#ffed6f',
         '#33a02c',
@@ -223,7 +223,14 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     ]
     start_time = time.time()
     # Drop <unk>
-    df = df[~df['category'].isin([0, 15])]
+    import pdb; pdb.set_trace()
+    df = df[~df['category'].apply(tokenizer.decode_category).isin([
+        '<unk>',
+        'area-world',
+        'economy-and-finance',
+        'video',
+        'health',
+    ])]
     # Filter top 10 frequent categories
     filter = df.groupby('category').size().reset_index(name='count').sort_values(by='count', ascending=False).head(10)['category'].unique()
     df = df[df['category'].isin(filter)]
@@ -244,7 +251,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
             sampled_rows = df[df['category'] == category]
         sampled_data = pd.concat([sampled_data, sampled_rows])
 
-    sampled_data.reset_index(drop=True, inplace=True)
+    df = sampled_data.reset_index(drop=True)
     info = df.groupby('category').size().reset_index()
     info['label'] = info['category'].apply(tokenizer.decode_category)
     print(info)

@@ -1,7 +1,7 @@
 cd .\training\
 python .\main.py ^
 --generate-tsne ^
---model-name NRMS ^
+--model-name NRMS-BERT ^
 --eval-batch-size 16 ^
---max-dataset-size 10 ^
---mode valid
+--mode valid ^
+--ckpt-dir 2024-11-15T181856

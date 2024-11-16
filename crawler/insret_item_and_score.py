@@ -1,10 +1,8 @@
 import requests
 import os
 import pandas as pd
-import requests
-import os
-import pandas as pd
-from training.recommend import recommend
+import time
+from recommendation import generate_random_scores
 
 def post_news_and_score(item_data, users):
     
@@ -22,11 +20,13 @@ def post_news_and_score(item_data, users):
                 item_post = requests.post(api_item, json=json_data, timeout=10)
                 
                 if item_post.status_code == 201:
-                    recommendations = recommend(items, users)
-                    api_recommendations = f"{os.environ.get('ROOT')}:5000/api/recommend/model"
-                    recommendations_post = requests.post(api_recommendations, json=recommendations, timeout=30) 
-                    if recommendations_post.status_code == 201:
-                        print(f"API 發送成功: {recommendations_post.text}")
+                    recommendations = generate_random_scores(json_data,users)
+                    time.sleep(1)
+                    api_recommendations = f"{os.environ.get('ROOT')}/api/recommend/model"
+                    for recommendation in recommendations:
+                        recommendations_post = requests.post(api_recommendations, json=recommendation, timeout=30) 
+                        if recommendations_post.status_code == 201:
+                            print(f"API 發送成功: {recommendations_post.text}")
                 
                 if item_post.status_code != 201:
                     print(f"API 發送失敗: {item_post.text}")

@@ -281,8 +281,8 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     # cmap = cm.get_cmap('viridis', len(unique_categories)) # Color too similar
 
     # Create a color mapping using the continuous colormap
-    color_mapping = {category: (f'{tokenizer.decode_category(category)}', distinct_colors[i % len(distinct_colors)])
-                     for i, category in enumerate(unique_categories)}
+    color_mapping = {category: (f'{category}: {tokenizer.decode_category(category)}', distinct_colors[i % len(distinct_colors)])
+                     for i, category in enumerate(sorted(unique_categories))}
     # Plot with unique colors
     fig, ax = plt.subplots(figsize=(10, 8))
     for category, (label, color) in color_mapping.items():

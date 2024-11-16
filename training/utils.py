@@ -230,10 +230,10 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
         'food-and-drink',
         'health',
         'politics',
-        'science-and-technology'
+        'science-and-technology',
         'social-issues',
         'sports',
-        'tv', # good
+        'tv',
         'weather',
         # '<unk>',
         # 'area-world',
@@ -281,7 +281,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     # cmap = cm.get_cmap('viridis', len(unique_categories)) # Color too similar
 
     # Create a color mapping using the continuous colormap
-    color_mapping = {category: (f'{category}: {tokenizer.decode_category(category)}', distinct_colors[i % len(distinct_colors)])
+    color_mapping = {category: (f'{tokenizer.decode_category(category)}', distinct_colors[i % len(distinct_colors)])
                      for i, category in enumerate(sorted(unique_categories))}
     # Plot with unique colors
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -291,7 +291,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
 
     # Custom legend
     legend_elements = [Line2D([0], [0], marker='o', color='w', label=label, markerfacecolor=color, markersize=10)
-                    for label, color in sorted(color_mapping.values())]
+                    for label, color in color_mapping.values()]
 
     ax.legend(handles=legend_elements, title="Categories")
 

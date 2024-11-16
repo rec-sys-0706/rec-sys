@@ -5,6 +5,7 @@ from PIL import Image
 import io
 import pandas as pd
 import ast
+from utils import reclassify_category
 
 app = Flask(__name__)
 app.secret_key = 'wqF1rXGsOgY8NyKslxTZXE8YFqnbv0FG'
@@ -13,7 +14,8 @@ news = pd.read_csv('./training/dataviz/news.tsv',
                     sep='\t',
                     names=['news_id', 'category', 'subcategory', 'title', 'abstract', 'url', 'title_entities', 'abstract_entities'],
                     index_col='news_id')
-result = pd.read_csv('./training/dataviz/eval_result.csv', index_col='user_id').sort_index()
+news['category'] = news.apply(reclassify_category, axis=1)
+result = pd.read_csv('./training/dataviz/eval_result_v2.csv', index_col='user_id').sort_index()
 
 @app.route('/')
 def index():

@@ -298,7 +298,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     # Show the plot
     ax.set_xlabel('t-SNE X')
     ax.set_ylabel('t-SNE Y')
-    ax.set_title('t-SNE Scatter Plot with Category Labels')
+    ax.set_title('t-SNE Visualization of News Vecotr')
     return fig
     # 1. 去除小樣本
     # 2. id排序

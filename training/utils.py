@@ -214,8 +214,8 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
         '#ff7f0e',
         '#ffed6f',
         '#33a02c',
-        '#17becf',
         '#1f78b4',
+        '#17becf',
         '#9467bd',
         '#e377c2',
         '#7f7f7f',
@@ -223,13 +223,23 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     ]
     start_time = time.time()
     # Drop <unk>
-    import pdb; pdb.set_trace()
-    df = df[~df['category'].apply(tokenizer.decode_category).isin([
-        '<unk>',
-        'area-world',
+
+    df = df[df['category'].apply(tokenizer.decode_category).isin([
+        'autos',
         'economy-and-finance',
-        'video',
+        'food-and-drink',
         'health',
+        'politics',
+        'science-and-technology'
+        'social-issues',
+        'sports',
+        'tv', # good
+        'weather',
+        # '<unk>',
+        # 'area-world',
+        # 'video',
+        # 'science-and-technology',
+        # 'travel'
     ])]
     # Filter top 10 frequent categories
     filter = df.groupby('category').size().reset_index(name='count').sort_values(by='count', ascending=False).head(10)['category'].unique()
@@ -271,7 +281,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     # cmap = cm.get_cmap('viridis', len(unique_categories)) # Color too similar
 
     # Create a color mapping using the continuous colormap
-    color_mapping = {category: (f'{category}: {tokenizer.decode_category(category)}', distinct_colors[i % len(distinct_colors)])
+    color_mapping = {category: (f'{tokenizer.decode_category(category)}', distinct_colors[i % len(distinct_colors)])
                      for i, category in enumerate(unique_categories)}
     # Plot with unique colors
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -281,7 +291,8 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
 
     # Custom legend
     legend_elements = [Line2D([0], [0], marker='o', color='w', label=label, markerfacecolor=color, markersize=10)
-                    for label, color in color_mapping.values()]
+                    for label, color in sorted(color_mapping.values())]
+
     ax.legend(handles=legend_elements, title="Categories")
 
     # Show the plot

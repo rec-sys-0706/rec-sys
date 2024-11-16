@@ -1,15 +1,15 @@
 import requests
 import os
 import pandas as pd
-import requests
-import os
-import pandas as pd
 from recommendation import generate_random_scores
+import numpy as np
 
-def post_news_and_score(item_data, users):
+def post_papers_and_score(item_data, users):
     
     df = pd.read_csv(item_data)
     df = df.drop(columns=['crawler_datetime', 'any_category'], errors='ignore')
+    
+    df = df.replace({np.nan: None, np.inf: None, -np.inf: None})
     
     api_item = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
     
@@ -36,4 +36,4 @@ def post_news_and_score(item_data, users):
     else:
         print("環境變數 ROOT 未設置")
         
-    print("新聞更新完畢")
+    print("論文更新完畢")

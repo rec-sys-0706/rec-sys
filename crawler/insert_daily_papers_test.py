@@ -56,4 +56,6 @@ def post_papers_and_score(item_data, users):
         
     print("論文更新完畢")
     
-#post_papers_and_score('daily_papers_output/daily_papers_2024-11-16_10-08-18.csv')
+#post_papers_and_score('daily_papers_output/daily_papers_2024-11-08_01-26-26.csv')
+#post_papers_and_score('daily_papers_output/daily_papers_2024-11-15_00-06-37.csv')
+#post_papers_and_score('daily_papers_output/daily_papers_2024-11-18_14-36-27.csv')

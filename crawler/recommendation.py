@@ -15,7 +15,8 @@ def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
                 'user_id': user_uuid,
                 'item_id': item_uuid,
                 'recommend_score': recommend_score,
-                'gattered_datetime': item_gattered_datetime
+                'gattered_datetime': item_gattered_datetime,
+                'clicked': 0
             })
     
     return recommendations

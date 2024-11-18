@@ -12,7 +12,6 @@ numpy<2.0
 whisper
 jieba
 line-bot-sdk=3.13.0
-line-bot-sdk
 
 
 # torch (See https://pytorch.org/ and choose version that match your GPU.)
@@ -34,7 +33,5 @@ marshmallow_sqlalchemy
 bertviz
 apiflask
 flask-jwt-extended
-
-dotenv
 feedparser
 dateparser

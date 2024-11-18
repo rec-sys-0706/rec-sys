@@ -53,4 +53,9 @@ def post_news_and_score(item_data, users):
                 
     print("新聞更新完畢")
     
+#post_news_and_score('cnn_news_output/cnn_news_2024-11-18_14-37-05.csv')
+#post_news_and_score('cnn_news_output/cnn_news_2024-11-16_17-38-31.csv')
+#post_news_and_score('cnn_news_output/cnn_news_2024-11-16_10-08-46.csv')
+#post_news_and_score('cnn_news_output/cnn_news_2024-11-15_09-22-54.csv')
+#post_news_and_score('cnn_news_output/cnn_news_2024-11-14_23-56-28.csv')
 #post_news_and_score('cnn_news_output/cnn_news_2024-11-14_11-26-33.csv')

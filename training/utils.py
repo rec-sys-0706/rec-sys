@@ -46,7 +46,7 @@ NOT_IN_CNN = ['movies', 'music', 'video'] # 'games', 'kids',
 
 class CustomTokenizer:
     """CustomTokenizer, wrapping HuggingFace Tokenizer inside"""
-    def __init__(self, args: Arguments):
+    def __init__(self, args: Arguments, tokenizer_file: str=None, categorizer_file: str=None):
         self.SPECIAL_TOKENS = {
             'pad_token': '[PAD]',
             'unk_token': '[UNK]',
@@ -55,10 +55,16 @@ class CustomTokenizer:
             'mask_token': '[MASK]'
         }
         self.args = args
-        self.tokenizer_file = Path(args.train_dir) / 'tokenizer.json'
-        self.categorizer_file = Path(args.train_dir) / 'categorizer.json'
+        self.tokenizer_file = Path(args.train_dir) / 'tokenizer.json' if tokenizer_file is None else Path(tokenizer_file)
+        self.categorizer_file = Path(args.train_dir) / 'categorizer.json' if categorizer_file is None else Path(categorizer_file)
+        
+        # categorizer
+        if not self.categorizer_file.exists():
+            self.__categorizer = self.__build_categorizer()
+        else:
+            self.__categorizer = self.__load_categorizer()
 
-        self.__categorizer = self.__build_categorizer()
+        # tokenizer
         if args.model_name == 'NRMS' or args.model_name == 'NRMS-Glove':
             if not self.tokenizer_file.exists():
                 logging.info("Tokenizer file not detected.")
@@ -131,6 +137,10 @@ class CustomTokenizer:
     def __load_tokenizer(self) -> PreTrainedTokenizerFast:
         tokenizer = PreTrainedTokenizerFast(tokenizer_file=self.tokenizer_file.__str__())
         return tokenizer
+
+    def __load_categorizer(self) -> PreTrainedTokenizerFast:
+        categorizer = PreTrainedTokenizerFast(tokenizer_file=self.categorizer_file.__str__())
+        return categorizer
 
     def __build_categorizer(self) -> PreTrainedTokenizerFast:
         logging.info("Building categorizer...")
@@ -365,10 +375,8 @@ def get_src_dir(args: Arguments, mode) -> Path:
         src_dir = Path(args.train_dir)
     elif mode == 'valid':
         src_dir = Path(args.val_dir)
-    elif mode == 'test':
-        src_dir = Path(args.test_dir)
     else:
-        raise ValueError(f"[ERROR] Expected `mode` be str['train'|'valid'|'test'] but got `{mode}` instead.")
+        raise ValueError(f"[ERROR] Expected `mode` be str['train'|'valid'] but got `{mode}` instead.")
     return src_dir
 
 def get_suffix(args: Arguments) -> str:

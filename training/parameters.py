@@ -9,7 +9,6 @@ class Arguments:
     # Directory
     train_dir: str
     val_dir: str
-    test_dir: str
     ckpt_dir: str | None
     glove_embedding_path: Literal['data\glove.6B\glove.6B.300d.txt', 'data/glove.840B.300d/glove.840B.300d.txt']
     # Model
@@ -38,7 +37,7 @@ class Arguments:
     metric_for_best_model: Literal['loss', 'auc', 'acc']
     greater_is_better: bool
     # System
-    mode: Literal['train', 'valid', 'test']
+    mode: Literal['train', 'valid']
     seed: int
     cpu: bool
     model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
@@ -73,8 +72,7 @@ def parse_args() -> Arguments:
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
-    parser.add_argument('--test-dir', type=str, default='data/test')
-    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid/test or continue training, it will get last checkpoint.')
+    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid or continue training, it will get last checkpoint.')
     parser.add_argument('--glove-embedding-path', type=str, default='data\glove.840B.300d\glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")

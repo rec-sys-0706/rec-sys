@@ -25,12 +25,12 @@ class NewsDataset(Dataset):
     #     candidate_news     : {
     #         title          : (batch_size, 1 + k, num_tokens_title)
     #     }
-    #     clicked(valid/test): (batch_size, 1 + k)
+    #     clicked            : (batch_size, 1 + k)
     # } # TODO
     def __init__(self,
                  args: Arguments,
                  tokenizer: CustomTokenizer,
-                 mode: Literal['train', 'valid', 'test'],
+                 mode: Literal['train', 'valid'],
                  use_full_candidate: bool=False) -> None:
         random.seed(args.seed)
         src_dir = get_src_dir(args, mode)
@@ -87,18 +87,15 @@ class NewsDataset(Dataset):
                 num_missing_news = args.max_clicked_news - len(clicked_news_ids)
 
                 # Generate candidate_ids
-                if mode in ['train', 'valid']:
-                    clicked_candidate_ids = literal_eval(row['clicked_candidate'])
-                    unclicked_candidate_ids = literal_eval(row['unclicked_candidate'])
-                    if args.drop_insufficient:
-                        if len(clicked_candidate_ids) < 1 or len(unclicked_candidate_ids) < args.negative_sampling_ratio:
-                            continue # ! skip if row is not completed
-                        # Drop if no clicked_news
-                    candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
-                    if use_full_candidate:
-                        candidate_news_ids = clicked_candidate_ids + unclicked_candidate_ids
-                elif mode == 'test':
-                    candidate_news_ids = literal_eval(row['candidate']) # Expected not empty list.
+                clicked_candidate_ids = literal_eval(row['clicked_candidate'])
+                unclicked_candidate_ids = literal_eval(row['unclicked_candidate'])
+                if args.drop_insufficient:
+                    if len(clicked_candidate_ids) < 1 or len(unclicked_candidate_ids) < args.negative_sampling_ratio:
+                        continue # ! skip if row is not completed
+                    # Drop if no clicked_news
+                candidate_news_ids = random.sample(clicked_candidate_ids, 1) + random.sample(unclicked_candidate_ids, args.negative_sampling_ratio)
+                if use_full_candidate:
+                    candidate_news_ids = clicked_candidate_ids + unclicked_candidate_ids
 
                 if len(clicked_news_ids) < 1:
                     clicked_news_ids += [None] # padded with 1 empty news. # TODO for dynamic padding.
@@ -118,33 +115,24 @@ class NewsDataset(Dataset):
                     'category': candidate_category
                     # 'abstract': candidate_abstract
                 }
+
+                
                 if use_full_candidate:
-                    result.append({
-                        'user_id': row['user_id'],
-                        'clicked_news_ids': clicked_news_ids,
-                        'candidate_news_ids': candidate_news_ids,
-                        'clicked_news': clicked_news,
-                        'candidate_news': candidate_news,
-                        'clicked': torch.tensor([1] * len(clicked_candidate_ids) + [0] * len(unclicked_candidate_ids), dtype=torch.float32)
-                    })
-                elif mode in ['train', 'valid']:
-                    result.append({
-                        'user_id': row['user_id'],
-                        'clicked_news_ids': clicked_news_ids,
-                        'candidate_news_ids': candidate_news_ids,
-                        'clicked_news': clicked_news,
-                        'candidate_news': candidate_news,
-                        'clicked': torch.tensor([1] + [0] * args.negative_sampling_ratio, dtype=torch.float32)
-                        # ! important for [RuntimeError: Expected floating point type for target with class probabilities, got Long]
-                    })
-                elif mode == 'test':
-                    result.append({
-                        'user_id': row['user_id'],
-                        'clicked_news_ids': clicked_news_ids,
-                        'candidate_news_ids': candidate_news_ids,
-                        'clicked_news': clicked_news,
-                        'candidate_news': candidate_news
-                    })
+                    clicked = torch.tensor([1] * len(clicked_candidate_ids) + [0] * len(unclicked_candidate_ids), dtype=torch.float32)
+                else:
+                    clicked = torch.tensor([1] + [0] * args.negative_sampling_ratio, dtype=torch.float32)
+                    # ! important for [RuntimeError: Expected floating point type for target with class probabilities, got Long]
+                
+
+
+                result.append({
+                    'user_id': row['user_id'],
+                    'clicked_news_ids': clicked_news_ids,
+                    'candidate_news_ids': candidate_news_ids,
+                    'clicked_news': clicked_news,
+                    'candidate_news': candidate_news,
+                    'clicked': clicked
+                })
 
             # Save
             torch.save(result, result_path)
@@ -262,7 +250,7 @@ class CustomDataCollator:
                 encodes = item['candidate_news']['title'] # encodes of title
                 result['candidate_news']['title']['input_ids'].append(encodes['input_ids'])
                 result['candidate_news']['title']['attention_mask'].append(encodes['attention_mask'])
-        elif self.mode in ['valid', 'test']: # padded to dynamic length
+        elif self.mode == 'valid': # padded to dynamic length
             length = {
                 'clicked_news': np.ceil(np.mean([len(example['clicked_news_ids']) for example in batch])).astype(int),
                 'candidate_news': np.ceil(np.max([len(example['candidate_news_ids']) for example in batch])).astype(int)

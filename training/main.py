@@ -67,7 +67,6 @@ def get_model(args: Arguments, tokenizer: CustomTokenizer, next_ckpt_dir: str) -
                      pretrained_embedding=pretrained_embedding)
     elif args.model_name == 'NRMS-BERT':
         model = NRMS_BERT(args,
-                          args.pretrained_model_name,
                           tokenizer,
                           next_ckpt_dir)
     else:
@@ -152,15 +151,9 @@ def main(args: Arguments):
     if args.mode == 'train':
         train_dataset = NewsDataset(args, tokenizer, mode='train')
         valid_dataset = NewsDataset(args, tokenizer, mode='valid')
-        test_dataset = None
     if args.mode == 'valid':
         train_dataset = None
         valid_dataset = NewsDataset(args, tokenizer, mode='valid', use_full_candidate=args.use_full_candidate)
-        test_dataset = None
-    if args.mode == 'test':
-        train_dataset = None
-        valid_dataset = None
-        test_dataset = NewsDataset(args, tokenizer, mode='test')
     logging.info(f'Datasets loaded successfully in {time_since(start_time, "seconds"):.2f} seconds.')
     # Trainer
     if args.early_stop:
@@ -179,7 +172,7 @@ def main(args: Arguments):
         callbacks=callbacks
     )
     # Load Model
-    if (args.ckpt_dir is not None) and args.mode in ['valid', 'test']:
+    if (args.ckpt_dir is not None) and args.mode == 'valid':
         last_checkpoint = get_last_checkpoint(f'checkpoints/{args.ckpt_dir}')
         tensors = load_file(last_checkpoint + "/model.safetensors")
         model_state_dict = model.state_dict()
@@ -194,7 +187,8 @@ def main(args: Arguments):
             trainer.save_model(next_ckpt_dir + '/checkpoint-best') # Save final best model
         else:
             pass
-            # trainer.train(resume_from_checkpoint=f'checkpoints/{args.ckpt_dir}') # TODO continue training
+            # TODO continue training
+            # trainer.train(resume_from_checkpoint=f'checkpoints/{args.ckpt_dir}') 
     elif args.mode == 'valid':
         dataloader = DataLoader(valid_dataset, batch_size=args.eval_batch_size, collate_fn=collate_fn)
         model.eval()
@@ -272,46 +266,6 @@ def main(args: Arguments):
         print(exp_result)
         with open(Path(next_ckpt_dir) / 'log.txt', 'w') as fout:
             fout.write(str(exp_result))
-    elif args.mode == 'test':
-        dataloader = DataLoader(test_dataset, batch_size=args.eval_batch_size, collate_fn=collate_fn)
-        model.eval()
-        predictions = []
-        user_ids = []
-        clicked_news_ids = []
-        candidate_news_ids = []
-        with torch.no_grad():
-            for batch in tqdm(dataloader):
-                outputs = model(**batch)
-                predictions.append(outputs['logits'].cpu().numpy())
-                user = outputs['user']
-                user_ids += user['user_id']
-                clicked_news_ids += user['clicked_news_ids']
-                candidate_news_ids += user['candidate_news_ids']
-        predictions = np.concatenate(predictions, axis=0)
-        result = np.where(predictions > 0.5, 1, 0).tolist()
-        
-        num_clicked_news = [len(e) for e in clicked_news_ids]
-        num_candidate_news = [len(e) for e in candidate_news_ids]
-        df = pd.DataFrame({
-            'user_id': user_ids,
-            'clicked_news': clicked_news_ids,
-            'candidate_news': candidate_news_ids,
-            'predictions': [e[:l] for e, l in zip(result, num_candidate_news)],
-            'num_clicked_news': num_clicked_news,
-            'num_candidate_news': num_candidate_news
-        })
-        df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])
-        df = df.sort_values(by='user_id')
-        df.to_csv(
-            Path(next_ckpt_dir) / 'eval_result.csv',
-            columns=['user_id',
-                     'clicked_news',
-                     'candidate_news',
-                     'predictions',
-                     'num_clicked_news',
-                     'num_candidate_news'],
-            index=False
-        )
     else:
         raise ValueError('')
 
@@ -323,6 +277,4 @@ if __name__ == '__main__':
     args = parse_args()    
     data_preprocessing(args, 'train')
     data_preprocessing(args, 'valid')
-    if args.mode == 'test':
-        data_preprocessing(args, 'test')
     main(args)

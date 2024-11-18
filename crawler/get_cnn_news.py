@@ -1,85 +1,193 @@
-#文章
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
+import csv
 import time
+import uuid
+import random
+import re
+import os
+import pandas as pd
+from datetime import datetime
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import (
+    NoSuchElementException, TimeoutException, 
+    StaleElementReferenceException, ElementClickInterceptedException
+)
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-def setup_webdriver():
-    service = Service()
-    driver = webdriver.Chrome(service=service)
-    driver.implicitly_wait(10)
-    return driver
-
-def perform_search(driver, url, keyword):
-    driver.get(url)
-    time.sleep(2)
-    driver.find_element(By.ID, 'headerSearchIcon').click()
-    driver.find_element(By.CLASS_NAME, 'search-bar__input').send_keys(keyword)
-    driver.find_element(By.CLASS_NAME, 'search-bar__submit').click()
-    time.sleep(2)
-    driver.find_element(By.XPATH, '//*[@id="search"]/div[1]/div[2]/div/div/ul/li[2]/label').click()
-    time.sleep(10)
-
-def extract_articles(driver, page_count=1):
-    for _ in range(page_count):
-        content_div = driver.find_element(By.CLASS_NAME, 'container__field-links')
-        divs_in_content = content_div.find_elements(By.XPATH, './div')
-        div_count = len(divs_in_content)
-        
-        for x in range(1, div_count + 1):
-            extract_and_save_article(driver, x)
-        navigate_to_next_page(driver)
-
-def extract_and_save_article(driver, index):
-    titles = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[1]/span').text
-    publication_dates = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[2]').text
-    abstracts = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]/div/div[3]').text
-    elements = driver.find_element(By.XPATH, f'//*[@id="search"]/div[2]/div/div[2]/div/div[2]/div/div/div[{index}]/a[2]')
-    urls = elements.get_attribute('href')
-
-    driver.get(urls)
-    categories, subcategories = extract_categories(driver)
-    content = extract_content(driver)
-
-    driver.back()
-    time.sleep(1)
-
-def extract_categories(driver):
-    try:
-        categories = driver.find_element(By.CLASS_NAME, 'breadcrumb__parent-link').text
-        subcategories = driver.find_element(By.CLASS_NAME, 'breadcrumb__child-link').text
-    except:
-        categories = " "
-        subcategories = " "
-    return categories, subcategories
-
-def extract_content(driver):
-    try:
-        article_content = driver.find_element(By.CLASS_NAME, 'article__content')
-        time.sleep(2)
-        paragraphs = article_content.find_elements(By.TAG_NAME, 'p')
-        time.sleep(2)
-        content = "\n".join([p.text for p in paragraphs])
-    except:
-        content = " "
-    return content
-
-def navigate_to_next_page(driver):
-    try:
-        driver.find_element(By.XPATH, '//*[@id="search"]/div[2]/div/div[4]/div/div[3]').click()
-        time.sleep(10)
-    except:
-        print("No more pages.")
-
-def main():
-    driver = setup_webdriver()
-
-    url = 'https://edition.cnn.com/'
-    keyword = 'Artificial Intelligence'
+def scrape_cnn_articles():
+    output_folder = 'cnn_news_output'
+    os.makedirs(output_folder, exist_ok=True)
     
-    perform_search(driver, url, keyword)
-    extract_articles(driver, page_count=4)  # 控制頁數
-    driver.quit()
+    driver = webdriver.Chrome()
+    driver.get('https://edition.cnn.com/search?q=&from=0&size=10&page=1&sort=newest&types=article&section=')
+    
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = os.path.join(output_folder, f'cnn_news_{current_time}.csv')
+    
+    file_exists = os.path.isfile('cnn_news_original.csv')
+    
+    if file_exists:
+        existing_data = pd.read_csv('cnn_news_original.csv')
+        existing_titles_links = set(zip(existing_data['title'], existing_data['link']))
+    else:
+        existing_data = pd.DataFrame(columns=['title', 'link'])
+        existing_titles_links = set()
+    
+    with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
+        open('cnn_news_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
+        
+        fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
+        writer_new = csv.DictWriter(new_file, fieldnames=fieldnames)
+        writer_original = csv.DictWriter(original_file, fieldnames=fieldnames)
+        
+        if not file_exists:
+            writer_original.writeheader()
+        
+        if os.stat(filename).st_size == 0:
+            writer_new.writeheader()
+            
+        last_title, last_link = None, None
+        skip_count = 0
 
-if __name__ == '__main__':
-    main()
+        while True:
+            try:
+                class_elements = WebDriverWait(driver, 10).until(
+                    EC.presence_of_all_elements_located((By.CLASS_NAME, 'container__item'))
+                )
+            except TimeoutException:
+                print("無法載入頁面內容，結束程式。")
+                break
+
+            for class_element in class_elements:
+                try:
+                    crawler_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    #print(crawler_datetime)
+                    
+                    unique_id = str(uuid.uuid4())
+                    #print(unique_id)
+                    
+                    title = class_element.find_element(By.CLASS_NAME, 'container__headline-text').text
+                    print(title)
+                    
+                    link = class_element.find_element(By.CLASS_NAME, 'container__link').get_attribute('href')
+                    #print(link)
+                    
+                    if (title == last_title and link == last_link):
+                        print("已經爬取過此文章，跳過此筆資料。")
+                        continue
+                    
+                    if (title, link) not in existing_titles_links:
+                        skip_count = 0
+                        abstract = WebDriverWait(class_element, 3).until(
+                                EC.presence_of_element_located((By.CLASS_NAME, 'container__description'))
+                            ).text
+                        #print(abstract)
+                        
+                        match = None
+                        patterns = [
+                            r"https://www\.cnn\.com/\d{4}/\d{2}/\d{2}/([^/]+)/",
+                            r"https://www\.cnn\.com/cnn-underscored/([^/]+)/",
+                            r'https?://www\.cnn\.com/([^/]+)/'
+                        ]
+                        
+                        for pattern in patterns:
+                            match = re.search(pattern, link)
+                            if match:
+                                if len(match.group(1)) <= 25:
+                                    category = match.group(1)
+                                    any_category = "YES"
+                                else:
+                                    driver.execute_script(f"window.open('{link}', '_blank');")
+                                    driver.switch_to.window(driver.window_handles[1])
+                                    try:
+                                        category_element = driver.find_element(By.CLASS_NAME, 'breadcrumb__link')
+                                        category = category_element.text
+                                        any_category = "YES"
+                                    except:
+                                        category = ""  
+                                        any_category = "NO"
+                                    driver.close()
+                                    driver.switch_to.window(driver.window_handles[0])
+                                    time.sleep(1)
+                                break
+                        else:
+                            # 如果所有模式都沒有匹配成功
+                            category = ""
+                            any_category = "NO"
+                                    
+                            
+                        #print(category)
+                        #print(any_category)
+                        
+                        data_source = 'cnn_news'
+                        #print(data_source)
+                        
+                        try:
+                            date_str = class_element.find_element(By.CLASS_NAME, 'container__date').text
+                            date_obj = datetime.strptime(date_str, "%b %d, %Y")
+                            gattered_datetime = date_obj.strftime("%Y-%m-%d 00:00:00")
+                            #print(gattered_datetime)
+                            
+                            if gattered_datetime.startswith("2023"):
+                                print("資料日期為2023，停止爬取。")
+                                driver.quit()
+                                return filename
+                            
+                        except (NoSuchElementException, ValueError) as e:
+                            if isinstance(e, NoSuchElementException):
+                                print("日期元素不存在，跳過該項。")
+                            else:
+                                print(f"日期格式錯誤，無法解析日期: '{date_str}'")
+                            continue  
+                        
+                        row_data = {
+                            'uuid': unique_id,
+                            'title': title,
+                            'category': category,
+                            'abstract': abstract,
+                            'link': link,
+                            'data_source': data_source,
+                            'gattered_datetime': gattered_datetime,
+                            'crawler_datetime': crawler_datetime,
+                            'any_category': any_category
+                        }
+                        
+                        writer_new.writerow(row_data)
+                        writer_original.writerow(row_data)
+                        
+                        new_file.flush()
+                        original_file.flush()
+                        
+                        existing_titles_links.add((title, link))
+                        
+                        last_title, last_link = title, link
+                        
+                    else:
+                        skip_count += 1  # 如果資料重複，計數器+1
+                        print(f"資料已存在，跳過標題: {title}")
+                        if skip_count >= 2:  # 檢查是否連續跳過兩筆
+                            driver.quit()
+                            return filename
+                        
+                except (NoSuchElementException, StaleElementReferenceException) as e:
+                    print(f"遇到錯誤，跳過該項：{e}")
+                    continue
+                
+            try:
+                next_page_button = WebDriverWait(driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, '//*[@id="search"]/div[2]/div/div[4]/div/div[3]'))
+                )
+                next_page_button.click()
+                time.sleep(random.uniform(2, 5)) 
+            except (NoSuchElementException, TimeoutException):
+                print("沒有找到下一頁，停止爬取。")
+                break
+            except ElementClickInterceptedException:
+                print("無法點擊下一頁按鈕，可能是其他元素覆蓋了它。")
+                break
+            
+    driver.quit()
+    return filename 
+
+

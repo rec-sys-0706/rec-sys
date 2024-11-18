@@ -8,6 +8,3 @@ __pycache__/
 .venv/
 *.exe
 *.ipynb
-*.csv
-*.txt
-*.tsv

@@ -58,4 +58,4 @@ def post_papers_and_score(item_data):
         
     print("論文更新完畢")
     
-post_papers_and_score('daily_papers_output/daily_papers_2024-11-16_10-08-18.csv')
+#post_papers_and_score('daily_papers_output/daily_papers_2024-11-16_10-08-18.csv')

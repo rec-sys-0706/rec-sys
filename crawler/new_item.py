@@ -2,8 +2,8 @@ import pandas as pd
 from get_cnn_news import scrape_cnn_articles
 from convert_category import convert_category
 from get_daily_papers import scrape_huggingface_papers
-from insret_item_and_score import post_news_and_score
-from insert_daily_papers import post_papers_and_score
+from insret_item_and_score_test import post_news_and_score
+from insert_daily_papers_test import post_papers_and_score
 from get_users import get_users
 
 papers_file = scrape_huggingface_papers()

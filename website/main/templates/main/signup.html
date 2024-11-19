@@ -1,0 +1,42 @@
+{% extends "index.html" %}
+
+{% block content %}
+    <div id="signup" class="home-container">
+        <h2>Sign Up</h2>
+        <form   method = 'post' action = "{{ url_for('main.signup') }}">
+            <input id="email" name="email" placeholder="Email" required>
+            <input type="text" id="signup-username" name="username" placeholder="Account" required>
+            <input type="password" id="signup-password" name="password" placeholder="Password" required>
+            <a>
+                <button type="submit">Sign Up</button>
+            </a>
+        </form>
+    </div>
+
+    
+    {% if status == 'False' %}
+        <script>
+            Swal.fire({
+                title:"註冊失敗",
+                text:"email 不符合格式",
+                icon:"error",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/signup"
+            });
+        </script>
+    {% elif status == 'True' %}
+        <script>
+            Swal.fire({
+                title:"註冊成功",
+                text:"已建立帳號",
+                icon:"success",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main"
+            });
+        </script>
+    {% endif %}
+{% endblock %}

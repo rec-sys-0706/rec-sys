@@ -1,0 +1,44 @@
+{% extends "./recommend/recommend.html" %}
+
+{% block content %}
+    <div id="revise" class="home">
+        <div>
+            <h2 class="place">Revise</h2>
+            <form   method = 'post' action = "{{ url_for('main.revise') }}">
+                <input type="text" id="revise-username" name="username" placeholder="Account" required>
+                <input type="password" id="srevise-password" name="password" placeholder="Password" required>
+                <input id="revise-email" name="email" placeholder="Email" required>
+                <input id="revise-phone" name="phone" placeholder="Phone" required>
+                <a>
+                    <button type="submit">Revise</button>
+                </a>
+            </form>
+        </div>
+    </div>
+
+    {% if status == 'False' %}
+        <script>
+            Swal.fire({
+                title:"修改失敗",
+                text:"email 不符合格式",
+                icon:"error",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/revise"
+            });
+        </script>
+    {% elif status == 'True' %}
+        <script>
+            Swal.fire({
+                title:"修改成功",
+                text:"已修改資料",
+                icon:"success",
+                confirmButtonText:"返回",
+                allowOutsideClick:false
+            }).then (function(){
+                window.location.href="/main/profile"
+            });
+        </script>
+    {% endif %}
+{% endblock %}

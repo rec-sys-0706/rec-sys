@@ -17,6 +17,8 @@ def dict_has_exact_keys(dictionary: dict, required_keys: list):
         return False
     return True
 
+def dict_has_keys():
+    pass
 # def validate_dict_keys(dictionary: dict, valid_keys: list):
 #     """Check if the dictionary has no keys other than those in valid_keys"""
 #     return all(key in valid_keys for key in dictionary.keys())
@@ -45,7 +47,7 @@ def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
                 'user_id': user_uuid,
                 'item_id': item_uuid,
                 'recommend_score': 0,
-                'gattered_datetime': item['gattered_datetime']
+                # 'gattered_datetime': item['gattered_datetime']
             })
     
     return recommendations

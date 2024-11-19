@@ -77,10 +77,10 @@
     </header>
     <nav id="navbar" class="sticky top-0 bg-[#fff] z-50">
         <ul>
-            <li><a href="/main" class="tab">本週文章</a></li>
+            <li><a href="/main" class="tab">最新文章</a></li>
             <!--<li><a href="/main/all_dates" class="tab">All News</a></li>-->
             <li><a href="/main/recommend" class="tab">關於我們</a></li>        
-            {% if session['token'] != '' %}
+            {% if is_login == 'True' or session.get('token') %}
                 <li><a href="/main/profile" class="tab">{{ session['account'] }}</a></li>
             {% else %}
                 <li><a href="/main/login" class="tab">登入</a></li>

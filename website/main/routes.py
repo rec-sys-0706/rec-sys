@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, render_template, request, session, redirect
 from .utils import register, login, click_data, get_user, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked, recommend_data_source, unrecommend_data_source, history_data_source, click_data_source, user_news
 import matplotlib.pyplot as plt
@@ -18,7 +19,7 @@ main_bp = Blueprint('main',
 @main_bp.route('/login', methods = ['GET','POST'])
 def login_user():
     status = 'T'
-    if session['token']:
+    if session.get('token'):
         return redirect('/main')
     if request.method == 'POST':
         account = request.form['account']
@@ -147,6 +148,7 @@ def profile():
     session['page'] = 'profile'
     if 'token' in session and session['token'] != '':
         is_login = 'True'
+        line_state = os.urandom(16).hex()
         user = get_user(session['token'])
         if session['source'] == 'all':
             history = get_user_cliked(session['token'])
@@ -156,10 +158,10 @@ def profile():
             data = request.get_json()
             source = data.get('source')
             session['source'] = source
-        return render_template('./main/profile.html', user=user, history=history, is_login=is_login)
+        return render_template('./main/profile.html', user=user, history=history, is_login=is_login, line_state=line_state)
     else:
         is_login = 'False'
-        return render_template('./main/profile.html', is_login=is_login)
+        return render_template('./main/profile.html', is_login=is_login, line_state=None)
 
 @main_bp.route('/edit-profile', methods = ['GET','POST'])
 def edit_profile():

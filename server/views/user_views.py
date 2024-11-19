@@ -31,6 +31,49 @@ def get_users():
         ]
     }), 200
 
+@user_blueprint.route('/test', methods=['GET'])
+def get_users_combined():
+    # 獲取一般資料（account 不以 'U' 開頭）
+    general_users = User.query.filter(User.account.notlike('U%')).all()
+
+    # 獲取所有 account 以 'U' 開頭的資料，固定前 9 筆
+    u_users = User.query.filter(User.account.like('U%')).order_by(User.account).limit(9).all()
+
+    # 確保包含 account 是 'U10425' 的資料
+    u_user_fixed = User.query.filter(User.account == 'U10425').first()
+    if u_user_fixed and u_user_fixed not in u_users:
+        # 如果不足 9 筆，直接加入
+        if len(u_users) < 9:
+            u_users.append(u_user_fixed)
+        else:
+            # 如果已滿 9 筆，替換掉最後一筆
+            u_users[-1] = u_user_fixed
+
+    # 最終確保 u_users 包含 10 筆
+    u_users = u_users[:9]  # 確保最多取前 9 筆
+    if u_user_fixed and u_user_fixed not in u_users:
+        u_users.append(u_user_fixed)  # 加入 U10425 保證是第 10 筆
+
+    # 構造響應資料
+    response_data = {
+        'general_users': [
+            {
+                'uuid': user.uuid,
+                'account': user.account,
+                'email': user.email,
+            } for user in general_users
+        ],
+        'u_users': [
+            {
+                'uuid': user.uuid,
+                'account': user.account,
+                'email': user.email,
+            } for user in u_users
+        ]
+    }
+
+    return jsonify(response_data), 200
+
 # get_certain_user_uuid
 @user_blueprint.route('/<uuid:user_id>', methods=['GET'])
 @jwt_required()
@@ -66,40 +109,40 @@ def user_register():
     new_user = User(uuid=id, account=account, password=password_hash, email=email, line_id=line_id)
     DB.session.add(new_user)
     DB.session.commit()
-    # return jsonify({"msg": "Success Register"}), 200
+    return jsonify({"msg": "Success Register"}), 200
 
-    items = Item.query.all()
-    item_list = [{'uuid': str(item.uuid), 'title': item.title, 'abstract': item.abstract, 'link': item.link, 'data_source':item.data_source, 'gattered_datetime':item.gattered_datetime} for item in items] 
+    # items = Item.query.all()
+    # item_list = [{'uuid': str(item.uuid), 'title': item.title, 'abstract': item.abstract, 'link': item.link, 'data_source':item.data_source, 'gattered_datetime':item.gattered_datetime} for item in items] 
 
-    user_data = {
-        'uuid': id,
-        'account': account,
-        'email': email,
-        'line_id': line_id
-    }
+    # user_data = {
+    #     'uuid': id,
+    #     'account': account,
+    #     'email': email,
+    #     'line_id': line_id
+    # }
 
-    recommendations = generate_random_scores(item_list, [user_data])
+    # recommendations = generate_random_scores(item_list, [user_data])
 
-    try:
-        for recommendation in recommendations:
-            new_recommendation = Recommendationlog(
-                uuid=recommendation['uuid'],
-                user_id=recommendation['user_id'],
-                item_id=recommendation['item_id'],
-                recommend_score=recommendation['recommend_score'],
-                gattered_datetime=recommendation['gattered_datetime']
-            )
-            DB.session.add(new_recommendation)
+    # try:
+    #     for recommendation in recommendations:
+    #         new_recommendation = Recommendationlog(
+    #             uuid=recommendation['uuid'],
+    #             user_id=recommendation['user_id'],
+    #             item_id=recommendation['item_id'],
+    #             recommend_score=recommendation['recommend_score'],
+    #             gattered_datetime=recommendation['gattered_datetime']
+    #         )
+    #         DB.session.add(new_recommendation)
 
-        # 提交所有更改user_uuid
-        DB.session.commit()
-        logging.info("Recommendation logs created successfully.")
-    except Exception as e:
-        logging.error(f"Error saving recommendation logs: {e}")
-        DB.session.rollback()
-        return jsonify({"msg": "Error saving recommendation logs"}), 500
+    #     # 提交所有更改user_uuid
+    #     DB.session.commit()
+    #     logging.info("Recommendation logs created successfully.")
+    # except Exception as e:
+    #     logging.error(f"Error saving recommendation logs: {e}")
+    #     DB.session.rollback()
+    #     return jsonify({"msg": "Error saving recommendation logs"}), 500
 
-    return jsonify({"msg": "Success Register and Recommendations Generated"}), 200
+    # return jsonify({"msg": "Success Register and Recommendations Generated"}), 200
     
 
 # login, verify
@@ -160,3 +203,53 @@ def delete_user(user_id):
     except Exception as e:
         DB.session.rollback()
         return jsonify({"message": f"Error deleting user: {str(e)}"}), 500
+    
+
+#### mind
+####for create mind user
+@user_blueprint.route('/mind', methods=['POST'])
+def create_user_data():
+    data = request.json
+    account = data.get('account')
+    password = data.get('password')
+    email = data.get('email')
+    line_id = data.get('line_id', None)
+
+    # 檢查必要欄位
+    if not account or not password or not email:
+        return jsonify({"msg": "Missing username, email, or password"}), 400
+
+    # 檢查帳號和電子郵件是否已存在
+    if User.query.filter_by(account=account).first():
+        return jsonify({"msg": "Username already exists"}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({"msg": "Email already registered"}), 400
+
+    # 生成 UUID 和密碼哈希
+    id = str(uuid.uuid4())
+    password_hash = generate_password_hash(password)
+
+    # 新增使用者到資料庫
+    new_user = User(uuid=id, account=account, password=password_hash, email=email, line_id=line_id)
+    DB.session.add(new_user)
+    DB.session.commit()
+
+    return jsonify({"msg": "Success Register"}), 200 
+
+# 透過 account 獲取 user_uuid
+@user_blueprint.route('/get_uuid_by_account', methods=['GET'])
+def get_user_uuid_by_account():
+    account = request.args.get('account')
+    
+    if not account:
+        return jsonify({"msg": "Missing account parameter"}), 400
+
+    # 查詢 User 表中的 account
+    user = User.query.filter_by(account=account).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    # 返回 user_uuid
+    return jsonify({
+        'user_uuid': str(user.uuid)
+    }), 200 

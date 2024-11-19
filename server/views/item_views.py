@@ -63,39 +63,28 @@ def get_today_items():
         sources = ['mit_news', 'cnn_news', 'bbc_news']
     elif data_source == 'papers':
         sources = ['hf_paper']
-    elif data_source:
-        sources = [data_source]
 
-    # 查找符合條件的最近日期
-    latest_item_query = Item.query
-    if sources:
-        latest_item_query = latest_item_query.filter(Item.data_source.in_(sources))
-
-    latest_item = latest_item_query.order_by(desc(Item.gattered_datetime)).first()
-
-    # 如果沒有找到符合條件的項目，返回空列表
-    if not latest_item:
-        return jsonify([]), 200
-
-    # 計算從最近日期往回數七天的時間範圍
-    end_date = latest_item.gattered_datetime
-    start_date = end_date - timedelta(days=7)
+    # 計算本週的開始和結束時間
+    today = datetime.today() + timedelta(days=1)
+    start_of_week = today - timedelta(days=8)  # 上週的時間
 
     # 查詢符合時間範圍和 data_source 的項目
     items_query = Item.query.filter(
-        Item.gattered_datetime >= start_date,
-        Item.gattered_datetime <= end_date
+        Item.gattered_datetime >= start_of_week,
+        Item.gattered_datetime <= today  
     )
 
     if sources:
         items_query = items_query.filter(Item.data_source.in_(sources))
 
-    items = items_query.order_by(desc(Item.gattered_datetime)).limit(20).all()
+    # 按時間排序並限制為前 10 筆
+    items = items_query.order_by(desc(Item.gattered_datetime)).limit(10).all()
 
     # 構建結果列表
     items_list = [
         {
             "title": item.title,
+            "category": item.category,
             "abstract": item.abstract,
             "gattered_datetime": item.gattered_datetime,
             "link": item.link,

@@ -146,7 +146,7 @@ class NewsDataset(Dataset):
 @dataclass
 class CustomDataCollator:
     tokenizer: CustomTokenizer
-    mode: str
+    mode: Literal['train', 'valid']
     use_full_candidate: bool
     def __call__(self, batch: list) -> dict[str, Any]:
         """
@@ -191,9 +191,10 @@ class CustomDataCollator:
                     'input_ids': [],
                     'attention_mask': []
                 },
+                # No category, because its size is dynamic.
             }
         }
-        # Clicked & Clicked news category
+        # candidate_news' category & clicked
         if self.use_full_candidate:
             max_clicked_len = max(len(example['clicked']) for example in batch)
             category_list = []
@@ -206,12 +207,13 @@ class CustomDataCollator:
                 clicked_list.append(torch.cat((example['clicked'], clicked_padded)))
             result['candidate_news']['category'] = torch.stack(category_list, dim=0)
             result['clicked'] = torch.stack(clicked_list, dim=0)
-        elif self.mode in ['train', 'valid']:
+        else:
             result['candidate_news']['category'] = torch.stack([example['candidate_news']['category'] for example in batch], dim=0)
             result['clicked'] = torch.stack([example['clicked'] for example in batch], dim=0) 
             # ! RuntimeError: cannot pin 'torch.cuda.LongTensor' only dense CPU tensors can be pinned
             # ! Don't need to move clicked and category to(device), do this in forward.
 
+        # clicked_news
         if self.mode == 'train': # padded to same length
             lengths = [len(example['clicked_news_ids']) for example in batch]
             # print(sorted(lengths))

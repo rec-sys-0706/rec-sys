@@ -97,16 +97,16 @@ class CustomTokenizer:
 
     def encode(self):
         pass
-    def encode_title(self, text) -> Encoding:
+    def encode_title(self, text: str) -> Encoding:
         return self.__tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_title)
-    def encode_abstract(self, text) -> Encoding:
+    def encode_abstract(self, text: str) -> Encoding:
         return self.__tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_abstract)
-    def encode_category(self, category):
+    def encode_category(self, category: str) -> int:
         return self.__categorizer.vocab.get(category, 0)
     def decode(self):
         pass
         # TODO
-    def decode_category(self, category_id):
+    def decode_category(self, category_id: int) -> str:
         return self.__categorizer.decode(category_id)
     def convert_ids_to_tokens(self, *args, **kwargs):
         return self.__tokenizer.convert_ids_to_tokens(*args, **kwargs)

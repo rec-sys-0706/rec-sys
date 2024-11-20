@@ -20,14 +20,12 @@ from tokenizers import (
     trainers,
     Tokenizer,
 )
-from parameters import Arguments, parse_args
+from training.parameters import Arguments, parse_args
 from pydantic import BaseModel
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from matplotlib.lines import Line2D
-from tqdm import tqdm
 class Encoding(BaseModel):
     input_ids: list[int]
     token_type_ids: list[int]

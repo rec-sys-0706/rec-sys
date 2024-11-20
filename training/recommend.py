@@ -6,25 +6,27 @@ The project must contains
     2. test/categorizer.json
     3. test/model.safetensors
 """
+import random
+import os
+from typing import Any
+from dataclasses import dataclass
+from uuid import uuid4
+from pathlib import Path
+
+
 from safetensors.torch import load_file  # For loading .safetensors
 import torch  # For saving .pt
-from model.NRMS import NRMS_BERT_test
-from parameters import parse_args
-from utils import CustomTokenizer, fix_all_seeds, list_to_dict
-from dataclasses import dataclass
-from typing import Any
 from torch.utils.data import DataLoader
-from pathlib import Path
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-import pdb
-# ! To call model for recommendation
-import random
-import os
 import pyodbc
 from dotenv import load_dotenv
-from uuid import uuid4
+
+from training.model.NRMS import NRMS_BERT_test
+from training.parameters import parse_args
+from training.utils import CustomTokenizer, fix_all_seeds, list_to_dict
+
 USER_KEYS = ['uuid']
 ITEM_KEYS = ['uuid', 'title', 'category']
 def dict_has_keys(dictionary: dict, required_keys: list):

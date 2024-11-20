@@ -8,10 +8,12 @@ nltk
 gradio
 tensorboard
 numpy<2.0
+bertviz
+ipython
 # Linebot
 whisper
 jieba
-line-bot-sdk=3.13.0
+line-bot-sdk==3.13.0
 
 
 # torch (See https://pytorch.org/ and choose version that match your GPU.)
@@ -30,7 +32,6 @@ pyodbc
 flask_sqlalchemy
 python-dotenv
 marshmallow_sqlalchemy
-bertviz
 apiflask
 flask-jwt-extended
 feedparser

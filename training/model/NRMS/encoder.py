@@ -1,5 +1,5 @@
 import torch.nn as nn
-from model.general import AdditiveAttention, MultiHeadAttention
+from training.model.general import AdditiveAttention, MultiHeadAttention
 
 class Encoder(nn.Module):
     def __init__(self, n_heads, d_embed):

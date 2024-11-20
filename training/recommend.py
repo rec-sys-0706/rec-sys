@@ -85,10 +85,10 @@ def generate_data(candidate_news_list: list[dict], user_list: list[dict], tokeni
             category.append(tokenizer.encode_category(row.category))
         user_data.append({
             'uuid': user_uuid,
-            'clicked_news_ids': clicked_news_ids,
+            'clicked_news_ids': clicked_news_ids if len(clicked_news_ids) else [-1],
             'clicked_news': {
-                'title': tokenizer.encode_title(title),
-                'category': category
+                'title': tokenizer.encode_title(title) if len(title) else tokenizer.encode_title(['']),
+                'category': category if len(category) else [0]
             }
         })
 

@@ -129,8 +129,8 @@ def scrape_cnn_articles():
                             gattered_datetime = date_obj.strftime("%Y-%m-%d 00:00:00")
                             #print(gattered_datetime)
                             
-                            if gattered_datetime.startswith("2023"):
-                                print("資料日期為2023，停止爬取。")
+                            if gattered_datetime.startswith("2024-09"):
+                                print("資料日期為2024-09，停止爬取。")
                                 driver.quit()
                                 return filename
                             

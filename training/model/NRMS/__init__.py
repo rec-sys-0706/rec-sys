@@ -7,9 +7,9 @@ import torch.nn.functional as F
 from bertviz import head_view
 
 from transformers import AutoModel
-from .encoder import Encoder
-from dataset import CustomTokenizer
-from parameters import Arguments
+from training.model.NRMS.encoder import Encoder
+from training.dataset import CustomTokenizer
+from training.parameters import Arguments
 
 class NRMS(nn.Module):
     """

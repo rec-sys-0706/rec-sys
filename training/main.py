@@ -17,13 +17,13 @@ from transformers.trainer_utils import get_last_checkpoint
 from safetensors.torch import load_file
 from tqdm import tqdm
 
-from data_preprocessing import data_preprocessing
-from model.NRMS import NRMS, NRMS_BERT
-from parameters import Arguments, parse_args
-from utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv, draw_tsne
-from dataset import NewsDataset, CustomDataCollator
-from evaluate import nDCG, ROC_AUC, recall, accuracy
-from evaluate import nDCG_new, ROC_AUC_new, recall_new, accuracy_new
+from training.data_preprocessing import data_preprocessing
+from training.model.NRMS import NRMS, NRMS_BERT
+from training.parameters import Arguments, parse_args
+from training.utils import CustomTokenizer, time_since, get_datetime_now, fix_all_seeds, parse_argv, draw_tsne
+from training.dataset import NewsDataset, CustomDataCollator
+from training.evaluate import nDCG, ROC_AUC, recall, accuracy
+from training.evaluate import nDCG_new, ROC_AUC_new, recall_new, accuracy_new
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 evaluate_new = lambda _pred, _true: (recall_new(_pred, _true), ROC_AUC_new(_pred, _true), nDCG_new(_pred, _true, 5), nDCG_new(_pred, _true, 10), accuracy_new(_pred, _true))
 

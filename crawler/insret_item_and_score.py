@@ -4,7 +4,7 @@ import pandas as pd
 import requests
 import os
 import pandas as pd
-from recommendation import generate_random_scores
+from training.recommend import recommend
 
 def post_news_and_score(item_data, users):
     
@@ -22,7 +22,7 @@ def post_news_and_score(item_data, users):
                 item_post = requests.post(api_item, json=json_data, timeout=10)
                 
                 if item_post.status_code == 201:
-                    recommendations = generate_random_scores(items,users)
+                    recommendations = recommend(items, users)
                     api_recommendations = f"{os.environ.get('ROOT')}:5000/api/recommend/model"
                     recommendations_post = requests.post(api_recommendations, json=recommendations, timeout=30) 
                     if recommendations_post.status_code == 201:

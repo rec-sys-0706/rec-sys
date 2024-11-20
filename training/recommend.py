@@ -20,6 +20,7 @@ import numpy as np
 from tqdm import tqdm
 import pdb
 # ! To call model for recommendation
+import random
 import os
 import pyodbc
 from dotenv import load_dotenv
@@ -262,4 +263,24 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
                 'recommend_score': predict
             })
             print(f'({row.user_id}, {candidate_news_id}): {predict}')
+    return recommendations
+
+def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
+    recommendations = []
+    
+    for user in users:
+        user_uuid = user['uuid']
+        for item in items:
+            item_uuid = item['uuid']
+            # tem_gattered_datetime = item['gattered_datetime']
+            recommend_score = random.randint(0, 1)  
+            recommendations.append({
+                'uuid': str(uuid4()),
+                'user_id': user_uuid,
+                'item_id': item_uuid,
+                'recommend_score': recommend_score,
+                # 'gattered_datetime': item_gattered_datetime,
+                # 'clicked': 0
+            })
+    
     return recommendations

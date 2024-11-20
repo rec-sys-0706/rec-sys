@@ -206,6 +206,11 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
         uuid,
     }
     """
+    if len(items) == 0:
+        raise ValueError('Items cannot be empty')
+    if len(users) == 0:
+        raise ValueError('Users cannot be empty')
+    
     args = parse_args()
     args.model_name = 'NRMS-BERT'
     args.eval_batch_size = 2

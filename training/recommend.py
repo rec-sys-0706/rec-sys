@@ -12,7 +12,7 @@ from typing import Any
 from dataclasses import dataclass
 from uuid import uuid4
 from pathlib import Path
-
+from datetime import datetime
 
 from safetensors.torch import load_file  # For loading .safetensors
 import torch  # For saving .pt
@@ -260,6 +260,7 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
     df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])
     df = df.sort_values(by='user_id')
     
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     recommendations = []
     for _, row in df.iterrows():
         for candidate_news_id, predict in zip(row.candidate_news, row.predictions):
@@ -267,7 +268,8 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
                 'uuid': str(uuid4()),
                 'user_id': row.user_id,
                 'item_id': candidate_news_id,
-                'recommend_score': predict
+                'recommend_score': predict,
+                'recommend_datetime': now
             })
             print(f'({row.user_id}, {candidate_news_id}): {predict}')
     return recommendations

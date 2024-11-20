@@ -95,9 +95,14 @@ class CustomTokenizer:
 
     def encode(self):
         pass
-    def encode_title(self, text: str) -> Encoding:
+    def encode_title(self, text: str|list[str]) -> Encoding:
+        if len(text) == '':
+            return self.title_padding
+        elif len(text) == 0 and isinstance(text, list):
+            return []
+                    
         return self.__tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_title)
-    def encode_abstract(self, text: str) -> Encoding:
+    def encode_abstract(self, text: str|list[str]) -> Encoding:
         return self.__tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_abstract)
     def encode_category(self, category: str) -> int:
         return self.__categorizer.vocab.get(category, 0)

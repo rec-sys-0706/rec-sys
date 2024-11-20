@@ -20,14 +20,12 @@ from tokenizers import (
     trainers,
     Tokenizer,
 )
-from parameters import Arguments, parse_args
+from training.parameters import Arguments, parse_args
 from pydantic import BaseModel
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from matplotlib.lines import Line2D
-from tqdm import tqdm
 class Encoding(BaseModel):
     input_ids: list[int]
     token_type_ids: list[int]
@@ -97,9 +95,14 @@ class CustomTokenizer:
 
     def encode(self):
         pass
-    def encode_title(self, text: str) -> Encoding:
+    def encode_title(self, text: str|list[str]) -> Encoding:
+        if len(text) == '':
+            return self.title_padding
+        elif len(text) == 0 and isinstance(text, list):
+            return [self.title_padding]
+
         return self.__tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_title)
-    def encode_abstract(self, text: str) -> Encoding:
+    def encode_abstract(self, text: str|list[str]) -> Encoding:
         return self.__tokenizer(text, padding='max_length', truncation=True, max_length=self.args.num_tokens_abstract)
     def encode_category(self, category: str) -> int:
         return self.__categorizer.vocab.get(category, 0)

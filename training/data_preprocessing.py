@@ -8,8 +8,8 @@ from tqdm import tqdm
 import torch
 from typing import Literal
 
-from parameters import Arguments
-from utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds, reclassify_category
+from training.parameters import Arguments
+from training.utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds, reclassify_category
 
 def parse_behaviors(src_dir: Path, mode: Literal['train', 'valid']) -> pd.DataFrame:
     """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.

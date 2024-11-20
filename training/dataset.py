@@ -11,8 +11,8 @@ from torch.utils.data import Dataset
 import pandas as pd
 from tqdm import tqdm
 
-from parameters import Arguments
-from utils import CustomTokenizer, list_to_dict, dict_to_tensors, get_src_dir, get_suffix
+from training.parameters import Arguments
+from training.utils import CustomTokenizer, list_to_dict, dict_to_tensors, get_src_dir, get_suffix
 
 
 class NewsDataset(Dataset):

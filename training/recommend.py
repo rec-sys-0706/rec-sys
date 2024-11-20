@@ -6,25 +6,27 @@ The project must contains
     2. test/categorizer.json
     3. test/model.safetensors
 """
+import random
+import os
+from typing import Any
+from dataclasses import dataclass
+from uuid import uuid4
+from pathlib import Path
+from datetime import datetime
+
 from safetensors.torch import load_file  # For loading .safetensors
 import torch  # For saving .pt
-from model.NRMS import NRMS_BERT_test
-from parameters import parse_args
-from utils import CustomTokenizer, fix_all_seeds, list_to_dict
-from dataclasses import dataclass
-from typing import Any
 from torch.utils.data import DataLoader
-from pathlib import Path
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-import pdb
-# ! To call model for recommendation
-import random
-import os
 import pyodbc
 from dotenv import load_dotenv
-from uuid import uuid4
+
+from training.model.NRMS import NRMS_BERT_test
+from training.parameters import parse_args
+from training.utils import CustomTokenizer, fix_all_seeds, list_to_dict
+
 USER_KEYS = ['uuid']
 ITEM_KEYS = ['uuid', 'title', 'category']
 def dict_has_keys(dictionary: dict, required_keys: list):
@@ -83,10 +85,10 @@ def generate_data(candidate_news_list: list[dict], user_list: list[dict], tokeni
             category.append(tokenizer.encode_category(row.category))
         user_data.append({
             'uuid': user_uuid,
-            'clicked_news_ids': clicked_news_ids,
+            'clicked_news_ids': clicked_news_ids if len(clicked_news_ids) else [-1],
             'clicked_news': {
-                'title': tokenizer.encode_title(title),
-                'category': category
+                'title': tokenizer.encode_title(title) if len(title) else tokenizer.encode_title(['']),
+                'category': category if len(category) else [0]
             }
         })
 
@@ -204,6 +206,11 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
         uuid,
     }
     """
+    if len(items) == 0:
+        raise ValueError('Items cannot be empty')
+    if len(users) == 0:
+        raise ValueError('Users cannot be empty')
+    
     args = parse_args()
     args.model_name = 'NRMS-BERT'
     args.eval_batch_size = 2
@@ -253,6 +260,7 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
     df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])
     df = df.sort_values(by='user_id')
     
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     recommendations = []
     for _, row in df.iterrows():
         for candidate_news_id, predict in zip(row.candidate_news, row.predictions):
@@ -260,7 +268,8 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
                 'uuid': str(uuid4()),
                 'user_id': row.user_id,
                 'item_id': candidate_news_id,
-                'recommend_score': predict
+                'recommend_score': predict,
+                'recommend_datetime': now
             })
             print(f'({row.user_id}, {candidate_news_id}): {predict}')
     return recommendations

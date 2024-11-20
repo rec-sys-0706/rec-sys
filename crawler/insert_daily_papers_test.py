@@ -1,7 +1,7 @@
 import requests
 import os
 import pandas as pd
-from recommendation import generate_random_scores
+from training.recommend import generate_random_scores
 import numpy as np
 
 def post_papers_and_score(item_data, users):

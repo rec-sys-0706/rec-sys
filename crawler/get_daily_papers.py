@@ -108,6 +108,7 @@ def scrape_huggingface_papers():
                             gattered_datetime = date_obj.strftime("%Y-%m-%d %H:%M:%S")
                             print(gattered_datetime)
                             
+                            
                         except (NoSuchElementException, TimeoutException) as e:
                             print(f"跳過該元素，原因：{e}")
                                 

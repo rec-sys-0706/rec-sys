@@ -74,8 +74,8 @@ def parse_args() -> Arguments:
     parser.add_argument('--generate-tsne', action='store_true', help="Whether to generate t-SNE.")
     parser.add_argument('--continue-training', action='store_true', help="Whether to continue training.")
     # Directory
-    parser.add_argument('--train-dir', type=str, default='data/train')
-    parser.add_argument('--val-dir', type=str, default='data/valid')
+    parser.add_argument('--train-dir', type=str, default='training/data/train')
+    parser.add_argument('--val-dir', type=str, default='training/data/valid')
     parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a name for checkpoint directory, it will get last checkpoint.')
     parser.add_argument('--glove-embedding-path', type=str, default='data\glove.840B.300d\glove.840B.300d.txt')
     # Model

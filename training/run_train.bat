@@ -1,5 +1,4 @@
-cd .\training\
-python .\main.py ^
+python .\run_model.py ^
 --reprocess-data ^
 --regenerate-dataset ^
 --use-category ^
@@ -11,8 +10,7 @@ python .\main.py ^
 --eval-batch-size 16 ^
 --mode train
 
-cd .\training\
-python .\main.py ^
+python .\run_model.py 
 --reprocess-data ^
 --regenerate-dataset ^
 --model-name NRMS-BERT ^

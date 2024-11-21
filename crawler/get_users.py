@@ -27,5 +27,3 @@ def get_users():
     users_df.to_csv(os.path.join(folder_path, f'user_data_{current_time}.csv'), index=False)
     
     return users
-
-get_users()

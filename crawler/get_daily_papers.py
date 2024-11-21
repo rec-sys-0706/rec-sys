@@ -1,164 +1,102 @@
-import csv
-import time
-import uuid
-import re
-import os
-import pandas as pd
-import json
-import re
-from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import (
-    NoSuchElementException, TimeoutException, StaleElementReferenceException
-)
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from urllib.parse import urlparse
 
-def scrape_huggingface_papers(output_file='output5.csv'):
-    response = requests.get(f"{os.environ.get('ROOT')}/api/user")
-    data = response.json()
-    users = data["data"]
+import time
+import re
+import csv
+from urllib.parse import urlparse, parse_qs
+from pathlib import Path
+import logging
+import pandas as pd
+
+class Article():
+    def __init__(self, title=None, link=None, date=None, arxiv=None, abstract=None) -> None:
+        self.title = title
+        self.link = link
+        self.date = date
+        self.arxiv = arxiv
+        self.abstract = abstract
+    
+    def __str__(self) -> str:
+        return f'[{self.date}] {self.title}'
+
+def get_daily_papers(data_dir=Path('data'), start_date='2023-05-04'):
+    data_dir = Path(data_dir)
+    if not data_dir.exists():
+        data_dir.mkdir()
     
     driver = webdriver.Chrome()
-    driver.get('https://huggingface.co/papers')
+    driver.get(f'https://huggingface.co/papers?date={start_date}')
     
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = os.path.join(output_folder, f'daily_papers_{current_time}.csv')
-    
-    file_exists = os.path.isfile('daily_papers_original.csv')
-    
-    if file_exists:
-        existing_data = pd.read_csv('daily_papers_original.csv')
-        existing_titles_links = set(zip(existing_data['title'], existing_data['link']))
-    else:
-        existing_data = pd.DataFrame(columns=['title', 'link'])
-        existing_titles_links = set()
-    
-    with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
-        open('daily_papers_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
-        
-        fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
 
     while True:
-        last_height = driver.execute_script("return document.body.scrollHeight")
-
-        
-        while True:
-            driver.execute_script("window.scrollBy(0, 1000);")  
-            time.sleep(2)  
-
-            new_height = driver.execute_script("return document.body.scrollHeight")
-            if new_height == last_height:
-                print("已達頁面底部，無更多內容。")
-                break
-            last_height = new_height
-
+        baseURL = driver.current_url
+        parsed_url = urlparse(driver.current_url)
+        date = parse_qs(parsed_url.query)['date'][0]
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.TAG_NAME, 'section'))) # wait
+        # ! NextURL
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);") # Scroll to bottom
         try:
-            articles_elements = WebDriverWait(driver, 10).until(
-                EC.presence_of_all_elements_located((By.TAG_NAME, 'article'))
-            )
-        except TimeoutException:
-            print("文章載入超時，結束爬取。")
-            driver.quit()
-            return
+            nextURL = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.LINK_TEXT, 'Next'))).get_attribute('href')
+        except:
+            nextURL = None
 
-        for article_element in articles_elements:
-            try:
-                # 捕捉並處理 StaleElementReferenceException
-                try:
-                    title_element = article_element.find_element(By.TAG_NAME, 'h3')
-                    title = title_element.text
-                    # print(title)
-                    link = title_element.find_element(By.TAG_NAME, 'a').get_attribute('href')
-                    # print(link)
-                except StaleElementReferenceException:
-                    print("元素已失效，重新嘗試抓取。")
-                    continue
-
-                # 進入 arXiv 網頁抓取摘要與日期
+        filepath = data_dir / f'{date}.csv'
+        logging.info(f'Processing papers on date [{date}]')
+        if filepath.exists():
+            logging.info('Data exists.')
+        else:
+            blocks = driver.find_elements(By.TAG_NAME, 'article')
+            articles: list[Article] = []
+            for block in blocks:
+                h3 = block.find_element(By.TAG_NAME, 'h3')
+                link = h3.find_element(By.TAG_NAME, 'a').get_attribute('href')
+                if not link.startswith('https://huggingface.co/papers'):
+                    raise ValueError(f'Link error. Got link: {link}')
                 arxiv = 'https://arxiv.org/abs/' + re.sub('/papers/', '', urlparse(link).path)
-                driver.execute_script(f"window.open('{arxiv}', '_blank');")
-                driver.switch_to.window(driver.window_handles[1])
+                articles.append(Article(h3.text, link, date, arxiv))
 
-                try:
-                    abstract = WebDriverWait(driver, 5).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, 'abstract'))
-                    ).text
-                    # print(abstract)
-                    gattered_datetime_element = driver.find_element(By.ID, 'content-inner')
-                    gattered_datetime_original = gattered_datetime_element.find_element(By.CLASS_NAME, 'dateline').text
-
-                    # 使用正則表達式提取日期
-                    pattern = r'\d{1,2} \w{3} \d{4}'
-                    match = re.search(pattern, gattered_datetime_original)
-                    date_str = match.group(0) if match else None
-                    date_obj = datetime.strptime(date_str, "%d %b %Y")
-                    gattered_datetime = date_obj.strftime("%Y-%m-%d %H:%M:%S")
-                    # print(gattered_datetime)
-
-                    # 防止重複記錄
-                    record = (title, abstract, link, gattered_datetime)
-                    
-                    if title and abstract and link and gattered_datetime:
-                        if record not in seen:
-                            seen.add(record)
-                            items_list = {
-                                'uuid': str(uuid.uuid4()),
-                                'title': title,
-                                'abstract': abstract,
-                                'link': link,
-                                'data_source': 'hf_paper',
-                                'gattered_datetime': gattered_datetime
-                            }
-                            items_data.append(items_list)    
-                            items = [items_list]
-                                                
-                            api_url = f"{os.environ.get('ROOT')}/api/item/crawler"
-                            if api_url:  # 檢查環境變數是否存在
-                                item_post = requests.post(api_url, json=items_list, timeout=20) 
-                                
-                                if item_post.status_code == 201:
-                                    recommendations = generate_random_scores(items,users)
-                                    time.sleep(3)
-                                    api_recommendations = f"{os.environ.get('ROOT')}/api/recommend/model"
-                                    for recommendation in recommendations:
-                                        recommendations_post = requests.post(api_recommendations, json=recommendation, timeout=30) 
-                                        if recommendations_post.status_code == 201:
-                                            print(f"API 發送成功: {recommendations_post.text}")
-                
-                                if item_post.status_code != 201:
-                                    print(f"API 發送失敗: {item_post.text}")
-                                
-                            
-                            with open(output_file, mode='a', newline='', encoding='utf-8') as file:
-                                writer = csv.DictWriter(file, fieldnames=fieldnames)
-                                writer.writerow(items_list)
-                    else:
-                        print(f"缺少資料: title={title}, abstract={abstract}, link={link}, gattered_datetime={gattered_datetime}")
-                
-                except (NoSuchElementException, TimeoutException) as e:
-                    print(f"跳過該元素，原因：{e}")
-                    
-                driver.close()
-                driver.switch_to.window(driver.window_handles[0])
-                time.sleep(1)    
-                
-            except (NoSuchElementException, TimeoutException) as e:
-                print(f"跳過該元素，原因：{e}")
-                continue    
+            logging.info(f'{len(articles)} papers is under processing.')
+            for article in articles:
+                # Get Abstract
+                driver.get(article.arxiv)
+                abstract = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, 'abstract'))
+                ).text
+                article.abstract = abstract
             
-        # 處理換頁按鈕
-        try:
-            next_page_button = driver.find_element(By.LINK_TEXT, 'Previous')
-            next_page_button.click()
-            time.sleep(1)
-        except NoSuchElementException:
-            print("沒有更多頁面了，結束爬取。")
-            break
+                
+            # Writing article attributes to a CSV file
+            with open(filepath, 'w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)                
+                writer.writerow(['title', 'link', 'date', 'abstract']) # Header
+                for article in articles:
+                    writer.writerow([article.title, article.link, article.date, article.abstract])
+                    print(article)
 
+        if nextURL is None:
+            break
+        driver.get(nextURL)
+
+    time.sleep(2)
     driver.quit()
-    return filename
+
+def concat_papers(data_dir=Path('data')):
+    data_dir = Path(data_dir)
+    if not data_dir.exists():
+        raise FileExistsError(f"[ERROR] '{data_dir}' did not exist")
+    csv_files = list(data_dir.glob('*.csv'))
+
+    dfs = [pd.read_csv(file) for file in csv_files]
+
+    combined_df = pd.concat(dfs, ignore_index=True)
+
+    combined_df.to_csv(data_dir / 'combined.csv', index=False)
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
+    get_daily_papers('crawler/data')
+    concat_papers('crawler/data')

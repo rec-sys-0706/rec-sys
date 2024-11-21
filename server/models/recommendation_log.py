@@ -10,6 +10,7 @@ class Recommendationlog(DB.Model):
     user_id = mapped_column(Uuid(as_uuid=True), ForeignKey('app_user.uuid'), nullable=False)
     item_id = mapped_column(Uuid(as_uuid=True), ForeignKey('item.uuid'), nullable=False)
     recommend_score = mapped_column(Boolean, default=False, nullable=False)
+    recommend_datetime = mapped_column(DateTime, nullable=False)
     # gattered_datetime = mapped_column(DateTime, nullable=False)
     # clicked = mapped_column(Boolean, default=False)
 

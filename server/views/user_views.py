@@ -36,23 +36,21 @@ def get_users_combined():
     # 獲取一般資料（account 不以 'U' 開頭）
     general_users = User.query.filter(User.account.notlike('U%')).all()
 
-    # 獲取所有 account 以 'U' 開頭的資料，固定前 9 筆
-    u_users = User.query.filter(User.account.like('U%')).order_by(User.account).limit(9).all()
+    # 確保固定包含的 U 開頭帳號
+    fixed_u_accounts = ['U10425', 'U10009', 'U10068', 'U10089', 'U10538']
+    fixed_u_users = User.query.filter(User.account.in_(fixed_u_accounts)).all()
 
-    # 確保包含 account 是 'U10425' 的資料
-    u_user_fixed = User.query.filter(User.account == 'U10425').first()
-    if u_user_fixed and u_user_fixed not in u_users:
-        # 如果不足 9 筆，直接加入
-        if len(u_users) < 9:
-            u_users.append(u_user_fixed)
-        else:
-            # 如果已滿 9 筆，替換掉最後一筆
-            u_users[-1] = u_user_fixed
+    # 獲取其他 U 開頭的資料，排除固定包含的帳號
+    additional_u_users = (
+        User.query
+        .filter(User.account.like('U%'), User.account.notin_(fixed_u_accounts))
+        .order_by(User.account)
+        .limit(10 - len(fixed_u_users))  # 填補剩餘的名額
+        .all()
+    )
 
-    # 最終確保 u_users 包含 10 筆
-    u_users = u_users[:9]  # 確保最多取前 9 筆
-    if u_user_fixed and u_user_fixed not in u_users:
-        u_users.append(u_user_fixed)  # 加入 U10425 保證是第 10 筆
+    # 合併固定 U 開頭的資料和其他資料，總共 10 筆
+    u_users = fixed_u_users + additional_u_users
 
     # 構造響應資料
     response_data = {

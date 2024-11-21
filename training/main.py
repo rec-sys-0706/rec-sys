@@ -91,7 +91,10 @@ def get_ckpt_dir(args: Arguments):
     folder_name = args.ckpt_dir
     if folder_name is not None:
         if not Path(f'checkpoints/{folder_name}').exists():
-            raise ValueError(f"checkpoint `{folder_name}` did not exist in ./checkpoints.")
+            if args.continue_training:
+                raise ValueError(f"checkpoint `{folder_name}` did not exist in ./checkpoints.")
+            else:
+                print(f"checkpoint `{folder_name}` did not exist in ./checkpoints, create a new one.")
         folder_name = next_folder(folder_name)
         ckpt_dir = f'checkpoints/{folder_name}'
     else:
@@ -182,13 +185,13 @@ def main(args: Arguments):
         model.load_state_dict(model_state_dict)
 
     if args.mode == 'train':
-        if args.ckpt_dir is None:
-            trainer.train()
-            trainer.save_model(next_ckpt_dir + '/checkpoint-best') # Save final best model
-        else:
+        if args.continue_training:
             pass
             # TODO continue training
             # trainer.train(resume_from_checkpoint=f'checkpoints/{args.ckpt_dir}') 
+        else:
+            trainer.train()
+            trainer.save_model(next_ckpt_dir + '/checkpoint-best') # Save final best model
     elif args.mode == 'valid':
         dataloader = DataLoader(valid_dataset, batch_size=args.eval_batch_size, collate_fn=collate_fn)
         model.eval()

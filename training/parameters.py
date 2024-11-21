@@ -46,6 +46,7 @@ class Arguments:
     regenerate_dataset: bool 
     generate_bertviz: bool
     generate_tsne: bool
+    continue_training: bool
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient = True
@@ -56,6 +57,8 @@ class Arguments:
             self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         if self.model_name == 'NRMS-BERT':
             self.embedding_dim = 768
+        if not self.embedding_dim % self.num_heads == 0:
+            raise ValueError(f'embedding_dim ({self.embedding_dim}) must be divisible by num_heads ({self.num_heads})')
 
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()
@@ -69,10 +72,11 @@ def parse_args() -> Arguments:
     parser.add_argument('--regenerate-dataset', action='store_true', help="Whether to redo dataset even if .pt exists.")
     parser.add_argument('--generate-bertviz', action='store_true', help="Whether to generate BERTViz.")
     parser.add_argument('--generate-tsne', action='store_true', help="Whether to generate t-SNE.")
+    parser.add_argument('--continue-training', action='store_true', help="Whether to continue training.")
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
-    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid or continue training, it will get last checkpoint.')
+    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a name for checkpoint directory, it will get last checkpoint.')
     parser.add_argument('--glove-embedding-path', type=str, default='data\glove.840B.300d\glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")

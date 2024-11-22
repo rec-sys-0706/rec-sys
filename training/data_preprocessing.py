@@ -8,10 +8,10 @@ from tqdm import tqdm
 import torch
 from typing import Literal
 
-from parameters import Arguments
-from utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds
+from training.parameters import Arguments
+from training.utils import CustomTokenizer, time_since, get_src_dir, get_suffix, fix_all_seeds, reclassify_category
 
-def parse_behaviors(src_dir: Path, mode: Literal['train', 'valid', 'test']) -> pd.DataFrame:
+def parse_behaviors(src_dir: Path, mode: Literal['train', 'valid']) -> pd.DataFrame:
     """Parses `behaviors.tsv` file, generate `behaviors_parsed.csv`.
     
     Output File Format:
@@ -36,10 +36,6 @@ def parse_behaviors(src_dir: Path, mode: Literal['train', 'valid', 'test']) -> p
     behaviors['clicked_news'] = behaviors['clicked_news'].apply(lambda h: list(set(h.split()))) # Remove duplicated values in 'clicked_news'
     behaviors['impressions'] = behaviors['impressions'].apply(lambda impression: list(set(impression)))
 
-    # Create clicked & unclicked columns
-    if mode == 'test': # In test mode, no clicked_news would be created.
-        behaviors = behaviors.rename(columns={'impressions': 'candidate'})
-        return behaviors
     behaviors[['clicked', 'unclicked']] = [None, None]
     for idx, row in tqdm(behaviors['impressions'].items(), total=len(behaviors)):
         candidate_news = {}
@@ -78,6 +74,7 @@ def parse_news(src_dir: Path, tokenizer: CustomTokenizer) -> pd.DataFrame:
     news['abstract'] = news['abstract'].fillna('') # TODO drop abstract None?
 
     # ! processing news
+    news['category'] = news.apply(reclassify_category, axis=1)
     news = news.drop(columns=['subcategory', 'url', 'title_entities', 'abstract_entities'])
     news = news.sort_index()
     news['category'] = news['category'].apply(lambda c: tokenizer.encode_category(c))
@@ -134,28 +131,23 @@ def generate_word_embedding(args: Arguments, tokenizer: CustomTokenizer):
     ))
     return result.values
 
-def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test']):
+def data_preprocessing(args: Arguments, mode: Literal['train', 'valid']):
     src_dir = get_src_dir(args, mode)
     suffix = get_suffix(args)
     news_path = src_dir / f'news_parsed{suffix}.csv'
     behaviors_path = src_dir / f'behaviors_parsed{suffix}.csv'
     # Behaviors
-    if not behaviors_path.exists() or args.reprocess:
+    if not behaviors_path.exists() or args.reprocess_data:
         start = time.time()
         behaviors = parse_behaviors(src_dir, mode)
-        if mode == 'test':
-            behaviors.to_csv(behaviors_path,
-                        index=False,
-                        columns=['user_id', 'clicked_news', 'candidate'])
-        elif mode in ['train', 'valid']:
-            behaviors.to_csv(behaviors_path,
-                        index=False,
-                        columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
+        behaviors.to_csv(behaviors_path,
+                    index=False,
+                    columns=['user_id', 'clicked_news', 'clicked_candidate', 'unclicked_candidate'])
         logging.info(f"[{mode}] Parsing `behaviors.tsv` completed in {time_since(start, 'seconds'):.2f} seconds")
     else:
         logging.info(f"{behaviors_path} already exists.")
     # News
-    if not news_path.exists() or args.reprocess:
+    if not news_path.exists() or args.reprocess_data:
         start = time.time()
         tokenizer = CustomTokenizer(args)
         news = parse_news(src_dir, tokenizer)
@@ -166,7 +158,7 @@ def data_preprocessing(args: Arguments, mode: Literal['train', 'valid', 'test'])
     # Glove
     if mode == 'train' and args.model_name == 'NRMS-Glove':
         embedding_path = Path(args.train_dir) / 'pretrained_embedding.pt'
-        if not embedding_path.exists() or args.reprocess:
+        if not embedding_path.exists() or args.reprocess_data:
             embedding = generate_word_embedding(args, tokenizer)
             torch.save(torch.tensor(embedding, dtype=torch.float32), embedding_path)
 

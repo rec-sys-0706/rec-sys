@@ -9,7 +9,6 @@ class Arguments:
     # Directory
     train_dir: str
     val_dir: str
-    test_dir: str
     ckpt_dir: str | None
     glove_embedding_path: Literal['data\glove.6B\glove.6B.300d.txt', 'data/glove.840B.300d/glove.840B.300d.txt']
     # Model
@@ -23,6 +22,8 @@ class Arguments:
     num_heads: int
     dropout_rate: float
     max_dataset_size: int
+    use_category: bool
+    use_full_candidate: bool
     # Training Process
     epochs: int
     eval_strategy: Literal['steps', 'epoch']
@@ -36,13 +37,15 @@ class Arguments:
     metric_for_best_model: Literal['loss', 'auc', 'acc']
     greater_is_better: bool
     # System
-    mode: Literal['train', 'valid', 'test']
+    mode: Literal['train', 'valid']
     seed: int
     cpu: bool
     model_name: Literal['NRMS', 'NRMS-Glove', 'NRMS-BERT']
     pretrained_model_name: Literal['distilbert-base-uncased', 'bert-base-uncased']
-    reprocess: bool
-    valid_test: bool
+    reprocess_data: bool
+    regenerate_dataset: bool 
+    generate_bertviz: bool
+    generate_tsne: bool
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient = True
@@ -62,13 +65,14 @@ def parse_args() -> Arguments:
     parser.add_argument('--cpu', action='store_true', help="Use CPU to run the model. If not set, the model will run on GPU by default.")
     parser.add_argument('--model-name', type=str, default='NRMS')
     parser.add_argument('--pretrained-model-name', type=str, default='distilbert-base-uncased')
-    parser.add_argument('--reprocess', action='store_true', help="Whether to redo data-preprocessing even if processed data exists.")
-    parser.add_argument('--valid-test', action='store_true', help="Validation testing mode.")
+    parser.add_argument('--reprocess-data', action='store_true', help="Whether to redo data-preprocessing even if processed data exists.")
+    parser.add_argument('--regenerate-dataset', action='store_true', help="Whether to redo dataset even if .pt exists.")
+    parser.add_argument('--generate-bertviz', action='store_true', help="Whether to generate BERTViz.")
+    parser.add_argument('--generate-tsne', action='store_true', help="Whether to generate t-SNE.")
     # Directory
     parser.add_argument('--train-dir', type=str, default='data/train')
     parser.add_argument('--val-dir', type=str, default='data/valid')
-    parser.add_argument('--test-dir', type=str, default='data/test')
-    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid/test or continue training, it will get last checkpoint.')
+    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid or continue training, it will get last checkpoint.')
     parser.add_argument('--glove-embedding-path', type=str, default='data\glove.840B.300d\glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")
@@ -81,6 +85,8 @@ def parse_args() -> Arguments:
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--max-dataset-size', type=int, default=60000, help="The upper limit of the dataset size.")
+    parser.add_argument('--use-category', action='store_true', help="Use category as features.")
+    parser.add_argument('--use-full-candidate', action='store_true', help="Use full candidate set.")
     # Training Process
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")

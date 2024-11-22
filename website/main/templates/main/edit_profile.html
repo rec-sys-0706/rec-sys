@@ -1,46 +1,43 @@
 {% extends "./main/profile.html" %}
 
 {% block contents %}
-<form action="{{ url_for('main.revise') }}" method="POST">
-    <table class="user-info" style="width:720px;">
-        <caption>個人資訊</caption>
-        <tbody>
-            <tr>
-                <th>帳號</th>
-                {% for index, data in user_data.iterrows() %}
-                    <td>
-                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" type="text" name="account" value="{{ data['account'] }}"/>
-                    </td>
-                {% endfor %}
-            </tr>
-            <tr>
-                <th>信箱</th>
-                {% for index, data in user_data.iterrows() %}
-                    <td>
-                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" name="email" value="{{ data['email'] }}"/>
-                    </td>
-                {% endfor %}
-            </tr>
-            <tr>
-                <th>Line ID</th>
-                {% for index, data in user_data.iterrows() %}
-                    <td>
-                        <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" name="line_id" value="{{ data['line_id'] }}" placeholder="Line ID"/>
-                    </td>
-                {% endfor %}
-            </tr>
-            <tr>
-                <th>密碼</th>
-                <td>
-                    <input style="border: none;font-size: 16px;color: black; background-color: #f4f4f9;" text="Password" name="password" placeholder="密碼" required/>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <div class = buttons>
-        <a href="javascript: void(0)" class="btn">Line</a>
-        <a href="/main/profile" class="btn">取消修改</a>
-        <button type="submit" class="btn1">確認修改</button>  
+
+<form action="{{ url_for('main.edit_profile') }}" method="POST">
+    <div class="grid grid-cols-5 gap-y-4">
+        <div class="col-span-2 font-medium text-gray-700">
+            帳號
+        </div>
+        <div class="col-span-3 text-gray-500">
+            <input value="{{ user['account'] }}" name="account" required/>
+        </div>
+        <div class="col-span-2 font-medium text-gray-700">
+            信箱
+        </div>
+        <div class="col-span-3 text-gray-500">
+            <input value="{{ user['email'] }}" name="email" required/>
+        </div>
+        <div class="col-span-2 font-medium text-gray-700">
+            Line ID
+        </div>
+        <div class="col-span-3 text-gray-500">
+            <input value="{{ user['line_id'] }}" name="line_id"  placeholder="Line ID"/>      
+        </div>
+        <div class="col-span-2 font-medium text-gray-700">
+            密碼
+        </div>
+        <div class="col-span-3 text-gray-500">
+            <input  type="password" name="password" placeholder="密碼" required/>
+        </td>     
+        </div>
+    </div>
+    <!-- Button Group -->
+    <div class="flex gap-3 justify-end">
+        <a href="/main/profile" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+            取消
+        </a>
+        <a class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+            <button type="submit">修改資料</button>
+        </a>
     </div>
 </form>
 

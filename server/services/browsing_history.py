@@ -46,6 +46,7 @@ def read_browsing_history(user_uuid):
             'item_id': h.item_id,
             'item_title': item.title,
             'item_category': item.category,
+            'item_abstract': item.abstract,
             'item_data_source': item.data_source,
             'item_date': item.gattered_datetime,
             'item_link': item.link,

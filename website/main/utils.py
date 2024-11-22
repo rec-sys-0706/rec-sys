@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import json
 import jwt
 from werkzeug.security import generate_password_hash
-
+from flask import current_app
 
 load_dotenv()
 SERVER_URL = os.environ.get('SERVER_URL')
@@ -123,7 +123,7 @@ def get_unrecommend(access_token):
         item = pd.DataFrame(items)
         item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
     except:
-        item = ''
+        item = user_news('all')
     return item
 
 def recommend_data_source(access_token, data_source):
@@ -157,7 +157,7 @@ def unrecommend_data_source(access_token, data_source):
         item = pd.DataFrame(items)
         item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
     except:
-        item = ''
+        item = user_news(data_source)
     return item
 
 def history_data_source(access_token, data_source):
@@ -167,7 +167,6 @@ def history_data_source(access_token, data_source):
         "Authorization" : f'Bearer {access_token}'
     }
     response = requests.get(f"{SERVER_URL}/api/user_history/{id}?data_source={data_source}", headers=headers)
-    data = response.json()
     try:
         data = response.json()
         item = pd.json_normalize(data['history'])
@@ -217,15 +216,16 @@ def get_formatted_datetime():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 def click_data(access_token, link):
+    current_app.logger.info('click data')
     time = get_formatted_datetime()
     recommend_item = get_recommend(access_token)
     unrecommend_item = get_unrecommend(access_token)
-    try:
-        item_content = recommend_item.loc[recommend_item['link'] == link]
-    except:
+    item_content = recommend_item.loc[recommend_item['link'] == link]
+    if item_content.empty:
         item_content = unrecommend_item.loc[unrecommend_item['link'] == link]
     item_id = item_content['uuid'].iloc[0]
-    uuid = item_content['recommendation_log_uuid'].iloc[0]
+    current_app.logger.info(item_content)
+    # uuid = item_content['recommendation_log_uuid'].iloc[0]
     user = get_user(access_token)
     id = user['uuid']
     data = {
@@ -233,25 +233,28 @@ def click_data(access_token, link):
         "item_id": item_id,
         "clicked_time": time
     }
-    status = {
-        "clicked": True
-    }
-    requests.put(f'{SERVER_URL}/api/recommend/{uuid}', json=status)
+    # status = {
+    #     "clicked": True
+    # }
+    # requests.put(f'{SERVER_URL}/api/recommend/{uuid}', json=status)
     requests.post(f'{SERVER_URL}/api/behavior', json = data)
 
 
 def click_data_source(access_token, link, data_source):
+    current_app.logger.info('click data source')
     time = get_formatted_datetime()
     recommend_item = recommend_data_source(access_token, data_source)
     unrecommend_item = unrecommend_data_source(access_token, data_source)
-    try:
-        item_content = recommend_item.loc[recommend_item['link'] == link]
-    except:
+    item_content = recommend_item.loc[recommend_item['link'] == link]
+    if item_content.empty:
         item_content = unrecommend_item.loc[unrecommend_item['link'] == link]
+    current_app.logger.info(item_content)
     item_id = item_content['uuid'].iloc[0]
-    uuid = item_content['recommendation_log_uuid'].iloc[0]
+    # uuid = item_content['recommendation_log_uuid'].iloc[0]
+    current_app.logger.info(access_token)
     user = get_user(access_token)
     id = user['uuid']
+    current_app.logger.info(user)
     data = {
         "user_id" : id,
         "item_id": item_id,
@@ -260,5 +263,7 @@ def click_data_source(access_token, link, data_source):
     status = {
         "clicked": True
     }
-    requests.put(f'{SERVER_URL}/api/recommend/{uuid}', json=status)
+    # requests.put(f'{SERVER_URL}/api/recommend/{uuid}', json=status)
     requests.post(f'{SERVER_URL}/api/behavior', json = data)
+
+

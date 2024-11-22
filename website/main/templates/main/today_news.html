@@ -93,9 +93,12 @@
                                                 {% set abstract = recommend_new.iloc[index]['abstract'] %}
                                                 {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
                                             </p>
+                                            <!-- Category (Bottom-Left) -->
+                                            <p class="absolute bottom-2 left-4 text-sm text-gray-600" style="position: absolute; bottom: 8px; left: 16px;">
+                                                <span class="font-semibold text-gray-800">Category：</span> {{ recommend_new.iloc[index]['category'] }}
+                                            </p>
 
                                             <p class="news-date">{{ recommend_new.iloc[index]['gattered_datetime'] }}</p>
-                                            <!--<p class="news-date">Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>-->
                                         </div>
                                     </div>
                                 {% endif %}
@@ -124,9 +127,12 @@
                                             {% set abstract = unrecommend_news.iloc[index]['abstract'] %}
                                             {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
                                         </p>
+                                        <!-- Category at Bottom-Left -->
+                                        <p class="absolute bottom-2 left-4 text-sm text-gray-600">
+                                            <span class="font-semibold text-gray-800">Category：</span> {{ unrecommend_news.iloc[index]['category'] }}
+                                        </p>
 
                                         <p class="news-date">{{ unrecommend_news.iloc[index]['gattered_datetime'] }}</p>
-                                        <!--<p class="news-date">Data Source: {{ unrecommend_news.iloc[index]['data_source'] }}</p>-->
                                     </div>
                                 </div>
                             {% endif %}

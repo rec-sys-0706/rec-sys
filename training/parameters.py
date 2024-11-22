@@ -88,7 +88,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--embedding-dim', type=int, default=300, help="If using `NRMS-BERT`, then the embedding_dim will be 768")
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
-    parser.add_argument('--max-dataset-size', type=int, default=60000, help="The upper limit of the dataset size.")
+    parser.add_argument('--max-dataset-size', type=int, default=1000000, help="The upper limit of the dataset size.")
     parser.add_argument('--use-category', action='store_true', help="Use category as features.")
     parser.add_argument('--use-full-candidate', action='store_true', help="Use full candidate set.")
     # Training Process

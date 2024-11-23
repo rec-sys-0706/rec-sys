@@ -5,11 +5,14 @@ import requests
 import os
 import pandas as pd
 from training.recommend import recommend
+import numpy as np
 
 def post_news_and_score(item_data, users):
     
     df = pd.read_csv(item_data)
     df = df.drop(columns=['crawler_datetime', 'any_category'], errors='ignore')
+    
+    df = df.replace({np.nan: None, np.inf: None, -np.inf: None})
     
     api_item = f"{os.environ.get('ROOT')}:5000/api/item/crawler"
     

@@ -1,26 +1,61 @@
 <!-- link, title, abstract, gattered_datetime -->
-<div class="w-full border border-gray-300 p-4 rounded-lg shadow-md bg-white hover:transform hover:-translate-y-1 hover:shadow-lg transition-transform duration-300 relative">
-    <div>
-        <h3 class="text-left font-bold mb-2">
-            <a href="{{ link }}" 
-                data-link="{{ link }}" 
-                onclick="sendValueAndRedirect(this); event.preventDefault();" 
-                target="_blank"
-                class="text-blue-600 hover:text-blue-800 transition-colors duration-300">
-                {{ title }}
-            </a>
-        </h3>
-        <p class="text-gray-700 mb-8">
-            {{ abstract[:200] }}{% if abstract|length > 200 %}...{% endif %}
-        </p>
-        <!-- Category at Bottom-Left -->
-        <p class="absolute bottom-2 left-4 text-sm text-gray-600">
-            <span class="font-semibold text-gray-800">Category：</span> {{ category }}
-        </p>
-        <p class="absolute bottom-2 right-4 text-sm text-gray-500">
-            {{ datetime }}
-        </p>
+ <!-- News Block -->
+ {% macro render_block(link, title, abstract, category, datetime) %}
+    {% set category_mapping = {
+        "area-world": "#1E90FF40",
+        "astrology": "#FF69B440",
+        "autos": "#8A2BE240",
+        "business": "#FFD70040",
+        "comment": "#70809040",
+        "economy-and-finance": "#00CED140",
+        "emotional": "#FF450040",
+        "entertainment": "#7CFC0040",
+        "fashion": "#FF634740",
+        "festival": "#9400D340",
+        "food-and-drink": "#FF8C0040",
+        "health": "#32CD3240",
+        "home": "#6A5ACD40",
+        "movies": "#DAA52040",
+        "music": "#1E844940",
+        "pet-and-animal": "#D2691E40",
+        "politics": "#80000040",
+        "science-and-technology": "#2E8B5740",
+        "shopping": "#FF00FF40",
+        "social-issues": "#DC143C40",
+        "sports": "#4682B440",
+        "travel": "#20B2AA40",
+        "tv": "#8B000040",
+        "video": "#5F9EA040",
+        "weather": "#00BFFF40",
+        "workplace": "#556B2F40"
+    } %}
+    <div class="w-full border border-gray-300 p-4 rounded-lg shadow-md bg-[#fcfcfc] hover:transform hover:-translate-y-1 hover:shadow-lg transition-transform duration-300 relative">
+        <div>
+            <h3 class="text-left text-base font-bold text-gray-600 hover:text-[var(--sail-500)] mb-2">
+                <a href="{{ link }}" 
+                    data-link="{{ link }}" 
+                    onclick="sendValueAndRedirect(this); event.preventDefault();" 
+                    target="_blank"
+                    class="transition-colors duration-300">
+                    {{ title }}
+                </a>
+            </h3>
+            <p class="text-sm text-gray-500 mb-8">
+                {{ abstract[:100] }}{% if abstract|length > 100 %}...{% endif %}
+            </p>
+            <!-- Category at Bottom-Left -->
+            {% if category %}
+                <div class="absolute bottom-2 left-4 text-sm text-gray-800 rounded-md px-2 py-1 bg-[{{ category_mapping.get(category, transparent) }}]">
+                    <span>{{ category }}</span> 
+                </div>
+            {% endif %}
+            <p class="absolute bottom-2 right-4 text-sm text-gray-500">
+                {{ datetime }}
+            </p>
+        </div>
     </div>
-</div>
+{% endmacro %}
+
+
 
 

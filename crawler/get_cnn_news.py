@@ -61,7 +61,7 @@ def scrape_cnn_articles():
                 print("無法載入頁面內容，結束程式。")
                 break
 
-            for class_element in class_elements:
+            for class_element in class_elements: # For each row
                 try:
                     crawler_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     #print(crawler_datetime)

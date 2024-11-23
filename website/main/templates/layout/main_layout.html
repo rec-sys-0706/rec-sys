@@ -13,11 +13,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 </head>
 <style>
-
+    /* TODO Particles.js 的背景顏色要改 */
 </style>
 <body>
+    <div id="particles-js"></div>
     <nav id="navbar" class="sticky top-0 z-50 bg-[var(--sail-100)] border-b border-gray-300">
         <div class="container 2xl:max-w-7xl mx-auto flex justify-between items-center">
             <div>
@@ -165,5 +167,6 @@
         // Event listener for resize to update navbarOffset
         window.addEventListener('resize', updateNavbarOffset);
     </script>
+    <script src="{{ url_for('main.static', filename='particles.js') }}"></script>
 </body>
 </html>

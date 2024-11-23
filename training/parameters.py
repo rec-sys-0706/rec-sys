@@ -96,7 +96,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")
     parser.add_argument('--eval-steps', type=int, default=1000, help="The interval for evaluation between steps")
     parser.add_argument('--early-stop', type=bool, default=False, help="Whether to use early stopping")
-    parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
+    parser.add_argument('--patience', type=int, default=5, help="Patience early stopping")
     parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--eval-batch-size', type=int, default=512)

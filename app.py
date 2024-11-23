@@ -13,33 +13,36 @@ from server.services.browsing_history import user_history_bp
 from server.views.recommendation_log_views import recommendation_bp
 from server.views.mind_views import mind_blueprint
 
-def create_app():
+def create_app(website_only=True):
     app = APIFlask(__name__)
     app.config.from_object(Config)
     app.config['SPEC_FORMAT'] = 'yaml'
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=2)
-    app.secret_key = uuid.uuid4().hex
-    # 初始化數據資料庫
-    DB.init_app(app)
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=20)
 
-    jwt = JWTManager(app)
 
-    # TODO history
-    app.register_blueprint(linebot_bp, url_prefix='/api/callback')
+    if not website_only:
+        # Server settings
+        DB.init_app(app)
+        
+        jwt = JWTManager(app)
 
-    app.register_blueprint(user_blueprint, url_prefix='/api/user')
-    app.register_blueprint(item_blueprint, url_prefix='/api/item')
-    app.register_blueprint(behavior_blueprint, url_prefix='/api/behavior')
-    app.register_blueprint(recommendation_bp, url_prefix='/api/recommend')
-    app.register_blueprint(mind_blueprint, url_prefix='/api/mind')
+        # TODO history
+        app.register_blueprint(linebot_bp, url_prefix='/api/callback')
 
-    app.register_blueprint(user_history_bp, url_prefix='/api/user_history')
+        app.register_blueprint(user_blueprint, url_prefix='/api/user')
+        app.register_blueprint(item_blueprint, url_prefix='/api/item')
+        app.register_blueprint(behavior_blueprint, url_prefix='/api/behavior')
+        app.register_blueprint(recommendation_bp, url_prefix='/api/recommend')
+        app.register_blueprint(mind_blueprint, url_prefix='/api/mind')
+
+        app.register_blueprint(user_history_bp, url_prefix='/api/user_history')
+
+        with app.app_context():
+            DB.create_all()
 
     from website.main.routes import main_bp
+    app.secret_key = uuid.uuid4().hex
     app.register_blueprint(main_bp)
-
-    with app.app_context():
-        DB.create_all()
 
     return app
 

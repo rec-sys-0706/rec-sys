@@ -93,14 +93,14 @@ def index():
                 source = data.get('source')
                 session['source'] = source
         if session['source'] == 'all':
-            recommend_new = get_recommend(session['token'])
+            recommend_news = get_recommend(session['token'])
             unrecommend_news = get_unrecommend(session['token'])
         else:
-            recommend_new = recommend_data_source(session['token'], session['source'])
+            recommend_news = recommend_data_source(session['token'], session['source'])
             unrecommend_news = unrecommend_data_source(session['token'], session['source']) 
-        return render_template('./main/today_news.html', status = status, recommend_new = recommend_new, unrecommend_news = unrecommend_news)
+        return render_template('./main/today_news.html', status = status, recommend_news = recommend_news, unrecommend_news = unrecommend_news)
     else:
-        recommend_new = ''
+        recommend_news = ''
         session['token'] = ''
         try:
             data = request.get_json()
@@ -115,7 +115,7 @@ def index():
             session['source'] = 'all'
             unrecommend_news = user_news("all")
         status = 'Not Login'
-        return render_template('./main/today_news.html', recommend_new = recommend_new, unrecommend_news = unrecommend_news, status = status)
+        return render_template('./main/today_news.html', recommend_news = recommend_news, unrecommend_news = unrecommend_news, status = status)
 
 @main_bp.route('/logout')
 def logout():

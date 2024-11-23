@@ -73,7 +73,9 @@ def scrape_cnn_articles():
                     print(title)
 
                     try:
-                        image_url = class_element.find_element(By.CLASS_NAME, 'image__dam-img').get_attribute('src')
+                        image_url = WebDriverWait(class_element, 15).until(
+                                EC.presence_of_element_located((By.CLASS_NAME, 'image__dam-img'))
+                            ).get_attribute('src')
                         response = requests.get(image_url)
                         if response.status_code == 200:
                             base64_image = base64.b64encode(response.content).decode('utf-8')
@@ -91,7 +93,7 @@ def scrape_cnn_articles():
                     
                     if (title, link) not in existing_titles_links:
                         skip_count = 0
-                        abstract = WebDriverWait(class_element, 3).until(
+                        abstract = WebDriverWait(class_element, 15).until(
                                 EC.presence_of_element_located((By.CLASS_NAME, 'container__description'))
                             ).text
                         #print(abstract)

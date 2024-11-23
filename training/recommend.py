@@ -260,6 +260,8 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
     df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])
     df = df.sort_values(by='user_id')
     
+    user_to_account = pd.DataFrame(users).set_index('uuid')['account'].to_dict()
+    item_to_title = pd.DataFrame(items).set_index('uuid')['title'].to_dict()
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     recommendations = []
     for _, row in df.iterrows():
@@ -271,7 +273,7 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
                 'recommend_score': predict,
                 'recommend_datetime': now
             })
-            print(f'({row.user_id}, {candidate_news_id}): {predict}')
+            print(f'{predict}: ({user_to_account[row.user_id]}, {item_to_title[candidate_news_id]})')
     return recommendations
 
 def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:

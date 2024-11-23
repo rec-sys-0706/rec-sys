@@ -46,6 +46,7 @@ class Arguments:
     regenerate_dataset: bool 
     generate_bertviz: bool
     generate_tsne: bool
+    continue_training: bool
     device: Any = None
     def __post_init__(self):
         self.drop_insufficient = True
@@ -56,6 +57,8 @@ class Arguments:
             self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         if self.model_name == 'NRMS-BERT':
             self.embedding_dim = 768
+        if not self.embedding_dim % self.num_heads == 0:
+            raise ValueError(f'embedding_dim ({self.embedding_dim}) must be divisible by num_heads ({self.num_heads})')
 
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()
@@ -69,10 +72,11 @@ def parse_args() -> Arguments:
     parser.add_argument('--regenerate-dataset', action='store_true', help="Whether to redo dataset even if .pt exists.")
     parser.add_argument('--generate-bertviz', action='store_true', help="Whether to generate BERTViz.")
     parser.add_argument('--generate-tsne', action='store_true', help="Whether to generate t-SNE.")
+    parser.add_argument('--continue-training', action='store_true', help="Whether to continue training.")
     # Directory
-    parser.add_argument('--train-dir', type=str, default='data/train')
-    parser.add_argument('--val-dir', type=str, default='data/valid')
-    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a checkpoint directory for valid or continue training, it will get last checkpoint.')
+    parser.add_argument('--train-dir', type=str, default='training/data/train')
+    parser.add_argument('--val-dir', type=str, default='training/data/valid')
+    parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a name for checkpoint directory, it will get last checkpoint.')
     parser.add_argument('--glove-embedding-path', type=str, default='data\glove.840B.300d\glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")
@@ -84,7 +88,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--embedding-dim', type=int, default=300, help="If using `NRMS-BERT`, then the embedding_dim will be 768")
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
-    parser.add_argument('--max-dataset-size', type=int, default=60000, help="The upper limit of the dataset size.")
+    parser.add_argument('--max-dataset-size', type=int, default=1000000, help="The upper limit of the dataset size.")
     parser.add_argument('--use-category', action='store_true', help="Use category as features.")
     parser.add_argument('--use-full-candidate', action='store_true', help="Use full candidate set.")
     # Training Process
@@ -92,7 +96,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--eval-strategy', type=str, default='epoch', help="The timing to evaluate model, it could be either `steps` or `epoch`")
     parser.add_argument('--eval-steps', type=int, default=1000, help="The interval for evaluation between steps")
     parser.add_argument('--early-stop', type=bool, default=False, help="Whether to use early stopping")
-    parser.add_argument('--patience', type=int, default=3, help="Patience early stopping")
+    parser.add_argument('--patience', type=int, default=5, help="Patience early stopping")
     parser.add_argument('--learning-rate', type=float, default=0.001)
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--eval-batch-size', type=int, default=512)

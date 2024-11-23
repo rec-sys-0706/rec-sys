@@ -4,103 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('main.static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="stylesheet" href="{{ url_for('main.static', filename='reset.css') }}">
-    <link rel="stylesheet" href="{{ url_for('main.static', filename='styles.css') }}">
+    <title>Home</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('main.static', filename='global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('main.static', filename='main.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <title>Home</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <style>
-    body {
-        font-family: 'Roboto', sans-serif;
-        background-color: #f4f4f9;
-        color: #333;
-    }
-    .my-swal {
-        font-family: 'Roboto', sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .custom-label {
-        display: flex;
-        align-items: center;
-        position: relative;
-        padding-left: 0;
-        margin: 15px 0;
-        cursor: pointer;
-        font-size: 18px;
-        user-select: none;
-        color: #333;
-        transition: color 0.3s;
-        width: 90px;
-    }
-    .custom-label:hover {
-        color: #2196F3;
-    }
-    .custom-label .checkmark {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 25px;
-        width: 25px;
-        background-color: #eee;
-        border-radius: 50%;
-        transition: background-color 0.3s;
-        margin-right: 10px;
-    }
-    .custom-label input:checked ~ .checkmark {
-        background-color: #2196F3;
-    }
-    .custom-label .checkmark:after {
-        content: "";
-        position: absolute;
-        display: none;
-    }
-    .custom-label input:checked ~ .checkmark:after {
-        display: block;
-    }
-    .custom-label .checkmark:after {
-        top: 9px;
-        left: 9px;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: white;
-        transition: background 0.3s;
-    }
+
 </style>
 <body>
-    <header class="h-48 text-center flex items-center justify-center">
-        <h1 class="text-3xl fw-bold">Recommender System</h1>
-    </header>
-    <nav id="navbar" class="sticky top-0 bg-[#fff] z-50">
-        <ul>
-            <li><a href="/main" class="tab">最新文章</a></li>
-            <!--<li><a href="/main/all_dates" class="tab">All News</a></li>-->
-            <li><a href="/main/recommend" class="tab">關於我們</a></li>        
-            {% if is_login == 'True' or session.get('token') %}
-                <li><a href="/main/profile" class="tab">{{ session['account'] }}</a></li>
-            {% else %}
-                <li><a href="/main/login" class="tab">登入</a></li>
-            {% endif %}
-            <li>
-                <a href="#" id="popup-link" class="tab">
-                    {% if session['source'] == 'all' %}
-                        資料來源：全部
-                    {% elif session['source'] == 'papers' %}
-                        資料來源：論文
-                    {% else %}
-                        資料來源：新聞
-                    {% endif %}
-            </a>
-            </li>
-        </ul>
+    <nav id="navbar" class="sticky top-0 z-50 bg-[var(--sail-100)] border-b border-gray-300">
+        <div class="container 2xl:max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <a href="/main">
+                    <img src="./static/images/logo.png" alt="logo" class="select-none w-[70px] h-[55px] ">
+                </a>
+            </div>
+            <ul class="flex items-center gap-8 text-gray-800 font-semibold">
+                <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                    <i class="bi bi-newspaper"></i>
+                    <li><a href="/main">最新文章</a></li>
+                </div>
+                <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                    <i class="bi bi-people-fill"></i>
+                    <li><a href="/main/recommend">關於我們</a></li>        
+                </div>
+                {% if is_login == 'True' or session.get('token') %}
+                    <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                        <i class="bi bi-person-fill"></i>
+                        <li><a href="/main/profile">{{ session['account'] }}</a></li>
+                    </div>
+                {% else %}
+                    <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                        <i class="bi bi-person-fill"></i>
+                        <li><a href="/main/login">登入</a></li>
+                    </div>
+                {% endif %}
+                <a href="#" id="popup-link">
+                <div class="flex items-center gap-2 border border-gray-800 hover:border-gray-600 px-2 py-1 rounded-sm hover:text-gray-600">
+                        <li>
+        
+                            {% if session['source'] == 'all' %}
+                                資料來源：全部
+                            {% elif session['source'] == 'papers' %}
+                                資料來源：論文
+                            {% else %}
+                                資料來源：新聞
+                            {% endif %}
+                        </li>
+                        <i class="bi bi-caret-down-fill"></i>
+                    </div>
+                </a>
+            </ul>
+        </div>
     </nav>
     {% block content %}
     {% endblock %}
-    <footer class="text-[#e5e7eb] bg-[#617a8e] p-[30px]">
+    <footer class="bg-[var(--sail-100)] p-[30px] text-gray-800">
         <div class="container mx-auto">
             <div class="flex items-center justify-center">
                 <a href="#">

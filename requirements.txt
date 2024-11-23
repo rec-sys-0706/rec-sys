@@ -13,6 +13,7 @@ ipython
 # Linebot
 whisper
 jieba
+schedule
 line-bot-sdk==3.13.0
 
 
@@ -34,4 +35,3 @@ python-dotenv
 marshmallow_sqlalchemy
 apiflask
 flask-jwt-extended
-schedule

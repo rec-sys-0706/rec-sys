@@ -34,5 +34,4 @@ python-dotenv
 marshmallow_sqlalchemy
 apiflask
 flask-jwt-extended
-feedparser
-dateparser
+schedule

@@ -108,6 +108,12 @@ def scrape_huggingface_papers():
                             gattered_datetime = date_obj.strftime("%Y-%m-%d %H:%M:%S")
                             print(gattered_datetime)
                             
+                            if gattered_datetime.startswith("2024-09-30"):
+                                print("資料日期為2024-09-30，停止爬取。")
+                                driver.quit()
+                                return filename
+                            
+                            
                         except (NoSuchElementException, TimeoutException) as e:
                             print(f"跳過該元素，原因：{e}")
                                 

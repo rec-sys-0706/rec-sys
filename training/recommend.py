@@ -278,6 +278,7 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
 
 def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
     recommendations = []
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     for user in users:
         user_uuid = user['uuid']
@@ -290,6 +291,7 @@ def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
                 'user_id': user_uuid,
                 'item_id': item_uuid,
                 'recommend_score': recommend_score,
+                'recommend_datetime': now
                 # 'gattered_datetime': item_gattered_datetime,
                 # 'clicked': 0
             })

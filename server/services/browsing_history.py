@@ -23,7 +23,10 @@ def read_browsing_history(user_uuid):
     history_query = Behavior.query\
         .filter_by(user_id=user_uuid)\
         .join(Item, Behavior.item_id == Item.uuid)\
-        .order_by(Behavior.clicked_time.desc())
+        .order_by(
+            Behavior.clicked_time.desc(),  # 首先按 clicked_time 降序排列
+            Item.category.asc()           # 然後按 category 升序排列
+        )
 
     # 根據 data_source 過濾紀錄
     if data_source == 'news':
@@ -90,7 +93,10 @@ def get_recommend_items(user_uuid):
         
         # 排序並限制前十筆
         recommendation_logs = recommendation_logs_query\
-            .order_by(Item.gattered_datetime.desc())\
+            .order_by(
+                Item.gattered_datetime.desc(),
+                Recommendationlog.recommend_score.desc()
+            )\
             .limit(10)\
             .all()
 
@@ -145,7 +151,10 @@ def get_unrecommend_items(user_uuid):
         
         # 排序並限制前十筆
         unrecommendation_logs = unrecommendation_logs_query\
-            .order_by(Item.gattered_datetime.desc())\
+            .order_by(
+                Item.gattered_datetime.desc(),
+                Item.title.asc()
+            )\
             .limit(10)\
             .all()
 

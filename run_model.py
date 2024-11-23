@@ -27,6 +27,7 @@ from training.evaluate import nDCG_new, ROC_AUC_new, recall_new, accuracy_new
 evaluate = lambda _pred, _true: (recall(_pred, _true), ROC_AUC(_pred, _true), nDCG(_pred, _true, 5), nDCG(_pred, _true, 10), accuracy(_pred, _true))
 evaluate_new = lambda _pred, _true: (recall_new(_pred, _true), ROC_AUC_new(_pred, _true), nDCG_new(_pred, _true, 5), nDCG_new(_pred, _true, 10), accuracy_new(_pred, _true))
 
+CHECKPOINT_DIR = 'training/checkpoints'
 def compute_metrics_new(eval_preds):
     predictions, label_ids = eval_preds
     recall, auc, ndcg5, ndcg10, acc = evaluate_new(predictions, label_ids)
@@ -83,22 +84,27 @@ def next_folder(folder_name):
     else:
         next_folder_name = f'{folder_name}_01'
 
-    if Path(f'checkpoints/{next_folder_name}').exists():
+    if Path(f'{CHECKPOINT_DIR}/{next_folder_name}').exists():
         return next_folder(next_folder_name)
     return next_folder_name
 def get_ckpt_dir(args: Arguments):
     """Get log_dir and ckpt_dir by using Datatime"""
     folder_name = args.ckpt_dir
     if folder_name is not None:
-        if not Path(f'checkpoints/{folder_name}').exists():
-            raise ValueError(f"checkpoint `{folder_name}` did not exist in ./checkpoints.")
-        folder_name = next_folder(folder_name)
-        ckpt_dir = f'checkpoints/{folder_name}'
+        if not Path(f'{CHECKPOINT_DIR}/{folder_name}').exists():
+            if args.continue_training:
+                raise ValueError(f"checkpoint `{folder_name}` did not exist in {CHECKPOINT_DIR}.")
+            else:
+                print(f"Checkpoint `{folder_name}` did not exist in {CHECKPOINT_DIR}, create a new one.")
+        else:
+            # If checkpoint directory exists, get next folder name.
+            folder_name = next_folder(folder_name)
+        ckpt_dir = f'{CHECKPOINT_DIR}/{folder_name}'
     else:
         DATETIME_NOW = get_datetime_now()
-        ckpt_dir = f'checkpoints/{DATETIME_NOW}'
-        if not Path('checkpoints').exists():
-            Path('checkpoints').mkdir()
+        ckpt_dir = f'{CHECKPOINT_DIR}/{DATETIME_NOW}'
+        if not Path(CHECKPOINT_DIR).exists():
+            Path(CHECKPOINT_DIR).mkdir()
 
     Path(ckpt_dir).mkdir()
     with open(f'{ckpt_dir}/args.json', 'w') as f:
@@ -173,7 +179,7 @@ def main(args: Arguments):
     )
     # Load Model
     if (args.ckpt_dir is not None) and args.mode == 'valid':
-        last_checkpoint = get_last_checkpoint(f'checkpoints/{args.ckpt_dir}')
+        last_checkpoint = get_last_checkpoint(f'{CHECKPOINT_DIR}/{args.ckpt_dir}')
         tensors = load_file(last_checkpoint + "/model.safetensors")
         model_state_dict = model.state_dict()
         for key in model_state_dict.keys():
@@ -182,13 +188,13 @@ def main(args: Arguments):
         model.load_state_dict(model_state_dict)
 
     if args.mode == 'train':
-        if args.ckpt_dir is None:
-            trainer.train()
-            trainer.save_model(next_ckpt_dir + '/checkpoint-best') # Save final best model
-        else:
+        if args.continue_training:
             pass
             # TODO continue training
-            # trainer.train(resume_from_checkpoint=f'checkpoints/{args.ckpt_dir}') 
+            # trainer.train(resume_from_checkpoint=f'{CHECKPOINT_DIR}/{args.ckpt_dir}') 
+        else:
+            trainer.train()
+            trainer.save_model(next_ckpt_dir + '/checkpoint-best') # Save final best model
     elif args.mode == 'valid':
         dataloader = DataLoader(valid_dataset, batch_size=args.eval_batch_size, collate_fn=collate_fn)
         model.eval()

@@ -88,7 +88,8 @@ def get_today_items():
             "abstract": item.abstract,
             "gattered_datetime": item.gattered_datetime,
             "link": item.link,
-            "data_source": item.data_source
+            "data_source": item.data_source,
+            "image": item.image
         }
         for item in items
     ]

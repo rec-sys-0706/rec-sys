@@ -253,29 +253,34 @@ def recommend(items: list[dict], users: list[dict]) -> list[dict]:
         'user_id': user_ids,
         'clicked_news': clicked_news_ids,
         'candidate_news': candidate_news_ids,
-        'predictions': [e[:l] for e, l in zip(result, num_candidate_news)],
+        'predictions': [e[:l] for e, l in zip(predictions.tolist(), num_candidate_news)],
+        'is_recommend': [e[:l] for e, l in zip(result, num_candidate_news)],
         'num_clicked_news': num_clicked_news,
         'num_candidate_news': num_candidate_news
     })
     df['clicked_news'] = df['clicked_news'].apply(lambda lst: [x for x in lst if x is not None])
     df = df.sort_values(by='user_id')
     
+    user_to_account = pd.DataFrame(users).set_index('uuid')['account'].to_dict()
+    item_to_title = pd.DataFrame(items).set_index('uuid')['title'].to_dict()
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     recommendations = []
     for _, row in df.iterrows():
-        for candidate_news_id, predict in zip(row.candidate_news, row.predictions):
+        for candidate_news_id, predict, is_recommend in zip(row.candidate_news, row.predictions, row.is_recommend):
             recommendations.append({
                 'uuid': str(uuid4()),
                 'user_id': row.user_id,
                 'item_id': candidate_news_id,
                 'recommend_score': predict,
+                'is_recommend': is_recommend,
                 'recommend_datetime': now
             })
-            print(f'({row.user_id}, {candidate_news_id}): {predict}')
+            print(f'{predict}: ({user_to_account[row.user_id]}, {item_to_title[candidate_news_id]})')
     return recommendations
 
 def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
     recommendations = []
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     for user in users:
         user_uuid = user['uuid']
@@ -288,6 +293,8 @@ def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
                 'user_id': user_uuid,
                 'item_id': item_uuid,
                 'recommend_score': recommend_score,
+                'is_recommend': recommend_score,
+                'recommend_datetime': now
                 # 'gattered_datetime': item_gattered_datetime,
                 # 'clicked': 0
             })

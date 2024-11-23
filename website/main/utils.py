@@ -209,7 +209,8 @@ def user_news(data_source):
     response = requests.get(f'{SERVER_URL}/api/item/today?data_source={data_source}')
     data = response.json()
     item = pd.DataFrame(data)
-    item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
+    if len(item):
+        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
     return item
 
 def get_formatted_datetime():

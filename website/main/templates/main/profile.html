@@ -8,38 +8,40 @@
                 <div class="col-span-7 bg-white shadow-md rounded-lg px-10 py-6 space-y-20">
                     <!-- User Information -->
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">個人資訊</h2>
-                    <div class="grid grid-cols-5 gap-y-4">
+                    {% block contents %}
+                        <div class="grid grid-cols-5 gap-y-4">
                             <div class="col-span-2 font-medium text-gray-700">
                                 帳號
                             </div>
                             <div class="col-span-3 text-gray-500">
-                                {{ user.account }}
+                                {{ user['account'] }}
                             </div>
                             <div class="col-span-2 font-medium text-gray-700">
                                 信箱
                             </div>
                             <div class="col-span-3 text-gray-500">
-                                {{ user.email }}
+                                {{ user['email'] }}
                             </div>
                             <div class="col-span-2 font-medium text-gray-700">
                                 Line ID
                             </div>
                             <div class="col-span-3 text-gray-500">
-                                {{ user.line_id }}
+                                {{ user['line_id'] }}
                             </div>
-                    </div>
-                    <!-- Button Group -->
-                    <div class="flex gap-3 justify-end">
-                        <a href="https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2006450824&redirect_uri=https://recsys.csie.fju.edu.tw/api/callback/login&state={{ line_state }}&scope=profile%20openid%20email" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
-                            綁定Line
-                        </a>
-                        <a href="/main/edit-profile" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
-                            修改資料
-                        </a>
-                        <a href="/main/logout" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
-                            登出
-                        </a>
-                    </div>
+                        </div>
+                        <!-- Button Group -->
+                        <div class="flex gap-3 justify-end">
+                            <a href="https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=2006450824&redirect_uri=https://recsys.csie.fju.edu.tw/api/callback/login&state={{ line_state }}&scope=profile%20openid%20email" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+                                綁定Line
+                            </a>
+                            <a href="/main/edit-profile" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+                                修改資料
+                            </a>
+                            <a href="/main/logout" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition transform hover:scale-105 duration-200 ease-in-out">
+                                登出
+                            </a>
+                        </div>
+                    {% endblock %}
                     <!-- View History -->
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4 text-center">文章瀏覽紀錄</h2>
                     <div>
@@ -57,10 +59,11 @@
                                             {% with 
                                                 link=history.iloc[index]['item_link'],
                                                 title=history.iloc[index]['item_title'],
-                                                abstract="",
-                                                gattered_datetime=""
+                                                category=history.iloc[index]['item_category'],
+                                                abstract=history.iloc[index]['item_abstract'],
+                                                datetime=history.iloc[index]['item_date']
                                             %}
-                                                {% include 'components/doc_block.html' %}
+                                            {% include 'components/doc_block.html' %}
                                             {% endwith %}
                                         </div>
                                     {% endif %}

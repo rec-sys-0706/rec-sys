@@ -14,6 +14,8 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import requests
+import base64
 
 def scrape_cnn_articles():
     output_folder = 'cnn_news_output'
@@ -37,7 +39,7 @@ def scrape_cnn_articles():
     with open(filename, mode='a', newline='', encoding='utf-8') as new_file, \
         open('cnn_news_original.csv', mode='a', newline='', encoding='utf-8') as original_file:
         
-        fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category']
+        fieldnames = ['uuid', 'title', 'category', 'abstract', 'link', 'data_source', 'gattered_datetime','crawler_datetime','any_category','image']
         writer_new = csv.DictWriter(new_file, fieldnames=fieldnames)
         writer_original = csv.DictWriter(original_file, fieldnames=fieldnames)
         
@@ -69,7 +71,17 @@ def scrape_cnn_articles():
                     
                     title = class_element.find_element(By.CLASS_NAME, 'container__headline-text').text
                     print(title)
-                    
+
+                    try:
+                        image_url = class_element.find_element(By.CLASS_NAME, 'image__dam-img').get_attribute('src')
+                        response = requests.get(image_url)
+                        if response.status_code == 200:
+                            base64_image = base64.b64encode(response.content).decode('utf-8')
+                        else:
+                            raise Exception(f"Failed to fetch image: {response.status_code}")
+                    except:
+                        base64_image = None
+
                     link = class_element.find_element(By.CLASS_NAME, 'container__link').get_attribute('href')
                     #print(link)
                     
@@ -129,8 +141,8 @@ def scrape_cnn_articles():
                             gattered_datetime = date_obj.strftime("%Y-%m-%d 00:00:00")
                             #print(gattered_datetime)
                             
-                            if gattered_datetime.startswith("2024"):
-                                print("資料日期為2024，停止爬取。")
+                            if gattered_datetime.startswith("2024-09-30"):
+                                print("資料日期為2024-09-30，停止爬取。")
                                 driver.quit()
                                 return filename
                             
@@ -151,7 +163,8 @@ def scrape_cnn_articles():
                             'data_source': data_source,
                             'gattered_datetime': gattered_datetime,
                             'crawler_datetime': crawler_datetime,
-                            'any_category': any_category
+                            'any_category': any_category,
+                            'image': base64_image
                         }
                         
                         writer_new.writerow(row_data)

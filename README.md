@@ -1,5 +1,5 @@
 tst
-tensorboard --logdir=runs
+tensorboard --logdir=training/checkpoints
 ```bash
 wget https://nlp.stanford.edu/data/glove.840B.300d.zip
 ```

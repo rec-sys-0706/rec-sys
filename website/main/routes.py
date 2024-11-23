@@ -1,5 +1,5 @@
 import os
-from flask import Blueprint, render_template, request, session, redirect
+from flask import Blueprint, render_template, request, session, redirect, current_app
 from .utils import register, login, click_data, get_user, update_user_data, msg, get_recommend, get_unrecommend, get_user_cliked, recommend_data_source, unrecommend_data_source, history_data_source, click_data_source, user_news
 import matplotlib.pyplot as plt
 import io
@@ -70,7 +70,6 @@ def recommend():
         data = request.get_json()
         source = data.get('source')
         session['source'] = source
-        print(source)
     except:
         print('error')
     return render_template('./main/about.html')
@@ -84,6 +83,7 @@ def index():
             try:                    
                 data = request.get_json()
                 link = data.get('link')
+                current_app.logger.info(session)
                 if session['source'] == 'all':
                     click_data(session['token'], link)
                 else:
@@ -109,6 +109,7 @@ def index():
         except:
             pass
         if 'source' in session:
+            current_app.logger.info(session)
             unrecommend_news = user_news(session['source']) 
         else:
             session['source'] = 'all'
@@ -170,6 +171,7 @@ def edit_profile():
     if 'token' in session:
         is_login = 'True'
         user = get_user(session['token'])
+        # current_app.logger.info(user)
         if session['source'] == 'all':
             history = get_user_cliked(session['token'])
         else:
@@ -180,7 +182,6 @@ def edit_profile():
             data = request.get_json()
             source = data.get('source')
             session['source'] = source
-            print(source)
         except:
             account = request.form['account']
             password = request.form['password']
@@ -192,7 +193,7 @@ def edit_profile():
                 update_user_data(session['token'], account, password, email, line_id)
             else:
                 status = 'False'
-    return render_template('./main/edit_profile.html', status = status, user_data = user, history = history, is_login = is_login)
+    return render_template('./main/edit_profile.html', status = status, user = user, history = history, is_login = is_login)
 
 @main_bp.route('/test', methods = ['GET'])
 def test():

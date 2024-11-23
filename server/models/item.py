@@ -1,6 +1,6 @@
 from config import DB, CustomDateTime
 from sqlalchemy.orm import mapped_column, relationship
-from sqlalchemy import Uuid, String, Text, Enum, DateTime, inspect
+from sqlalchemy import Uuid, String, Text, Enum, DateTime, LargeBinary, inspect
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from .behavior import Behavior
 from .recommendation_log import Recommendationlog
@@ -11,7 +11,7 @@ class Item(DB.Model):
     uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     title = mapped_column(String(500), nullable=False)
     category = mapped_column(String(100), nullable=True)
-    abstract = mapped_column(Text, nullable=False)
+    abstract = mapped_column(Text, nullable=True)
     link = mapped_column(String(255))
     data_source = mapped_column(Enum('mind_small',
                                      'hf_paper',
@@ -21,6 +21,7 @@ class Item(DB.Model):
                                      'bbc_news',
                                      'mit_news'), nullable=False)
     gattered_datetime = mapped_column(DateTime)
+    image = mapped_column(Text, nullable=True)
 
     behavior = relationship('Behavior', backref='item', uselist=True, lazy='dynamic')
     recommendationlog = relationship('Recommendationlog', backref='item', uselist=True, lazy='dynamic')

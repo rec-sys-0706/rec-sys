@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import uuid
 
@@ -33,6 +34,9 @@ def validate_dict_keys(data: dict, headers: list):
         logging.error(f"Invalid keys in the request: {extra_keys}")
         return False
     return True
+
+def format_date(date_obj):
+    return datetime.strftime(date_obj, "%b %d, %Y")
 
 def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
     recommendations = []

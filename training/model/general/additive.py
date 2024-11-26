@@ -4,6 +4,7 @@ from torch import Tensor
 import torch.nn.functional as F
 
 class AdditiveAttention(nn.Module):
+    # Query based Attention Pooling
     """
     Description:
         Second-level attention for gathering attention representation infomation.

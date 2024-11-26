@@ -7,7 +7,7 @@ class Encoder(nn.Module):
         assert d_embed % n_heads == 0, "d_embed must be divisible by n_heads"
         d_query = d_embed // n_heads # TODO There could be other ways.
         self.multi_head = MultiHeadAttention(n_heads, d_embed, d_query)
-        self.additive = AdditiveAttention(d_embed, d_query)
+        self.additive = AdditiveAttention(d_embed, d_query) # TODO BERT use Attention Pooling?
         self.d_embed = d_embed
     def forward(self, embedding, attn_mask=None, category_embed=None):
         """

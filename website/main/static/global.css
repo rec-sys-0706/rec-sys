@@ -1,0 +1,41 @@
+/* Global css, will be imported in all layout files. */
+:root {
+    --sail-50: #f0f9ff;
+    --sail-100: #e0f3fe;
+    --sail-200: #b3e5fc;
+    --sail-300: #7ed7fb;
+    --sail-400: #3ac1f6;
+    --sail-500: #10aae7;
+    --sail-600: #0488c5;
+    --sail-700: #056d9f;
+    --sail-800: #085c84;
+    --sail-900: #0d4d6d;
+    --sail-950: #093148;
+    
+    --border-nav: #d1d5db; /* border-gray-300 */
+    --base-text: #000; /* text-gray-800 or #333 */
+    --base-text-white: #fcfcfc; /* text-gray-600 */
+    /* --news-header: #00335f;
+    --news-header-hover: #00335f; */
+
+    /* header: text-gray-800 */
+    /* body: text-gray-700 */
+    /* trivial: text-gray-500 */
+}
+
+/* Universal text selection styles */
+::selection {
+    background-color: var(--sail-200); /* Highlight background color */
+    color: #000000; /* Highlight text color */
+}
+
+::-moz-selection {
+    background-color: var(--sail-200); /* Highlight background color for Firefox */
+    color: #000000; /* Highlight text color for Firefox */
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--sail-50);
+    color: var(--base-text);
+}

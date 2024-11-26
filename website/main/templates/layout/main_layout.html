@@ -15,42 +15,57 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 </head>
-<style>
-    /* TODO Particles.js 的背景顏色要改 */
-</style>
-<body>
-    <div id="particles-js"></div>
-    <nav id="navbar" class="sticky top-0 z-50 bg-[var(--sail-100)] border-b border-gray-300">
+<body class="flex flex-col min-h-screen">
+    <div id="particles-js" class="fixed inset-0 -z-10"></div>
+    <nav id="navbar" class="sticky top-0 z-50 bg-[var(--sail-100)] border-b-2 border-gray-600 shadow-lg">
         <div class="container 2xl:max-w-7xl mx-auto flex justify-between items-center">
             <div>
                 <a href="/main">
                     <img src="./static/images/logo.png" alt="logo" class="select-none w-[70px] h-[55px] ">
                 </a>
             </div>
-            <ul class="flex items-center gap-8 text-gray-800 font-semibold">
-                <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
-                    <i class="bi bi-newspaper"></i>
-                    <li><a href="/main">最新文章</a></li>
-                </div>
-                <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
-                    <i class="bi bi-people-fill"></i>
-                    <li><a href="/main/recommend">關於我們</a></li>        
-                </div>
-                {% if is_login == 'True' or session.get('token') %}
+            <ul class="flex items-center gap-8 font-semibold text-gray-800">
+                <a href="/main?is_recommend=True">
                     <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
-                        <i class="bi bi-person-fill"></i>
-                        <li><a href="/main/profile">{{ session['account'] }}</a></li>
+                        <i class="bi bi-star-fill"></i>
+                        <li>推薦文章</li>
                     </div>
+                </a>
+                <a href="/main?is_recommend=False">
+                    <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                        <i class="bi bi-newspaper"></i>
+                        <li>其他文章</li>
+                    </div>
+                </a>
+                <a href="/main/about">
+                    <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                        <i class="bi bi-people-fill"></i>
+                        <li>關於我們</li>
+                    </div>
+                </a>
+                {% if session.get('token', None) %}
+                    <a href="/main/profile">
+                        <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                            <i class="bi bi-person-fill"></i>
+                            <li>{{ session['account'] }}</li>
+                        </div>
+                    </a>
                 {% else %}
-                    <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
-                        <i class="bi bi-person-fill"></i>
-                        <li><a href="/main/login">登入</a></li>
-                    </div>
+                    <a href="/main/login">
+                        <div class="flex items-center gap-2 nav-anime hover:text-gray-600">
+                            <i class="bi bi-person-fill"></i>
+                            <li>登入</li>
+                        </div>
+                    </a>
                 {% endif %}
                 <a href="#" id="popup-link">
-                <div class="flex items-center gap-2 border border-gray-800 hover:border-gray-600 px-2 py-1 rounded-sm hover:text-gray-600">
+                    <div class="bg-[var(--sail-500)] text-[var(--base-text-white)] flex items-center gap-2 border border-gray-800 hover:border-gray-600 px-2 py-1 rounded-lg
+                        shadow-md 
+                        transition transform duration-300 ease-in-out
+                        hover:scale-105 hover:bg-[var(--sail-600)]
+                        hover:ring-4 hover:ring-[var(--sail-200)] hover:text-[var(--base-text-white)]
+                    ">
                         <li>
-        
                             {% if session['source'] == 'all' %}
                                 資料來源：全部
                             {% elif session['source'] == 'papers' %}
@@ -65,8 +80,11 @@
             </ul>
         </div>
     </nav>
-    {% block content %}
-    {% endblock %}
+    <main class="flex-grow">
+        {% block content %}
+        {% endblock %}
+    </main>
+
     <footer class="bg-[var(--sail-100)] p-[30px] text-gray-800">
         <div class="container mx-auto">
             <div class="flex items-center justify-center">
@@ -144,28 +162,6 @@
                 }
             });
         });
-    </script>
-    <script>
-        // 讓 navber 滑動時有陰影效果
-        // GPT寫的不要問我
-        const navbar = document.getElementById('navbar');
-        let navbarOffset = navbar.offsetTop; // Initial offset
-
-        // Function to update the navbar offset
-        function updateNavbarOffset() {
-            navbarOffset = navbar.offsetTop;
-        }
-        // JavaScript to add shadow when navbar is sticky
-        window.addEventListener('scroll', function() {
-          const navbar = document.getElementById('navbar');
-          if (window.scrollY > navbarOffset) {
-            navbar.classList.add('shadow-lg'); // Add shadow when scrolling past 0
-          } else {
-            navbar.classList.remove('shadow-lg'); // Remove shadow when at the top
-          }
-        });
-        // Event listener for resize to update navbarOffset
-        window.addEventListener('resize', updateNavbarOffset);
     </script>
     <script src="{{ url_for('main.static', filename='particles.js') }}"></script>
 </body>

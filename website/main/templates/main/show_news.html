@@ -1,0 +1,67 @@
+{% extends "./layout/main_layout.html" %}
+{% block content %}
+    {% if not session.get('token', None) and is_recommend == 'True' %}
+        <div class="container 2xl:max-w-7xl my-6 mx-auto border-2 border-gray-600 rounded-lg backdrop-blur-sm p-4 min-h-[50vh] flex items-center justify-center">
+            <p>請先<a href="/main/login" class="font-bold no-underline text-[#00335f] hover:text-[#00335f] hover:no-underline">登入</a>，讓我們為您推薦文章</p>
+        </div>
+    {% else %}
+        <div class="container 2xl:max-w-7xl my-6 mx-auto border-2 border-gray-600 rounded-lg backdrop-blur-sm">
+            <!-- Pagination Component -->
+            <div class="">
+                {% include 'components/pagination.html' %}
+            </div>
+            {% if news|length == 0 %}
+                <div class="flex justify-center items-center p-4 min-h-[50vh]">
+                    <p>沒有{{ '推薦' if is_recommend == 'True' else '其他' }}文章，稍後再來看看吧！</p>
+                </div>
+            {% else %}
+                {% from 'components/doc_block_image.html' import render_block %}
+                <div class="grid grid-cols-3 p-4">
+                    {% for i in range(3) %}
+                        <div>
+                            {% for j in range(i, news|length, 3) %}
+                                <div class="p-4">
+                                    {% with 
+                                        link=news[j]['link']|e,
+                                        title=news[j]['title'],
+                                        category=news[j]['category'],
+                                        abstract=news[j]['abstract'],
+                                        datetime=news[j]['gattered_datetime'],
+                                        image=news[j]['image']
+                                    %}
+                                        {{ render_block(link, title, abstract, category, datetime, image) }}
+                                    {% endwith %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+    <script>
+        // TODO 這我不懂
+        function sendValueAndRedirect(element) {
+            var link = element.getAttribute('data-link');
+        
+            // 立即打開新鏈接，不等待 fetch 完成
+            window.open(link, '_blank');
+        
+            // 後台發送數據到伺服器，無需等待回應
+            fetch('/main', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    link: link
+                })
+            }).catch(error => {
+                console.error('Error sending data:', error);
+            });
+        
+            // 阻止默認行為，防止瀏覽器重定向
+            return false;
+        }
+    </script>
+{% endblock %}

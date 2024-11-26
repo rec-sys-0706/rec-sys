@@ -1,3 +1,4 @@
+import time
 import requests
 import pandas as pd
 from datetime import datetime
@@ -26,8 +27,8 @@ check_env_vars()
 
 
 
-def format_date(date_str):
-    return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %Z").strftime("%b %d, %Y")
+def time_since(start):
+    return f'{round(time.time() - start, 2)}s'
 
 #註冊
 def register(email, account, password):
@@ -86,111 +87,80 @@ def msg(text):
     return message
 
 def get_user(access_token):
+    # TODO What if access token is empty or invalid?
     texts = access_decode(access_token)
     decoded_text = texts.decode('utf-8')
     json_data = json.loads(decoded_text)
     data = json_data['data']
     return data
 
-def get_recommend(access_token):
-    user = get_user(access_token)
-    id = user['uuid']
-    response = requests.get(f"{SERVER_URL}/api/user_history/recommend/{id}")
+# ---- get_document ---- #
+def get_document(data_source, date):
+    if data_source == 'all':
+        data_source = ''
+    print(f'Request data start.')
+    start = time.time()
+    response = requests.get(f'{SERVER_URL}/api/item/today?data_source={data_source}&date={date}')
+    print(f'Request data end. Time taken: {time_since(start)}')
     data = response.json()
-    items = []
-    try:
-        for entry in data:
-            item_data = entry['item']
-            item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
-            items.append(item_data)
-        item = pd.DataFrame(items)
-        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
-    except:
-        item = ''
-    return item
+    return data
 
-def get_unrecommend(access_token):
-    user = get_user(access_token)
-    id = user['uuid']
-    response = requests.get(f"{SERVER_URL}/api/user_history/unrecommend/{id}")
-    data = response.json()
-    items = []
-    try:
-        for entry in data:
-            item_data = entry['item']
-            item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
-            items.append(item_data)
-        item = pd.DataFrame(items)
-        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
-    except:
-        item = user_news('all')
-    return item
+def get_document_for_user(access_token, data_source, is_recommend, date):
+    user = get_user(access_token) # TODO 只存 uuid
+    is_recommend = str(is_recommend).lower()
+    response = requests.get(f"{SERVER_URL}/api/user_history/recommend/{user['uuid']}?data_source={data_source}&is_recommend={is_recommend}&date={date}")
+    if response.status_code == 200:
+        data = response.json()
+        return data
+    else:
+        print(f'Error: {response.status_code}')
+        return []
 
-def recommend_data_source(access_token, data_source):
-    user = get_user(access_token)
-    id = user['uuid']
-    response = requests.get(f"{SERVER_URL}/api/user_history/recommend/{id}?data_source={data_source}")
-    data = response.json()
-    items = []
-    try:
-        for entry in data:
-            item_data = entry['item']
-            item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
-            items.append(item_data)
-        item = pd.DataFrame(items)
-        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
-    except:
-        item = ''
-    return item
-
-def unrecommend_data_source(access_token, data_source):
-    user = get_user(access_token)
-    id = user['uuid']
-    response = requests.get(f"{SERVER_URL}/api/user_history/unrecommend/{id}?data_source={data_source}")
-    data = response.json()
-    items = []
-    try:
-        for entry in data:
-            item_data = entry['item']
-            item_data['recommendation_log_uuid'] = entry['recommendation_log_uuid']
-            items.append(item_data)
-        item = pd.DataFrame(items)
-        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
-    except:
-        item = user_news(data_source)
-    return item
-
-def history_data_source(access_token, data_source):
+def get_history(access_token, data_source):
     user = get_user(access_token)
     id = user['uuid']
     headers = {
         "Authorization" : f'Bearer {access_token}'
     }
     response = requests.get(f"{SERVER_URL}/api/user_history/{id}?data_source={data_source}", headers=headers)
-    try:
+    if response.status_code == 200:
         data = response.json()
-        item = pd.json_normalize(data['history'])
-        item['clicked_time'] = item['clicked_time'].apply(format_date)
-        item['item_date'] = item['item_date'].apply(format_date)
-    except:
-        item = ''
-    return item
+        return data['history']
+    else:
+        print(f'Error: {response.status_code}')
+        return []
 
-def get_user_cliked(access_token):
-    user = get_user(access_token)
-    id = user['uuid']
-    headers = {
-        "Authorization" : f'Bearer {access_token}'
-    }
-    response = requests.get(f"{SERVER_URL}/api/user_history/{id}", headers=headers)
-    try:
-        data = response.json()
-        item = pd.json_normalize(data['history'])
-        item['clicked_time'] = item['clicked_time'].apply(format_date)
-        item['item_date'] = item['item_date'].apply(format_date)
-    except:
-        item = ''
-    return item
+# def history_data_source(access_token, data_source):
+#     user = get_user(access_token)
+#     id = user['uuid']
+#     headers = {
+#         "Authorization" : f'Bearer {access_token}'
+#     }
+#     response = requests.get(f"{SERVER_URL}/api/user_history/{id}?data_source={data_source}", headers=headers)
+#     try:
+#         data = response.json()
+#         item = pd.json_normalize(data['history'])
+#         # item['clicked_time'] = item['clicked_time'].apply(format_date)
+#         # item['item_date'] = item['item_date'].apply(format_date)
+#     except:
+#         item = ''
+#     return item
+
+# def get_user_cliked(access_token):
+#     user = get_user(access_token)
+#     id = user['uuid']
+#     headers = {
+#         "Authorization" : f'Bearer {access_token}'
+#     }
+#     response = requests.get(f"{SERVER_URL}/api/user_history/{id}", headers=headers)
+#     try:
+#         data = response.json()
+#         item = pd.json_normalize(data['history'])
+#         # item['clicked_time'] = item['clicked_time'].apply(format_date)
+#         # item['item_date'] = item['item_date'].apply(format_date)
+#     except:
+#         item = ''
+#     return item
 
 #獲取新聞
 '''
@@ -202,16 +172,6 @@ def item_data():
     item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
     return item
 '''
-
-def user_news(data_source):
-    if data_source == 'all':
-        data_source = ''
-    response = requests.get(f'{SERVER_URL}/api/item/today?data_source={data_source}')
-    data = response.json()
-    item = pd.DataFrame(data)
-    if len(item):
-        item['gattered_datetime'] = item['gattered_datetime'].apply(format_date)
-    return item
 
 def get_formatted_datetime():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')

@@ -1,6 +1,6 @@
 <!-- link, title, abstract, gattered_datetime -->
  <!-- News Block -->
- {% macro render_block(link, title, abstract, category, datetime) %}
+ {% macro render_block(link, title, abstract, category, datetime, image) %}
     {% set category_mapping = {
         "area-world": "#1E90FF40",
         "astrology": "#FF69B440",
@@ -30,12 +30,15 @@
         "workplace": "#556B2F40"
     } %}
     <a href="{{ link }}" 
-        data-link="{{ link }}" 
-        onclick="sendValueAndRedirect(this); event.preventDefault();" 
-        target="_blank"
-        class="transition-colors duration-300">
-        <div class="w-full border border-gray-300 p-4 rounded-lg shadow-md bg-[#fcfcfc] hover:transform hover:-translate-y-1 hover:shadow-lg transition-transform duration-300 relative">
-            <div>
+       data-link="{{ link }}" 
+       onclick="sendValueAndRedirect(this); event.preventDefault();" 
+       target="_blank"
+       class="transition-colors duration-300">
+        <div class="shadow-md hover:transform hover:-translate-y-1 hover:shadow-lg transition-transform duration-300 relative bg-[var(--base-text-white)]">
+            <div class="">
+                <img src="data:image/png;base64,{{ image }}" alt="image">
+            </div>
+            <div class="p-4">
                 <h3 class="text-left text-base font-bold text-gray-600 mb-2">
                     {{ title }}
                 </h3>

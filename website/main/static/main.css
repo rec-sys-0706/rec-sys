@@ -1,0 +1,312 @@
+/* This will only be imported in main_layout.html */
+/* Navbar Animation */
+.nav-anime {
+    text-decoration: none;
+    font-size: 17px;
+    padding: 10px;
+    position: relative;
+}
+
+.nav-anime::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    background: #000;
+    left: 0;
+    bottom: 0;
+    transition: width 0.3s;
+}
+
+.nav-anime:hover::after {
+    width: 100%;
+}
+
+/* Pagination */
+.ring-bottom-hover:hover {
+    box-shadow: 0 2px 0 0 var(--sail-500); /* Example using Tailwind's blue-500 color */
+}
+/* Others */
+.my-swal {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.custom-label {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 0;
+    margin: 15px 0;
+    cursor: pointer;
+    font-size: 18px;
+    user-select: none;
+    color: #333;
+    transition: color 0.3s;
+    width: 90px;
+}
+.custom-label:hover {
+    color: #2196F3;
+}
+.custom-label .checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 25px;
+    width: 25px;
+    background-color: #eee;
+    border-radius: 50%;
+    transition: background-color 0.3s;
+    margin-right: 10px;
+}
+.custom-label input:checked ~ .checkmark {
+    background-color: #2196F3;
+}
+.custom-label .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+.custom-label input:checked ~ .checkmark:after {
+    display: block;
+}
+.custom-label .checkmark:after {
+    top: 9px;
+    left: 9px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: white;
+    transition: background 0.3s;
+}
+
+.home-container {
+    display: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px;
+}
+
+#login, #signup, #revise {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Align items to the top */
+    height: auto; /* Allow the container to adjust its height based on content */
+    padding-top: 20px; /* Add padding to push the content down from the top */
+    margin-top: 20px; /* Adjust margin-top as needed */
+}
+
+#login .header, #signup .header {
+    margin-bottom: 10px; /* Space between the header and the form */
+}
+
+#login form, #signup form, #revise form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+    border: 1px solid #ddd;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: #f9f9f9;
+}
+
+#login form label, #signup form label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    width: 100%;
+}
+
+#login form input, #signup form input, #revise form input {
+    margin-bottom: 15px;
+    padding: 10px;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: left; /* Align placeholder text to the left */
+    box-sizing: border-box; /* Ensure padding and border are included in the width */
+}
+
+#login form input::placeholder, #signup form input::placeholder, #revise form input::placeholder {
+    color: #999;
+    text-align: left; /* Ensure placeholder text is aligned to the left */
+}
+
+#login form button, #signup form button, #revise form button {
+    padding: 10px 20px;
+    background-color: #8cc9ff; /* Button color */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    font-size: 16px;
+    max-width: 150px;
+}
+
+#login form button:hover, #signup form button:hover, #revise form button:hover {
+    background-color: #6ab0e1; /* Darker shade for hover effect */
+}
+
+/* .news-block {
+    width: 45%;
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.news-block h3 {
+    margin-top: 0;
+} */
+
+#contact {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+}
+
+.profile-info {
+    width: 25%;
+    border: 1px solid #ddd;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-right: 20px;
+}
+
+.history-list {
+    width: 40%;
+    padding: 20px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#chart-container {
+    width: 30%;
+    padding: 20px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#profile.home-container{
+    display: flex;
+    flex-direction: row;
+}
+
+.first-col {
+    display: flex;
+    flex-direction: column;
+}
+
+caption {
+    text-align: center;
+    padding-bottom: 10px;
+    font-size: 180%;
+    font-family: "Times New Roman";
+    font-weight: bold;
+}
+
+table{
+    border-collapse: collapse;
+    border: 2px solid rgb(140 140 140);
+    font-family: sans-serif;
+    letter-spacing: 1px;
+}
+
+th, td{
+    border:  1px solid rgb(160 160 160);
+    padding: 8px 10px;
+}
+
+th{
+    background-color: #66CDAA;
+}
+
+.buttons {
+    position: relative;
+    margin-top: 20px;
+    text-align: right;
+}
+
+.btn,
+.btn:focus {
+    justify-content: center;
+    margin: 10px;
+    min-width: 104px;
+    min-height:37px;
+    border: none;
+    border-radius: 2px;
+    background-position: center;
+    background-color: #8FBC8F;
+    color: #FFFFFF;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 0.8s;
+    padding: 10px 20px;
+    box-shadow: 0 0 4px #999;
+}
+
+.btn:hover {
+    color: #FFFFFF;
+    background: #47a7f5 radial-gradient(circle, transparent 1%, #47a7f5 1%) center/15000%;
+}
+
+.btn:active {
+    background-color: #6eb9f7;
+    background-size: 100%;
+    transition: background 0s;
+}
+
+figcaption {
+    padding: 3px;
+    text-align: center;
+    font-size: 200%;
+    margin-top: 10%;
+    font-weight: bold;
+}
+
+.place {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+input:disabled {
+    background-color: #ffffff;  /* 自定義禁用狀態下的背景顏色 */
+    color: #333;  /* 自定義禁用狀態下的文字顏色 */
+}
+
+.btn1,
+.btn1:focus {
+    margin: 10px;
+    min-width: 104px;
+    min-height:37.33px;
+    border: none;
+    border-radius: 2px;
+    background-position: center;
+    background-color: #8FBC8F;
+    color: #FFFFFF;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: background 0.8s;
+    box-shadow: 0 0 4px #999;
+}
+
+.btn1:hover {
+    color: #FFFFFF;
+    background: #47a7f5 radial-gradient(circle, transparent 1%, #47a7f5 1%) center/15000%;
+}
+
+.btn1:active {
+    background-color: #6eb9f7;
+    background-size: 100%;
+    transition: background 0s;
+}

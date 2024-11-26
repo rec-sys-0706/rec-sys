@@ -1,0 +1,54 @@
+.news-column {
+    width: 48%;
+}
+.news-row {
+    margin-bottom: 20px;
+}
+.news-block {
+    width: 100%;
+    border: 1px solid #ddd;
+    padding: 15px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+}
+.news-block:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+.news-content h3 {
+    margin: 0 0 10px;
+    font-weight: 700;
+    text-align: left;
+}
+.news-content a {
+    text-decoration: none;
+    color: #007BFF;
+    transition: color 0.3s;
+}
+.news-content a:hover {
+    color: #0056b3;
+}
+.news-content a:visited {
+    color: #007BFF; /* 保持與未訪問時相同的顏色 */
+}
+.news-content p {
+    margin: 0 0 5px;
+    color: #555;
+    text-align: left;
+}
+.news-date {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    color: #999;
+    font-size: 0.9em;
+}
+.no-news {
+    text-align: center;
+    color: #999;
+    font-size: 1.2em;
+}

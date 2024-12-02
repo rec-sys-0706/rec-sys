@@ -57,14 +57,14 @@ class CustomTokenizer:
         self.categorizer_file = Path(args.train_dir) / 'categorizer.json' if categorizer_file is None else Path(categorizer_file)
         
         # categorizer
-        if not self.categorizer_file.exists():
+        if not self.categorizer_file.exists() or args.regenerate_dataset:
             self.__categorizer = self.__build_categorizer()
         else:
             self.__categorizer = self.__load_categorizer()
 
         # tokenizer
         if args.model_name == 'NRMS' or args.model_name == 'NRMS-Glove':
-            if not self.tokenizer_file.exists():
+            if not self.tokenizer_file.exists() or args.regenerate_dataset:
                 logging.info("Tokenizer file not detected.")
                 logging.info("Start building tokenizer and saving to `train_dir`.")
                 self.__tokenizer = self.__build_tokenizer()
@@ -311,7 +311,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     # Show the plot
     ax.set_xlabel('t-SNE X')
     ax.set_ylabel('t-SNE Y')
-    ax.set_title('t-SNE Visualization of News Vecotr')
+    ax.set_title('t-SNE Visualization of News Vector')
     return fig
     # 1. 去除小樣本
     # 2. id排序

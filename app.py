@@ -3,7 +3,7 @@ import logging
 import uuid
 from apiflask import APIFlask
 from config import Config, DB
-from server.bot import linebot_bp
+#from server.bot import linebot_bp
 from flask_jwt_extended import JWTManager
 
 from server.views.user_views import user_blueprint
@@ -27,7 +27,7 @@ def create_app(website_only=True):
         jwt = JWTManager(app)
 
         # TODO history
-        app.register_blueprint(linebot_bp, url_prefix='/api/callback')
+        #app.register_blueprint(linebot_bp, url_prefix='/api/callback')
 
         app.register_blueprint(user_blueprint, url_prefix='/api/user')
         app.register_blueprint(item_blueprint, url_prefix='/api/item')

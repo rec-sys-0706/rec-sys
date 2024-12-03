@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, request, session, redirect, curren
 from .utils import register, login, get_user, update_user_data, msg
 from .utils import get_history
 from .utils import get_document, get_document_for_user
+from .utils import click
 import matplotlib.pyplot as plt
 import io
 from PIL import Image
@@ -36,7 +37,6 @@ def login_user():
         else:
             session['token'] = msg
             session['account'] = account
-            session['page'] = 'index'
             return redirect('/main')
     return render_template('./auth/login.html', status = status)
 
@@ -67,10 +67,19 @@ def signup():
             status = 'False' 
     return render_template('./auth/signup.html', status = status)
 
+@main_bp.route('/source', methods = ['GET','POST'])
+def source():
+    try:
+        data = request.get_json()
+        source = data.get('source')
+        session['source'] = source
+    except:
+        print('error')
+    return redirect('/main')
+
 
 @main_bp.route('/about', methods = ['GET','POST'])
 def about():
-    session['page'] = 'about'
     try:
         data = request.get_json()
         source = data.get('source')
@@ -79,7 +88,7 @@ def about():
         print('error')
     return render_template('./main/about.html')
 
-@main_bp.route('/', methods = ['GET'])
+@main_bp.route('/', methods = ['GET','POST'])
 def index():
     # initialize session
     if session.get('source', None) is None:
@@ -104,10 +113,13 @@ def index():
     news = []
     if session.get('token', None) is not None:
         news = get_document_for_user(session['token'], source, is_recommend, date)
+        try:
+            item_id = request.json.get('item_id')
+            click(session['token'], item_id)
+        except:
+            print('error')
     elif is_recommend == 'False':
         news = get_document(source, date)
-
-
     session_str = '\n'.join([f'{k}: {v}' for k, v in session.items()])
 
     logging.info((
@@ -119,56 +131,13 @@ def index():
     ))
     return render_template('./main/show_news.html', news=news, is_recommend=is_recommend, date=date, prev_date=prev_date, next_date=next_date)
 
-
-
-# @main_bp.route('/click', methods = ['POST'])
-# def click():
-#     if 'token' in session and session['token'] != '':
-#         if request.method == 'POST':
-#             try:                    
-#                 data = request.get_json()
-#                 link = data.get('link')
-#                 current_app.logger.info(session)
-#                 print(data)
-#                 if session['source'] == 'all':
-#                     click_data(session['token'], link)
-#                 else:
-#                     click_data_source(session['token'], link, session['source'])
-#             except:
-#                 data = request.get_json()
-#                 source = data.get('source')
-#                 session['source'] = source
-
 @main_bp.route('/logout')
 def logout():
-    session['token'] = ''
-    session['account'] = ''
+    session['token'] = None
     return redirect(f'/main')
-
-# TODO
-# @main_bp.route('/all_dates')
-# def all_dates():
-#     if 'token' in session:
-#         all_news = item_data()
-#         news_dates = all_news.sort_values('gattered_datetime').drop_duplicates(subset=['gattered_datetime'])
-#         return render_template('./recommend/all_dates.html', news_date = news_dates)        
-#     else:
-#         return redirect(f'{BASE_URL}:8080/main')
-
-# @main_bp.route('/all_news')
-# def allnews():
-#     if 'token' in session:
-#         all_news = item_data()
-#         date = request.args.get('gattered_datetime')
-#         date_news = all_news.loc[all_news['gattered_datetime'] == date]
-#         return render_template('./recommend/all_news.html', all_news = date_news)        
-#     else:
-#         return redirect(f'{BASE_URL}:8080/main')
-
 
 @main_bp.route('/profile', methods = ['GET','POST'])
 def profile():
-    session['page'] = 'profile'
 
     user = None
     history = None
@@ -176,6 +145,7 @@ def profile():
 
     if session.get('token', None) is not None:
         user = get_user(session['token'])
+        session['id'] = user['uuid']
         history = get_history(session['token'], session['source'])
         line_state = os.urandom(16).hex()
 
@@ -188,16 +158,11 @@ def profile():
 
 @main_bp.route('/edit-profile', methods = ['GET','POST'])
 def edit_profile():
-    session['page'] = 'edit'
     is_login = 'False'
-    if 'token' in session:
+    if session.get('token', None) is not None:
         is_login = 'True'
         user = get_user(session['token'])
-        # current_app.logger.info(user)
-        if session['source'] == 'all':
-            history = get_user_cliked(session['token'])
-        else:
-            history = history_data_source(session['token'], session['source'])
+        history = get_history(session['token'], session['source'])
     status = 'T'
     if request.method == 'POST':
         try:

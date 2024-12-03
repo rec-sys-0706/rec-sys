@@ -27,9 +27,10 @@
                                         category=news[j]['category'],
                                         abstract=news[j]['abstract'],
                                         datetime=news[j]['gattered_datetime'],
-                                        image=news[j]['image']
+                                        image=news[j]['image'],
+                                        item_id = news[j]['item_id']
                                     %}
-                                        {{ render_block(link, title, abstract, category, datetime, image) }}
+                                        {{ render_block(item_id, link, title, abstract, category, datetime, image) }}
                                     {% endwith %}
                                 </div>
                             {% endfor %}
@@ -39,29 +40,4 @@
             {% endif %}
         </div>
     {% endif %}
-    <script>
-        // TODO 這我不懂
-        function sendValueAndRedirect(element) {
-            var link = element.getAttribute('data-link');
-        
-            // 立即打開新鏈接，不等待 fetch 完成
-            window.open(link, '_blank');
-        
-            // 後台發送數據到伺服器，無需等待回應
-            fetch('/main', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    link: link
-                })
-            }).catch(error => {
-                console.error('Error sending data:', error);
-            });
-        
-            // 阻止默認行為，防止瀏覽器重定向
-            return false;
-        }
-    </script>
 {% endblock %}

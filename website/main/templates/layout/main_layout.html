@@ -141,9 +141,8 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const page = "{{ session['page'] }}";
                     
-                    fetch(`/main/${page}`, {
+                    fetch(`/main/source`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

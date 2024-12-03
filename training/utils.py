@@ -221,7 +221,13 @@ def reclassify_category(row):
             return 'astrology' # 占星
     return None  # Return None if no match is found
 
-def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42, perplexity: int=30, learning_rate='auto', max_iter=1000):
+def draw_tsne(df: pd.DataFrame,
+              tokenizer: CustomTokenizer,
+              title: str='t-SNE Visualization of News Vector',
+              random_state: int=42,
+              perplexity: int=30,
+              learning_rate='auto',
+              max_iter=1000):
     distinct_colors = [
         '#d62728',
         '#ff7f0e',
@@ -311,7 +317,7 @@ def draw_tsne(df: pd.DataFrame, tokenizer: CustomTokenizer, random_state: int=42
     # Show the plot
     ax.set_xlabel('t-SNE X')
     ax.set_ylabel('t-SNE Y')
-    ax.set_title('t-SNE Visualization of News Vector')
+    ax.set_title(title)
     return fig
     # 1. 去除小樣本
     # 2. id排序
@@ -467,3 +473,23 @@ def traverse_object(obj):
         return f"tensor{tuple(obj.size())}"
     else:
         return obj  # int, str...
+
+
+# TODO custom lr_scheduler
+from torch.optim.lr_scheduler import LambdaLR
+def get_scheduler(optimizer, num_training_steps, warmup_ratio=0.1, constant_lr=1e-4):
+    warmup_steps = int(warmup_ratio * num_training_steps)
+    break_point = int(0.333 * num_training_steps)  # 比如設置為總步數的1/3作為分界點
+    def lr_lambda(current_step):
+        if current_step < warmup_steps:
+            # Warmup phase
+            return float(current_step) / float(max(1, warmup_steps))
+        elif current_step < break_point:
+            # Linear decay phase
+            progress = (current_step - warmup_steps) / float(max(1, break_point - warmup_steps))
+            return max(progress, constant_lr)
+        else:
+            # Constant learning rate phase
+            return constant_lr
+
+    return LambdaLR(optimizer, lr_lambda)

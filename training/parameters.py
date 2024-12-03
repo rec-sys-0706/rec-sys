@@ -34,8 +34,7 @@ class Arguments:
     train_batch_size: int
     eval_batch_size: int
     drop_insufficient: bool
-    metric_for_best_model: Literal['loss', 'auc', 'acc']
-    greater_is_better: bool
+    metric_for_best_model: Literal['loss', 'auc', 'acc', 'recall']
     # System
     mode: Literal['train', 'valid']
     seed: int
@@ -48,6 +47,7 @@ class Arguments:
     generate_tsne: bool
     continue_training: bool
     device: Any = None
+    greater_is_better: bool | None = None
     def __post_init__(self):
         self.drop_insufficient = True
         self.cpu = False # utils.parse_argv
@@ -59,7 +59,20 @@ class Arguments:
             self.embedding_dim = 768
         if not self.embedding_dim % self.num_heads == 0:
             raise ValueError(f'embedding_dim ({self.embedding_dim}) must be divisible by num_heads ({self.num_heads})')
+        
+        # Set default values for some arguments
+        if self.model_name != 'NRMS-Glove':
+            self.glove_embedding_path = None
+        if self.model_name == 'NRMS-BERT':
+            self.pretrained_model_name = None
+        if self.early_stop is False:
+            self.patience = None
+        if self.metric_for_best_model == 'loss':
+            self.greater_is_better = False
+        else:
+            self.greater_is_better = True
 
+        
 def parse_args() -> Arguments:
     parser = argparse.ArgumentParser()
     # System
@@ -77,7 +90,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--train-dir', type=str, default='training/data/train')
     parser.add_argument('--val-dir', type=str, default='training/data/valid')
     parser.add_argument('--ckpt-dir', type=str, default=None, help='Specify a name for checkpoint directory, it will get last checkpoint.')
-    parser.add_argument('--glove-embedding-path', type=str, default='data\glove.840B.300d\glove.840B.300d.txt')
+    parser.add_argument('--glove-embedding-path', type=str, default='training/data/glove.840B.300d/glove.840B.300d.txt')
     # Model
     parser.add_argument('--max-vocab-size', type=int, default=30000, help="The maximum number of unique tokens")
     parser.add_argument('--min-frequency', type=int, default=2, help="Term frequency threshold")
@@ -85,7 +98,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--num-tokens-title', type=int, default=24, help="The number of tokens in title (aka. context_length)")
     parser.add_argument('--num-tokens-abstract', type=int, default=50, help="The number of tokens in abstract")
     parser.add_argument('--max-clicked-news', type=int, default=64, help="The maximum number of clicked news sampled for each user")
-    parser.add_argument('--embedding-dim', type=int, default=300, help="If using `NRMS-BERT`, then the embedding_dim will be 768")
+    parser.add_argument('--embedding-dim', type=int, default=300, help="The default embedding_dim is 300. If using `NRMS-BERT`, then the default embedding_dim will be 768.")
     parser.add_argument('--num-heads', type=int, default=6, help="The number of attention heads")
     parser.add_argument('--dropout-rate', type=float, default=0.2)
     parser.add_argument('--max-dataset-size', type=int, default=1000000, help="The upper limit of the dataset size.")
@@ -101,8 +114,7 @@ def parse_args() -> Arguments:
     parser.add_argument('--train-batch-size', type=int, default=64)
     parser.add_argument('--eval-batch-size', type=int, default=512)
     parser.add_argument('--drop-insufficient', action='store_true', help="Drop row which is insufficient in clicked_news, clicked_candidate")
-    parser.add_argument('--metric-for-best-model', type=str, default='loss', help="Which metric should be monitored while early stopping")
-    parser.add_argument('--greater-is-better', type=bool, default=False, help="Whether metric greater is better")
+    parser.add_argument('--metric-for-best-model', type=str, default='recall', help="Which metric should be monitored while early stopping")
 
     parsed_args = parser.parse_args()
     args_dict = vars(parsed_args)

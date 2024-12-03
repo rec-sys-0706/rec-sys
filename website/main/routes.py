@@ -90,25 +90,26 @@ def about():
 
 @main_bp.route('/', methods = ['GET','POST'])
 def index():
+    today = datetime(2024, 11, 23)
     # initialize session
     if session.get('source', None) is None:
         session['source'] = 'news'
     
-    # Session
-    source = session.get('source', 'news')
     # Query
     is_recommend = request.args.get('is_recommend', session.get('is_recommend', 'False'))
-    date = request.args.get('date', session.get('date', datetime.today().strftime('%Y-%m-%d')))
+    date = request.args.get('date', session.get('date', today.strftime('%Y-%m-%d')))
+    source = request.args.get('source', session.get('source', 'news'))
     # Update session
     session['is_recommend'] = is_recommend
     session['date'] = date
+    session['source'] = source
     # Process date
     _date = datetime.strptime(date, '%Y-%m-%d')
     _prev_date = _date - timedelta(days=1)
     _next_date = _date + timedelta(days=1)
 
     prev_date = _prev_date.strftime('%Y-%m-%d') if _prev_date > datetime(2023, 12, 31) else None
-    next_date = _next_date.strftime('%Y-%m-%d') if _next_date < datetime.today() else None
+    next_date = _next_date.strftime('%Y-%m-%d') if _next_date < today else None
 
     news = []
     if session.get('token', None) is not None:

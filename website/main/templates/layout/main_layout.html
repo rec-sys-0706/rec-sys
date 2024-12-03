@@ -141,23 +141,7 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    
-                    fetch(`/main/source`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            source: result.value
-                        })
-                    }).then(data => {
-                        console.log('Data sent successfully:', data);
-                        window.location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Error sending data:', error);
-                    });
-
+                    window.location.href = `/main?source=${result.value}`;
                 }
             });
         });

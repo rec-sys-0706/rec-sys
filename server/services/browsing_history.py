@@ -8,7 +8,7 @@ from config import DB
 from server.models.behavior import Behavior
 from server.models.recommendation_log import Recommendationlog
 from server.models.item import Item
-from server.utils import format_date
+from server.utils import format_date, get_or_cache_item_image
 
 user_history_bp = APIBlueprint('user_history_bp', __name__)
 
@@ -138,6 +138,7 @@ def get_recommend_items(user_uuid):
         # 構建結果列表，移除 recommend_score，並格式化 gattered_datetime
         result = [
             {
+                "item_id": item.uuid,
                 "title": item.title,
                 "category": item.category,
                 "abstract": item.abstract,
@@ -145,6 +146,7 @@ def get_recommend_items(user_uuid):
                 "link": item.link,
                 "data_source": item.data_source,
                 "image": item.image
+                # "image_blob": f"/api/item/image_blob/{item.uuid}"  # 返回圖片的 Blob URL
             }
             for log, item in recommendation_logs
         ]

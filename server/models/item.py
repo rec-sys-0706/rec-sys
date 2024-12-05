@@ -11,7 +11,7 @@ class Item(DB.Model):
     uuid = mapped_column(Uuid(as_uuid=True), primary_key=True)
     title = mapped_column(String(500), nullable=False)
     category = mapped_column(String(100), nullable=True)
-    abstract = mapped_column(Text, nullable=True)
+    abstract = mapped_column(Text, nullable=False)
     link = mapped_column(String(255))
     data_source = mapped_column(Enum('mind_small',
                                      'hf_paper',

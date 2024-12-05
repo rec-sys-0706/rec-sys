@@ -5,6 +5,7 @@ from apiflask import APIFlask
 from config import Config, DB
 from server.bot import linebot_bp
 from flask_jwt_extended import JWTManager
+from flask_compress import Compress 
 
 from server.views.user_views import user_blueprint
 from server.views.item_views import item_blueprint
@@ -23,6 +24,9 @@ def create_app(website_only=True):
     if not website_only:
         # Server settings
         DB.init_app(app)
+
+        # 初始化 Flask-Compress
+        Compress(app)
         
         jwt = JWTManager(app)
 

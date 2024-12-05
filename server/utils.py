@@ -1,6 +1,11 @@
 from datetime import datetime
+from flask_caching import Cache
+import base64
 import logging
 import uuid
+
+# 初始化緩存（Redis）
+cache = Cache(config={'CACHE_TYPE': 'RedisCache', 'CACHE_REDIS_URL': 'redis://localhost:6379/0'})
 
 def dict_has_exact_keys(dictionary: dict, required_keys: list):
     dict_keys = set(dictionary.keys())
@@ -55,3 +60,23 @@ def generate_random_scores(items: list[dict], users: list[dict]) -> list[dict]:
             })
     
     return recommendations
+
+
+# 通用緩存函數
+def get_or_cache_item_image(item_uuid, base64_image):
+    """
+    檢查緩存中是否存在 item.image，如果不存在則進行緩存。
+    :param item_uuid: Item 的唯一 UUID
+    :param base64_image: 圖片的 Base64 編碼
+    :return: 圖片的 Base64 編碼
+    """
+    cache_key = f"item_image:{item_uuid}"
+
+    # 檢查是否存在緩存
+    cached_image = cache.get(cache_key)
+    if cached_image:
+        return cached_image
+
+    # 如果緩存不存在，添加到緩存
+    cache.set(cache_key, base64_image, timeout=86400)  # 緩存 1 天
+    return base64_image

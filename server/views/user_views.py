@@ -161,7 +161,8 @@ def login():
 
     # JWT token
     access_token = create_access_token(identity=user.uuid)
-    return jsonify({"access_token": access_token, "uuid":user.uuid}), 200
+    return jsonify({"access_token": access_token}), 200
+
 
 # update_user_data
 @user_blueprint.route('/<uuid:user_id>', methods=['PUT'])

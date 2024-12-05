@@ -36,3 +36,5 @@ apiflask
 flask-jwt-extended
 feedparser
 dateparser
+flask-compress
+flask-caching

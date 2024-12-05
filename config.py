@@ -36,3 +36,8 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'super_secret')
+
+    # Flask-Compress 配置
+    COMPRESS_MIMETYPES = ['text/html', 'text/css', 'application/json', 'application/javascript']
+    COMPRESS_LEVEL = 6  # 壓縮等級（1-9）
+    COMPRESS_MIN_SIZE = 500  # 最小壓縮大小（字節）

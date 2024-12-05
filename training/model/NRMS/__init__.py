@@ -192,6 +192,8 @@ class NRMS_BERT(nn.Module):
                     bertviz_filename = re.sub(r'[\\/:*?"<>|]', '', " ".join(tokens))
                     with open(self.bertviz_path / f'{bertviz_filename}.html', 'w') as file:
                         file.write(html_head_view.data)
+                except FileNotFoundError:
+                    continue
                 except:
                     raise ValueError("Bertviz error.")
         return output

@@ -12,7 +12,6 @@ from server.utils import format_date, get_or_cache_item_image
 
 user_history_bp = APIBlueprint('user_history_bp', __name__)
 
-
 ###瀏覽紀錄API
 @user_history_bp.route('/<string:user_uuid>', methods=['GET'])
 @jwt_required()
@@ -147,6 +146,7 @@ def get_recommend_items(user_uuid):
                 "data_source": item.data_source,
                 "image": item.image
                 # "image_blob": f"/api/item/image_blob/{item.uuid}"  # 返回圖片的 Blob URL
+
             }
             for log, item in recommendation_logs
         ]

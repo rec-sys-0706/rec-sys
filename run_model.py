@@ -280,7 +280,7 @@ def main(args: Arguments):
 # TODO bert attention layers?
 if __name__ == '__main__': 
     logging.basicConfig(level=logging.INFO, format='[%(levelname)s] - %(message)s')
-    args = parse_args()    
+    args = parse_args()
     data_preprocessing(args, 'train')
     data_preprocessing(args, 'valid')
     main(args)
